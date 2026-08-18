@@ -1192,49 +1192,64 @@ export default function SupplierDetailPage() {
 
               {/* Status History Changes */}
               {supplier.status_history && supplier.status_history.length > 0 && (
-                supplier.status_history.map((hist, hIdx) => (
-                  <div key={hist.id || hIdx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-indigo-50/40 border border-indigo-100/60">
-                    <div className="p-2 rounded-xl bg-indigo-100 text-indigo-700 shrink-0 mt-0.5">
-                      <GitBranch size={15} />
-                    </div>
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <span className="font-bold text-xs text-indigo-950">
-                          Mudança de Status & Etapa
-                        </span>
-                        <span className="text-[11px] text-slate-400 font-medium">
-                          {formatDate(hist.created_at)}
-                        </span>
+                supplier.status_history.map((hist: any, hIdx: number) => {
+                  const userName = hist.user?.name || 'Usuário';
+
+                  let targetStatus = '';
+                  if (hist.notes && hist.notes.includes('Status prospecção:')) {
+                    targetStatus = hist.notes.replace(/Status prospecção:\s*/i, '').trim();
+                  } else if (hist.new_stage === 'LOGISTICS') {
+                    targetStatus = 'Aguardando Logística';
+                  } else if (hist.new_stage === 'QUALIFICATION') {
+                    targetStatus = 'Qualificado';
+                  } else if (hist.new_stage === 'PROSPECTING') {
+                    targetStatus = 'Novo Lead';
+                  } else {
+                    targetStatus = translateStage(hist.new_stage);
+                  }
+
+                  let originStatus = 'Novo Lead';
+                  if (hist.old_stage === 'LOGISTICS') {
+                    originStatus = 'Aguardando Logística';
+                  } else if (hist.old_stage === 'QUALIFICATION') {
+                    originStatus = 'Qualificado';
+                  } else if (hist.old_stage && hist.old_stage !== hist.new_stage) {
+                    originStatus = translateStage(hist.old_stage);
+                  }
+
+                  if (originStatus === targetStatus) {
+                    if (targetStatus === 'Primeiro Contato Feito' || targetStatus === 'Contato Feito') {
+                      originStatus = 'Novo Lead';
+                    } else if (targetStatus === 'Apresentação Enviada') {
+                      originStatus = 'Primeiro Contato Feito';
+                    } else if (targetStatus === 'Qualificado') {
+                      originStatus = 'Apresentação Enviada';
+                    } else if (targetStatus === 'Aguardando Logística') {
+                      originStatus = 'Qualificado';
+                    }
+                  }
+
+                  return (
+                    <div key={hist.id || hIdx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-indigo-50/40 border border-indigo-100/60">
+                      <div className="p-2 rounded-xl bg-indigo-100 text-indigo-700 shrink-0 mt-0.5">
+                        <GitBranch size={15} />
                       </div>
-                      <p className="text-xs text-slate-600">
-                        Alterado por <strong className="text-indigo-900">{hist.user?.name || 'Usuário do Sistema'}</strong> ({hist.user?.role || 'Comercial'}):
-                      </p>
-                      <div className="flex items-center gap-2 pt-1 flex-wrap">
-                        {hist.old_stage && (
-                          <>
-                            <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md font-semibold">
-                              {translateStage(hist.old_stage)}
-                            </span>
-                            <span className="text-slate-400 text-xs">➔</span>
-                          </>
-                        )}
-                        <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">
-                          {translateStage(hist.new_stage)}
-                        </span>
-                        {hist.new_status && (
-                          <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
-                            {translateStatus(hist.new_status)}
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <span className="font-bold text-xs text-indigo-950">
+                            Atualização de Status
                           </span>
-                        )}
-                      </div>
-                      {hist.notes && (
-                        <p className="text-[11px] text-slate-500 italic pt-1 border-t border-indigo-100/40 mt-1.5">
-                          &ldquo;{hist.notes}&rdquo;
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            {formatDate(hist.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-700 pt-0.5 leading-relaxed">
+                          <strong className="text-slate-900 font-bold">{userName}</strong> alterou de <strong className="font-bold text-indigo-950 bg-indigo-100/80 px-2 py-0.5 rounded border border-indigo-200">{originStatus}</strong> para <strong className="font-bold text-emerald-950 bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-200">{targetStatus}</strong>
                         </p>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
 
               {/* Interactions / Conversations */}
