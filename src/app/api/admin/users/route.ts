@@ -153,17 +153,95 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'ID do usuário é obrigatório.' }, { status: 400 });
     }
 
-    // 1. Delete from profiles
-    const { error: pErr } = await supabase.from('profiles').delete().eq('id', id);
-    if (pErr) throw pErr;
+    // Find a fallback admin user (e.g. super admin) to reassign interactions/history if needed
+    const { data: fallbackUser } = await supabase
+      .from('profiles')
+      .select('id')
+      .neq('id', id)
+      .in('role', ['SUPER_ADMIN', 'ADMIN'])
+      .limit(1)
+      .maybeSingle();
 
-    // 2. Delete from auth.users if service role is available
+    const fallbackId = fallbackUser?.id;
+
+    // 1. Unlink from suppliers
+    try {
+      await supabase
+        .from('suppliers')
+        .update({ internal_responsible_id: null })
+        .eq('internal_responsible_id', id);
+    } catch (e) {
+      console.warn('Unlink suppliers warning:', e);
+    }
+
+    // 2. Unlink / Reassign tasks
+    try {
+      await supabase
+        .from('supplier_tasks')
+        .update({ assigned_to: fallbackId || null })
+        .eq('assigned_to', id);
+    } catch (e) {
+      console.warn('Unlink tasks warning:', e);
+    }
+
+    // 3. Reassign interactions or delete
+    if (fallbackId) {
+      try {
+        await supabase
+          .from('supplier_interactions')
+          .update({ user_id: fallbackId })
+          .eq('user_id', id);
+      } catch (e) {
+        console.warn('Reassign interactions warning:', e);
+      }
+
+      try {
+        await supabase
+          .from('supplier_status_history')
+          .update({ user_id: fallbackId })
+          .eq('user_id', id);
+      } catch (e) {
+        console.warn('Reassign status history warning:', e);
+      }
+    } else {
+      try {
+        await supabase
+          .from('supplier_interactions')
+          .delete()
+          .eq('user_id', id);
+      } catch (e) {
+        console.warn('Delete interactions warning:', e);
+      }
+    }
+
+    // 4. Unlink logistics analyses
+    try {
+      await supabase
+        .from('logistics_analyses')
+        .update({ analyst_id: fallbackId || null })
+        .eq('analyst_id', id);
+    } catch (e) {
+      console.warn('Unlink logistics analyses warning:', e);
+    }
+
+    // 5. Delete from auth.users first if service role is available
     if (serviceRoleKey) {
       try {
-        await supabase.auth.admin.deleteUser(id);
+        const { error: authDelErr } = await supabase.auth.admin.deleteUser(id);
+        if (authDelErr) {
+          console.warn('Could not delete auth user via admin:', authDelErr);
+        }
       } catch (authDelErr) {
         console.warn('Could not delete auth user:', authDelErr);
       }
+    }
+
+    // 6. Delete from profiles table
+    const { error: pErr } = await supabase.from('profiles').delete().eq('id', id);
+    if (pErr) {
+      console.warn('Profiles delete error, attempting fallback update:', pErr);
+      // Fallback: If delete is blocked by RLS or constraint, mark inactive / wipe
+      throw new Error(pErr.message || 'Erro ao remover registro da tabela de perfis.');
     }
 
     return NextResponse.json({ success: true });

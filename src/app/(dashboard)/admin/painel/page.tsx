@@ -143,15 +143,18 @@ export default function SuperAdminPanelPage() {
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!confirm(`Tem certeza que deseja desativar o acesso de "${userName}"?`)) return;
+    if (!confirm(`Tem certeza que deseja excluir o usuário "${userName}"?`)) return;
     try {
       const res = await fetch(`/api/admin/users?id=${userId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Falha ao excluir usuário');
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Falha ao excluir usuário');
+      }
       setUsersList(prev => prev.filter(u => u.id !== userId));
-      alert('Usuário removido com sucesso.');
+      alert('Usuário excluído com sucesso.');
     } catch (err: any) {
       console.error(err);
-      alert('Erro ao excluir usuário.');
+      alert(err.message || 'Erro ao excluir usuário.');
     }
   };
 
