@@ -88,7 +88,11 @@ export default function SuperAdminPanelPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserForm.email || !newUserForm.password || !newUserForm.name) {
+    const cleanEmail = newUserForm.email.trim().toLowerCase();
+    const cleanPassword = newUserForm.password.trim();
+    const cleanName = newUserForm.name.trim();
+
+    if (!cleanEmail || !cleanPassword || !cleanName) {
       alert('Preencha todos os campos obrigatórios.');
       return;
     }
@@ -98,7 +102,12 @@ export default function SuperAdminPanelPage() {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUserForm)
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          password: cleanPassword,
+          role: newUserForm.role
+        })
       });
 
       const data = await res.json();

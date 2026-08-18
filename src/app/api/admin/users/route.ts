@@ -41,7 +41,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email, password, name, role } = body;
 
-    if (!email || !password || !name) {
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanPassword = String(password || '').trim();
+    const cleanName = String(name || '').trim();
+
+    if (!cleanEmail || !cleanPassword || !cleanName) {
       return NextResponse.json({ error: 'E-mail, senha e nome são obrigatórios.' }, { status: 400 });
     }
 
@@ -51,10 +55,10 @@ export async function POST(req: Request) {
     // 1. Try to create user via Admin API if service role key is set
     if (serviceRoleKey) {
       const { data: adminUser, error: adminErr } = await supabase.auth.admin.createUser({
-        email,
-        password,
+        email: cleanEmail,
+        password: cleanPassword,
         email_confirm: true,
-        user_metadata: { name }
+        user_metadata: { name: cleanName }
       });
 
       if (adminErr) throw adminErr;
@@ -62,10 +66,10 @@ export async function POST(req: Request) {
     } else {
       // Fallback: standard sign-up
       const { data: authData, error: signErr } = await supabase.auth.signUp({
-        email,
-        password,
+        email: cleanEmail,
+        password: cleanPassword,
         options: {
-          data: { name }
+          data: { name: cleanName }
         }
       });
 
@@ -79,8 +83,8 @@ export async function POST(req: Request) {
       .from('profiles')
       .upsert({
         id: userId,
-        email,
-        name,
+        email: cleanEmail,
+        name: cleanName,
         role: userRole,
         created_at: new Date().toISOString()
       })
