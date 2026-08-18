@@ -1,7 +1,7 @@
 -- ============================================================
 -- SCRIPT DE IMPORTAÇÃO EM LOTE: FORNECEDORES / GERADORES HUB SOROCABA
--- Gerado automaticamente a partir da planilha oficial da iWrc
--- Total de Geradores: 182
+-- Gerado a partir da aba oficial "Prospecção de Geradores"
+-- Total Exato de Geradores: 139
 -- ============================================================
 
 DO $$
@@ -14,7 +14,7 @@ BEGIN
 
 
   -- ------------------------------------------------------------
-  -- [1] Fulwood Sorocaba Business Park
+  -- [1] (Planilha ID: 1) Fulwood Sorocaba Business Park
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -84,7 +84,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [2] Braslog Sorocaba - Condomínio de Galpões Industriais
+  -- [2] (Planilha ID: 2) Braslog Sorocaba - Condomínio de Galpões Industriais
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -154,7 +154,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [3] M5 Sorocaba
+  -- [3] (Planilha ID: 3) M5 Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -224,7 +224,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [4] Votorantim Park Industrial
+  -- [4] (Planilha ID: 4) Votorantim Park Industrial
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -294,7 +294,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [5] Condomínio Empresarial Ômega
+  -- [5] (Planilha ID: 5) Condomínio Empresarial Ômega
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -364,7 +364,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [6] Condominio Aurora Business Park 2
+  -- [6] (Planilha ID: 6) Condominio Aurora Business Park 2
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -434,7 +434,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [7] Condominio Empresarial Panamericano
+  -- [7] (Planilha ID: 7) Condominio Empresarial Panamericano
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -504,7 +504,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [8] Tauste Itavuvu - (Sorocaba)
+  -- [8] (Planilha ID: 8) Tauste Itavuvu - (Sorocaba)
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -574,7 +574,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [9] Tauste Campolim - (Sorocaba)
+  -- [9] (Planilha ID: 9) Tauste Campolim - (Sorocaba)
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -644,7 +644,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [10] Rede Bom Lugar
+  -- [10] (Planilha ID: 10) Rede Bom Lugar
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -709,12 +709,12 @@ BEGIN
     'purchase',
     0,
     'Sacos / Bags / Caixas',
-    'Estimativa: N.A',
+    NULL,
     NOW()
   );
 
   -- ------------------------------------------------------------
-  -- [11] Taurus Helmets
+  -- [11] (Planilha ID: 11) Taurus Helmets
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -771,20 +771,20 @@ BEGIN
   ) VALUES (
     gen_random_uuid(),
     v_supplier_id,
-    'Plastico e papelão',
-    'Plastico e papelão',
+    'Recicláveis em geral',
+    'Recicláveis em geral',
     0,
     'kg',
     'monthly',
     'donation',
     0,
     'Sacos / Bags / Caixas',
-    'Estimativa: Não tem estimativa',
+    NULL,
     NOW()
   );
 
   -- ------------------------------------------------------------
-  -- [12] Brasil Reverso
+  -- [12] (Planilha ID: 12) Brasil Reverso
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -854,7 +854,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [13] UNIP
+  -- [13] (Planilha ID: 13) UNIP
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -919,12 +919,12 @@ BEGIN
     'donation',
     0,
     'Sacos / Bags / Caixas',
-    'Estimativa: N.A',
+    NULL,
     NOW()
   );
 
   -- ------------------------------------------------------------
-  -- [14] UNISO
+  -- [14] (Planilha ID: 14) UNISO
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -994,7 +994,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [15] UFSCAR
+  -- [15] (Planilha ID: 15) UFSCAR
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1064,7 +1064,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [16] UNESP
+  -- [16] (Planilha ID: 16) UNESP
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1134,7 +1134,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [17] PUC-CAMPINAS
+  -- [17] (Planilha ID: 17) PUC-CAMPINAS
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1204,7 +1204,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [18] UNISANTA
+  -- [18] (Planilha ID: 18) UNISANTA
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1274,7 +1274,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [19] Anglo
+  -- [19] (Planilha ID: 19) Anglo
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1344,7 +1344,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [20] GMRA
+  -- [20] (Planilha ID: 20) GMRA
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1414,7 +1414,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [21] CIESP Sorocaba
+  -- [21] (Planilha ID: 21) CIESP Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1484,7 +1484,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [22] CIESP Campinas
+  -- [22] (Planilha ID: 22) CIESP Campinas
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1554,7 +1554,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [23] CIESP Indaiatuba
+  -- [23] (Planilha ID: 23) CIESP Indaiatuba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1624,7 +1624,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [24] CIESP São Carlos
+  -- [24] (Planilha ID: 24) CIESP São Carlos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1694,7 +1694,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [25] Lord Brasil
+  -- [25] (Planilha ID: 25) Lord Brasil
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1764,7 +1764,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [26] Soroplast Indústria e Comércio de Artefatos Plásticos
+  -- [26] (Planilha ID: 26) Soroplast Indústria e Comércio de Artefatos Plásticos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1834,7 +1834,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [27] Majesty América do Sul Embalagens
+  -- [27] (Planilha ID: 27) Majesty América do Sul Embalagens
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1904,7 +1904,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [28] Parabor Indústria e Comércio de Produtos Químicos Ltda
+  -- [28] (Planilha ID: 28) Parabor Indústria e Comércio de Produtos Químicos Ltda
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -1974,7 +1974,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [29] Militão Vidros
+  -- [29] (Planilha ID: 29) Militão Vidros
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2044,7 +2044,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [30] Éden Park Hotel
+  -- [30] (Planilha ID: 30) Éden Park Hotel
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2056,7 +2056,7 @@ BEGIN
     'Éden Park Hotel',
     'Éden Park Hotel',
     NULL,
-    'Hotelaria / Turismo',
+    'Indústria',
     'Prospecção HUB Sorocaba',
     v_admin_id,
     'PROSPECTING',
@@ -2114,7 +2114,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [31] Toyota do Brasil
+  -- [31] (Planilha ID: 31) Toyota do Brasil
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2184,7 +2184,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [32] ZF do Brasil
+  -- [32] (Planilha ID: 32) ZF do Brasil
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2254,7 +2254,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [33] Schaeffler Brasil
+  -- [33] (Planilha ID: 33) Schaeffler Brasil
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2324,7 +2324,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [34] CNH Industrial
+  -- [34] (Planilha ID: 34) CNH Industrial
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2394,7 +2394,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [35] Metso Brasil
+  -- [35] (Planilha ID: 35) Metso Brasil
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2464,7 +2464,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [36] Clarios
+  -- [36] (Planilha ID: 36) Clarios
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2534,7 +2534,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [37] Tecsis
+  -- [37] (Planilha ID: 37) Tecsis
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2604,7 +2604,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [38] GCP Applied Technologies
+  -- [38] (Planilha ID: 38) GCP Applied Technologies
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2674,7 +2674,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [39] Prysmian Group
+  -- [39] (Planilha ID: 39) Prysmian Group
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2744,7 +2744,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [40] Nissin Foods
+  -- [40] (Planilha ID: 40) Nissin Foods
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2814,7 +2814,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [41] Amcor Flexibles
+  -- [41] (Planilha ID: 41) Amcor Flexibles
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2884,7 +2884,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [42] Unilever
+  -- [42] (Planilha ID: 42) Unilever
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -2954,7 +2954,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [43] John Deere
+  -- [43] (Planilha ID: 43) John Deere
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3024,7 +3024,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [44] Kion South America
+  -- [44] (Planilha ID: 44) Kion South America
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3094,7 +3094,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [45] DHL Supply Chain
+  -- [45] (Planilha ID: 45) DHL Supply Chain
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3164,7 +3164,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [46] Mercado Livre (Fulfillment)
+  -- [46] (Planilha ID: 46) Mercado Livre (Fulfillment)
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3234,7 +3234,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [47] Amazon Brasil (Fulfillment)
+  -- [47] (Planilha ID: 47) Amazon Brasil (Fulfillment)
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3304,7 +3304,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [48] Magazine Luiza CD
+  -- [48] (Planilha ID: 48) Magazine Luiza CD
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3374,7 +3374,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [49] CEVA Logistics
+  -- [49] (Planilha ID: 49) CEVA Logistics
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3444,7 +3444,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [50] Crown Embalagens
+  -- [50] (Planilha ID: 50) Crown Embalagens
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3514,7 +3514,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [51] Tetra Pak
+  -- [51] (Planilha ID: 51) Tetra Pak
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3584,7 +3584,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [52] Brasilata
+  -- [52] (Planilha ID: 52) Brasilata
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3654,7 +3654,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [53] Klabin
+  -- [53] (Planilha ID: 53) Klabin
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3724,7 +3724,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [54] PepsiCo
+  -- [54] (Planilha ID: 54) PepsiCo
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3794,7 +3794,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [55] Ajinomoto
+  -- [55] (Planilha ID: 55) Ajinomoto
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3864,7 +3864,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [56] Ypê
+  -- [56] (Planilha ID: 56) Ypê
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -3934,7 +3934,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [57] Adimax
+  -- [57] (Planilha ID: 57) Adimax
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4004,7 +4004,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [58] Case IH
+  -- [58] (Planilha ID: 58) Case IH
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4074,7 +4074,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [59] Parker Hannifin
+  -- [59] (Planilha ID: 59) Parker Hannifin
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4144,7 +4144,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [60] Bardella
+  -- [60] (Planilha ID: 60) Bardella
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4214,7 +4214,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [61] Splice Indústria
+  -- [61] (Planilha ID: 61) Splice Indústria
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4284,7 +4284,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [62] Wobben (Enercon)
+  -- [62] (Planilha ID: 62) Wobben (Enercon)
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4354,7 +4354,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [63] Hexis Científica
+  -- [63] (Planilha ID: 63) Hexis Científica
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4424,7 +4424,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [64] Rexam (Ardagh)
+  -- [64] (Planilha ID: 64) Rexam (Ardagh)
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4494,7 +4494,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [65] Castelo Alimentos
+  -- [65] (Planilha ID: 65) Castelo Alimentos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4564,7 +4564,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [66] Marfrig
+  -- [66] (Planilha ID: 66) Marfrig
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4634,7 +4634,7 @@ BEGIN
   );
 
   -- ------------------------------------------------------------
-  -- [67] JBS Couros
+  -- [67] (Planilha ID: 67) JBS Couros
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4705,7 +4705,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [68] Colégio Objetivo Sorocaba
+  -- [68] (Planilha ID: 68) Colégio Objetivo Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4775,7 +4775,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [69] Colégio Uirapuru
+  -- [69] (Planilha ID: 69) Colégio Uirapuru
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4845,7 +4845,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [70] Colégio Dom Aguirre
+  -- [70] (Planilha ID: 70) Colégio Dom Aguirre
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4860,9 +4860,9 @@ imprensa@jbs.com.br',
     'Indústria',
     'Prospecção HUB Sorocaba',
     v_admin_id,
-    'LOGISTICS',
+    'PROSPECTING',
     'PENDING',
-    'WAITING_LOGISTICS',
+    'NEW_LEAD',
     NOW(),
     NOW()
   );
@@ -4902,20 +4902,20 @@ imprensa@jbs.com.br',
   ) VALUES (
     gen_random_uuid(),
     v_supplier_id,
-    'Recicláveis diversos',
-    'Recicláveis diversos',
+    'Papel, papelão, plastico e metais',
+    'Papel, papelão, plastico e metais',
     1,
     'kg',
     'monthly',
     'donation',
     0,
     'Sacos / Bags / Caixas',
-    'Estimativa: 1 lixeira 500l mês',
+    'Estimativa: 1 lixeira de 500 litros mês',
     NOW()
   );
 
   -- ------------------------------------------------------------
-  -- [71] SESI Sorocaba
+  -- [71] (Planilha ID: 71) SESI Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -4985,7 +4985,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [72] SENAI Sorocaba
+  -- [72] (Planilha ID: 72) SENAI Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5055,7 +5055,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [73] Parque Tecnológico de Sorocaba
+  -- [73] (Planilha ID: 73) Parque Tecnológico de Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5125,7 +5125,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [74] Kostela do Japonês
+  -- [74] (Planilha ID: 74) Kostela do Japonês
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5137,12 +5137,12 @@ imprensa@jbs.com.br',
     'Kostela do Japonês',
     'Kostela do Japonês',
     NULL,
-    'Indústria',
+    'Restaurante / Alimentação',
     'Prospecção HUB Sorocaba',
     v_admin_id,
-    'LOGISTICS',
+    'PROSPECTING',
     'PENDING',
-    'WAITING_LOGISTICS',
+    'NEW_LEAD',
     NOW(),
     NOW()
   );
@@ -5182,20 +5182,20 @@ imprensa@jbs.com.br',
   ) VALUES (
     gen_random_uuid(),
     v_supplier_id,
-    'Papelão, plastico e vidro',
-    'Papelão, plastico e vidro',
+    'Papelão e plastico',
+    'Papelão e plastico',
     1,
     'kg',
     'monthly',
     'donation',
     0,
     'Sacos / Bags / Caixas',
-    'Estimativa: 1 bag - 90x90x120                                   1 caixa de vidro',
+    'Estimativa: 1 bag/2 semanas',
     NOW()
   );
 
   -- ------------------------------------------------------------
-  -- [75] Restaurante Picanha na Villa
+  -- [75] (Planilha ID: 75) Restaurante Picanha na Villa
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5265,7 +5265,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [76] Mio Sapore Restaurante
+  -- [76] (Planilha ID: 76) Mio Sapore Restaurante
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5335,7 +5335,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [77] Pizzaria da Rita
+  -- [77] (Planilha ID: 77) Pizzaria da Rita
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5405,7 +5405,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [78] Restaurante Vecchio Cancian
+  -- [78] (Planilha ID: 78) Restaurante Vecchio Cancian
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5475,7 +5475,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [79] Restaurante Refazenda Sorocaba
+  -- [79] (Planilha ID: 79) Restaurante Refazenda Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5545,7 +5545,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [80] Do Japonês
+  -- [80] (Planilha ID: 80) Do Japonês
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5615,7 +5615,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [81] Domo Restaurante
+  -- [81] (Planilha ID: 81) Domo Restaurante
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5685,7 +5685,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [82] Paladare Grill Restaurante
+  -- [82] (Planilha ID: 82) Paladare Grill Restaurante
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5755,7 +5755,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [83] Café HP Restaurante
+  -- [83] (Planilha ID: 83) Café HP Restaurante
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5770,9 +5770,9 @@ imprensa@jbs.com.br',
     'Restaurante / Alimentação',
     'Prospecção HUB Sorocaba',
     v_admin_id,
-    'LOGISTICS',
+    'PROSPECTING',
     'PENDING',
-    'WAITING_LOGISTICS',
+    'NEW_LEAD',
     NOW(),
     NOW()
   );
@@ -5812,20 +5812,20 @@ imprensa@jbs.com.br',
   ) VALUES (
     gen_random_uuid(),
     v_supplier_id,
-    'Papelão',
-    'Papelão',
-    4,
+    'Plastico, papelão e pet',
+    'Plastico, papelão e pet',
+    200,
     'kg',
     'monthly',
     'donation',
     0,
     'Sacos / Bags / Caixas',
-    'Estimativa: 4 bags/2 semanal',
+    'Estimativa: 200 kg',
     NOW()
   );
 
   -- ------------------------------------------------------------
-  -- [84] Gelar Comida Caseira
+  -- [84] (Planilha ID: 84) Gelar Comida Caseira
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5895,7 +5895,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [85] Roda d' Ferro Churrascaria e Pizzaria
+  -- [85] (Planilha ID: 85) Roda d' Ferro Churrascaria e Pizzaria
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -5965,7 +5965,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [86] Restaurante da Lu
+  -- [86] (Planilha ID: 86) Restaurante da Lu
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6035,7 +6035,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [87] Restaurante da Dorinha
+  -- [87] (Planilha ID: 87) Restaurante da Dorinha
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6105,7 +6105,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [88] Feitosa Supermercados – Loja 1
+  -- [88] (Planilha ID: 88) Feitosa Supermercados – Loja 1
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6175,7 +6175,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [89] Supermercado Feitosa 02
+  -- [89] (Planilha ID: 89) Supermercado Feitosa 02
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6245,7 +6245,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [90] Rede Bom Lugar – Loja Cajuru
+  -- [90] (Planilha ID: 90) Rede Bom Lugar – Loja Cajuru
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6315,7 +6315,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [91] San Marcos
+  -- [91] (Planilha ID: 91) San Marcos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6385,7 +6385,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [92] Rede Bom Lugar – Loja 09
+  -- [92] (Planilha ID: 92) Rede Bom Lugar – Loja 09
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6455,7 +6455,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [93] Colégio Adventista de Sorocaba
+  -- [93] (Planilha ID: 93) Colégio Adventista de Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6525,7 +6525,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [94] Colégio Sorocaba
+  -- [94] (Planilha ID: 94) Colégio Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6595,7 +6595,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [95] Colégio Horizonte
+  -- [95] (Planilha ID: 95) Colégio Horizonte
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6665,7 +6665,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [96] Colégio Renascer Sorocaba
+  -- [96] (Planilha ID: 96) Colégio Renascer Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6735,7 +6735,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [97] College International Talent
+  -- [97] (Planilha ID: 97) College International Talent
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6805,7 +6805,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [98] The Lighthouse School
+  -- [98] (Planilha ID: 98) The Lighthouse School
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6875,7 +6875,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [99] Colégio Espaço Criança – Berçário e Educação Infantil
+  -- [99] (Planilha ID: 99) Colégio Espaço Criança – Berçário e Educação Infantil
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -6945,7 +6945,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [100] Colégio Pleno – Educação Infantil
+  -- [100] (Planilha ID: 100) Colégio Pleno – Educação Infantil
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7001,7 +7001,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [101] Espaço de Eventos - Monteiro Lobato
+  -- [101] (Planilha ID: 101) Espaço de Eventos - Monteiro Lobato
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7071,7 +7071,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [102] GD Eventos
+  -- [102] (Planilha ID: 102) GD Eventos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7141,7 +7141,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [103] Casa Magna Eventos
+  -- [103] (Planilha ID: 103) Casa Magna Eventos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7211,7 +7211,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [104] Camacho Espaço para Eventos
+  -- [104] (Planilha ID: 104) Camacho Espaço para Eventos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7281,7 +7281,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [105] Espaço Verde Encanto
+  -- [105] (Planilha ID: 105) Espaço Verde Encanto
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7351,7 +7351,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [106] Alhambra Eventos
+  -- [106] (Planilha ID: 106) Alhambra Eventos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7421,7 +7421,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [107] Espaço Casa da Vó
+  -- [107] (Planilha ID: 107) Espaço Casa da Vó
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7491,7 +7491,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [108] Espaço Festa e Lazer Novo Sol
+  -- [108] (Planilha ID: 108) Espaço Festa e Lazer Novo Sol
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7561,7 +7561,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [109] Espaço Festa Summer
+  -- [109] (Planilha ID: 109) Espaço Festa Summer
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7631,7 +7631,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [110] Palace Club Sorocaba
+  -- [110] (Planilha ID: 110) Palace Club Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7701,7 +7701,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [111] Cervejaria Estação Beer
+  -- [111] (Planilha ID: 111) Cervejaria Estação Beer
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7771,7 +7771,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [112] Cervejaria Burgman
+  -- [112] (Planilha ID: 112) Cervejaria Burgman
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7841,7 +7841,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [113] Buffet Matsushima
+  -- [113] (Planilha ID: 113) Buffet Matsushima
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7911,7 +7911,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [114] Buffet Guimarães
+  -- [114] (Planilha ID: 114) Buffet Guimarães
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -7981,7 +7981,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [115] Buffet Vó Landa
+  -- [115] (Planilha ID: 115) Buffet Vó Landa
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8051,7 +8051,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [116] Eventos Damas e José
+  -- [116] (Planilha ID: 116) Eventos Damas e José
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8121,7 +8121,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [117] Bar do Tio Oscar
+  -- [117] (Planilha ID: 117) Bar do Tio Oscar
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8191,7 +8191,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [118] RR Águias Bar
+  -- [118] (Planilha ID: 118) RR Águias Bar
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8261,7 +8261,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [119] Road Shopping - Rodovia Castello Branco
+  -- [119] (Planilha ID: 119) Road Shopping - Rodovia Castello Branco
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8331,7 +8331,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [120] Catarina Fashion Outlet
+  -- [120] (Planilha ID: 120) Catarina Fashion Outlet
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8401,7 +8401,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [121] São Paulo Catarina Aeroporto Executivo Internacional
+  -- [121] (Planilha ID: 121) São Paulo Catarina Aeroporto Executivo Internacional
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8471,7 +8471,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [122] Embraer Executive Jets
+  -- [122] (Planilha ID: 122) Embraer Executive Jets
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8527,7 +8527,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [123] Carrefour Hipermercado
+  -- [123] (Planilha ID: 123) Carrefour Hipermercado
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8597,7 +8597,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [124] Golden Park Sorocaba & Convenções
+  -- [124] (Planilha ID: 124) Golden Park Sorocaba & Convenções
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8667,7 +8667,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [125] Cacau Park
+  -- [125] (Planilha ID: 125) Cacau Park
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8723,7 +8723,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [126] No Precinho - Loja 1
+  -- [126] (Planilha ID: 126) No Precinho - Loja 1
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8793,7 +8793,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [127] Prysmian - Cabos e Sistemas do Brasil SA
+  -- [127] (Planilha ID: 127) Prysmian - Cabos e Sistemas do Brasil SA
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8863,7 +8863,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [128] DFF Embalagens | Fábrica de Embalagens Caixas em Sorocaba
+  -- [128] (Planilha ID: 128) DFF Embalagens | Fábrica de Embalagens Caixas em Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -8933,7 +8933,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [129] Rewplastic Artefatos Plásticos - Indústria De Injeção Termoplástica
+  -- [129] (Planilha ID: 129) Rewplastic Artefatos Plásticos - Indústria De Injeção Termoplástica
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9003,7 +9003,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [130] CONSEG Sorocaba
+  -- [130] (Planilha ID: 130) CONSEG Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9018,9 +9018,9 @@ imprensa@jbs.com.br',
     'Indústria',
     'Prospecção HUB Sorocaba',
     v_admin_id,
-    'LOGISTICS',
+    'PROSPECTING',
     'PENDING',
-    'WAITING_LOGISTICS',
+    'NEW_LEAD',
     NOW(),
     NOW()
   );
@@ -9068,12 +9068,12 @@ imprensa@jbs.com.br',
     'donation',
     0,
     'Sacos / Bags / Caixas',
-    'Estimativa: A definir',
+    'Estimativa: Planilha - conseg',
     NOW()
   );
 
   -- ------------------------------------------------------------
-  -- [131] Condomínio Vert Ville
+  -- [131] (Planilha ID: 131) Condomínio Vert Ville
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9088,9 +9088,9 @@ imprensa@jbs.com.br',
     'Condomínio Logístico / Galpão',
     'Prospecção HUB Sorocaba',
     v_admin_id,
-    'LOGISTICS',
+    'PROSPECTING',
     'PENDING',
-    'WAITING_LOGISTICS',
+    'NEW_LEAD',
     NOW(),
     NOW()
   );
@@ -9143,7 +9143,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [132] Edifício Deuses do Olimpo
+  -- [132] (Planilha ID: 132) Edifício Deuses do Olimpo
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9158,9 +9158,9 @@ imprensa@jbs.com.br',
     'Indústria',
     'Prospecção HUB Sorocaba',
     v_admin_id,
-    'LOGISTICS',
+    'PROSPECTING',
     'PENDING',
-    'WAITING_LOGISTICS',
+    'NEW_LEAD',
     NOW(),
     NOW()
   );
@@ -9208,12 +9208,12 @@ imprensa@jbs.com.br',
     'donation',
     0,
     'Sacos / Bags / Caixas',
-    'Estimativa: Big Bags / 2.000 kg ou contentores de 1000 L',
+    'Estimativa: Big Bags - 2.000 kg ou contentores de 1000 L',
     NOW()
   );
 
   -- ------------------------------------------------------------
-  -- [133] NelSom Eletrônica
+  -- [133] (Planilha ID: 133) NelSom Eletrônica
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9283,7 +9283,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [134] MR Eletrônica - Conserto e Reparos de Aparelhos Eletrônicos
+  -- [134] (Planilha ID: 134) MR Eletrônica - Conserto e Reparos de Aparelhos Eletrônicos
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9353,7 +9353,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [135] Eletrônica Total
+  -- [135] (Planilha ID: 135) Eletrônica Total
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9423,7 +9423,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [136] Infomaxx Informática Sorocaba
+  -- [136] (Planilha ID: 136) Infomaxx Informática Sorocaba
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9493,7 +9493,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [137] FAERTECH TECNOLOGIA
+  -- [137] (Planilha ID: 137) FAERTECH TECNOLOGIA
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9563,7 +9563,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [138] Hackers Informática
+  -- [138] (Planilha ID: 138) Hackers Informática
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9633,7 +9633,7 @@ imprensa@jbs.com.br',
   );
 
   -- ------------------------------------------------------------
-  -- [139] E9 INFORMÁTICA
+  -- [139] (Planilha ID: 139) E9 INFORMÁTICA
   -- ------------------------------------------------------------
   v_supplier_id := gen_random_uuid();
 
@@ -9699,2806 +9699,6 @@ imprensa@jbs.com.br',
     0,
     'Sacos / Bags / Caixas',
     NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [140] Condomínio Modular Trade Center
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Condomínio Modular Trade Center',
-    'Condomínio Modular Trade Center',
-    NULL,
-    'Condomínio Logístico / Galpão',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18087-170',
-    'Av. Liberdade',
-    '4565',
-    NULL,
-    'Iporanga',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Condomínio Modular Trade Center (Contato)',
-    'Comercial / Responsável',
-    '(15) 3228-3548',
-    '(15) 3228-3548',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [141] BARRACÃO REVERSA COMERCIO DE PRODUTOS
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'BARRACÃO REVERSA COMERCIO DE PRODUTOS',
-    'BARRACÃO REVERSA COMERCIO DE PRODUTOS',
-    NULL,
-    'Comércio / Varejo',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18086-432',
-    'R. José João Alves',
-    '31',
-    NULL,
-    'Parque empresarial das Mangueiras',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'BARRACÃO REVERSA COMERCIO DE PRODUTOS (Contato)',
-    'Comercial / Responsável',
-    '(15) 99696-6956',
-    '(15) 99696-6956',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [142] O Caçador de Galpões
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'O Caçador de Galpões',
-    'O Caçador de Galpões',
-    NULL,
-    'Condomínio Logístico / Galpão',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18030-005',
-    'Rod. Raposo Tavares',
-    'S/N',
-    NULL,
-    'S/N',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'O Caçador de Galpões (Contato)',
-    'Comercial / Responsável',
-    '(11) 98344-7886',
-    '(11) 98344-7886',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [143] Direct Express Logística Integrada
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Direct Express Logística Integrada',
-    'Direct Express Logística Integrada',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Rua Yashica',
-    '519 - glp 4',
-    NULL,
-    'glp 4',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Direct Express Logística Integrada (Contato)',
-    'Comercial / Responsável',
-    '(15) 3227-2990',
-    '(15) 3227-2990',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [144] Condomínio Industrial Aparecidinha
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Condomínio Industrial Aparecidinha',
-    'Condomínio Industrial Aparecidinha',
-    NULL,
-    'Condomínio Logístico / Galpão',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18087-280',
-    'Rua Joaquim Machado',
-    '250',
-    NULL,
-    'Aparecidinha',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Condomínio Industrial Aparecidinha (Contato)',
-    'Comercial / Responsável',
-    '(15) 3225-2807',
-    '(15) 3225-2807',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [145] METROPOLITANO EMPRESARIAL
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'METROPOLITANO EMPRESARIAL',
-    'METROPOLITANO EMPRESARIAL',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18103-000',
-    'R. Moacyr de Castro',
-    '100',
-    NULL,
-    'Éden',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'METROPOLITANO EMPRESARIAL (Contato)',
-    'Comercial / Responsável',
-    '(15) 99634-9079',
-    '(15) 99634-9079',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [146] Flex (Flextronics)
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Flex (Flextronics)',
-    'Flex (Flextronics)',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Sorocaba',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Flex (Flextronics) (Contato)',
-    'Comercial / Responsável',
-    '(15) 4009-6647 - (15) 4009-6200',
-    '(15) 4009-6647 - (15) 4009-6200',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [147] Robert Bosch
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Robert Bosch',
-    'Robert Bosch',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Campinas',
-    'S/N',
-    NULL,
-    'Centro',
-    'Campinas',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Robert Bosch (Contato)',
-    'Comercial / Responsável',
-    '(19) 2103-4278',
-    '(19) 2103-4278',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [148] Samsung Eletrônica
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Samsung Eletrônica',
-    'Samsung Eletrônica',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Campinas',
-    'S/N',
-    NULL,
-    'Centro',
-    'Campinas',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [149] Ambev
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Ambev',
-    'Ambev',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Jaguariúna',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [150] Tauste Supermercados
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Tauste Supermercados',
-    'Tauste Supermercados',
-    NULL,
-    'Comércio / Varejo',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Sorocaba',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Tauste Supermercados (Contato)',
-    'Comercial / Responsável',
-    '(15) 3414-1880 - (15)996838677',
-    '(15) 3414-1880 - (15)996838677',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [151] Mercado Livre
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Mercado Livre',
-    'Mercado Livre',
-    NULL,
-    'Comércio / Varejo',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Cajamar',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [152] Amazon Brasil
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Amazon Brasil',
-    'Amazon Brasil',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Cajamar',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [153] Whirlpool
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Whirlpool',
-    'Whirlpool',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Rio Claro',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Whirlpool (Contato)',
-    'Comercial / Responsável',
-    '(11) 4480-7100',
-    '(11) 4480-7100',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [154] Eurofarma
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Eurofarma',
-    'Eurofarma',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Itapevi',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [155] Multicoisas
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Multicoisas',
-    'Multicoisas',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Várias',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Multicoisas (Contato)',
-    'Comercial / Responsável',
-    '(15) 3032-0142',
-    '(15) 3032-0142',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [156] Ferramentarias Éden
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Ferramentarias Éden',
-    'Ferramentarias Éden',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Sorocaba',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [157] Cintitec
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Cintitec',
-    'Cintitec',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Osasco',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Cintitec (Contato)',
-    'Comercial / Responsável',
-    'Brito -',
-    'Brito -',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [158] Global Reverso
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Global Reverso',
-    'Global Reverso',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Nacional',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [159] Reciclagem Brasil
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Reciclagem Brasil',
-    'Reciclagem Brasil',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Cabreúva',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Reciclagem Brasil (Contato)',
-    'Comercial / Responsável',
-    '(11) 4529-3776/ (11) 96389-1753',
-    '(11) 4529-3776/ (11) 96389-1753',
-    'contato@reciclagembrasil.com.br',
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [160] Reversis
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Reversis',
-    'Reversis',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Campinas',
-    'S/N',
-    NULL,
-    'Centro',
-    'Campinas',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Reversis (Contato)',
-    'Comercial / Responsável',
-    '(19) 2101-5100',
-    '(19) 2101-5100',
-    'contato@reversis.com.br',
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [161] PUC-SP
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'PUC-SP',
-    'PUC-SP',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Sorocaba',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [162] UNICAMP
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'UNICAMP',
-    'UNICAMP',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Campinas',
-    'S/N',
-    NULL,
-    'Centro',
-    'Campinas',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'UNICAMP (Contato)',
-    'Comercial / Responsável',
-    '1935218071',
-    '1935218071',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [163] UNIMEP
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'UNIMEP',
-    'UNIMEP',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Piracicaba',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [164] FMJ
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'FMJ',
-    'FMJ',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Jundiaí',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [165] USP
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'USP',
-    'USP',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São Paulo',
-    'S/N',
-    NULL,
-    'Centro',
-    'São Paulo',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'USP (Contato)',
-    'Comercial / Responsável',
-    '(16) 3373-9333',
-    '(16) 3373-9333',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [166] UNIFESP
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'UNIFESP',
-    'UNIFESP',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São Paulo',
-    'S/N',
-    NULL,
-    'Centro',
-    'São Paulo',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [167] UFABC
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'UFABC',
-    'UFABC',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Diadema',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'UFABC (Contato)',
-    'Comercial / Responsável',
-    '(11) 3356-7000',
-    '(11) 3356-7000',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [168] FGV
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'FGV',
-    'FGV',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São Paulo',
-    'S/N',
-    NULL,
-    'Centro',
-    'São Paulo',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'FGV (Contato)',
-    'Comercial / Responsável',
-    '(11) 3799-7700',
-    '(11) 3799-7700',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [169] INSPER
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'INSPER',
-    'INSPER',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São Paulo',
-    'S/N',
-    NULL,
-    'Centro',
-    'São Paulo',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'INSPER (Contato)',
-    'Comercial / Responsável',
-    '(11) 4504-2400',
-    '(11) 4504-2400',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [170] ESPM
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'ESPM',
-    'ESPM',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São Paulo',
-    'S/N',
-    NULL,
-    'Centro',
-    'São Paulo',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'ESPM (Contato)',
-    'Comercial / Responsável',
-    '0800 607 3777',
-    '0800 607 3777',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [171] PUC
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'PUC',
-    'PUC',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São Paulo',
-    'S/N',
-    NULL,
-    'Centro',
-    'São Paulo',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'PUC (Contato)',
-    'Comercial / Responsável',
-    '(11) 3670-8000',
-    '(11) 3670-8000',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [172] Mackenzie
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Mackenzie',
-    'Mackenzie',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São Paulo',
-    'S/N',
-    NULL,
-    'Centro',
-    'São Paulo',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Mackenzie (Contato)',
-    'Comercial / Responsável',
-    '(11) 2114-8000',
-    '(11) 2114-8000',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [173] ITA
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'ITA',
-    'ITA',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São José dos Campos',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'ITA (Contato)',
-    'Comercial / Responsável',
-    '(12) 3947-5856',
-    '(12) 3947-5856',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [174] UNITAU
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'UNITAU',
-    'UNITAU',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Taubaté',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'UNITAU (Contato)',
-    'Comercial / Responsável',
-    '(12) 3624-2888',
-    '(12) 3624-2888',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [175] UNISANTOS
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'UNISANTOS',
-    'UNISANTOS',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Santos',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [176] Instituto Mauá de Tecnologia
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Instituto Mauá de Tecnologia',
-    'Instituto Mauá de Tecnologia',
-    NULL,
-    'Instituição / Educação / Saúde',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'São Caetano do Sul',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Instituto Mauá de Tecnologia (Contato)',
-    'Comercial / Responsável',
-    '0800 019 3100',
-    '0800 019 3100',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [177] Vivo/Telefônica
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Vivo/Telefônica',
-    'Vivo/Telefônica',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Nacional',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [178] CIESP Jundiaí
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'CIESP Jundiaí',
-    'CIESP Jundiaí',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Jundiaí',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'CIESP Jundiaí (Contato)',
-    'Comercial / Responsável',
-    '(11) 4815-7941',
-    '(11) 4815-7941',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [179] CIESP Cotia
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'CIESP Cotia',
-    'CIESP Cotia',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Cotia',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'CIESP Cotia (Contato)',
-    'Comercial / Responsável',
-    '(11) 4612-9722',
-    '(11) 4612-9722',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [180] CIESP Americana
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'CIESP Americana',
-    'CIESP Americana',
-    NULL,
-    'Indústria',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'PROSPECTING',
-    'PENDING',
-    'NEW_LEAD',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Americana',
-    'S/N',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_contacts (
-    id, supplier_id, name, role, phone, whatsapp, email, is_primary, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'CIESP Americana (Contato)',
-    'Comercial / Responsável',
-    '(19) 3471-0400',
-    '(19) 3471-0400',
-    NULL,
-    TRUE,
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis em geral',
-    'Recicláveis em geral',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    NULL,
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [181] Lar Escola Monteiro Lobato
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Lar Escola Monteiro Lobato',
-    'Lar Escola Monteiro Lobato',
-    NULL,
-    'Instituição / Educação / Saúde',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'LOGISTICS',
-    'PENDING',
-    'WAITING_LOGISTICS',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Rua Antônio Aparecido Ferraz',
-    '1111',
-    NULL,
-    'Centro',
-    'Sorocaba',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Recicláveis diversos',
-    'Recicláveis diversos',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    'Estimativa: A definir',
-    NOW()
-  );
-
-  -- ------------------------------------------------------------
-  -- [182] Universidade Mackenzie
-  -- ------------------------------------------------------------
-  v_supplier_id := gen_random_uuid();
-
-  INSERT INTO suppliers (
-    id, name, trade_name, document, supplier_type, lead_source,
-    internal_responsible_id, current_stage, current_status, backlog_reason, created_at, updated_at
-  ) VALUES (
-    v_supplier_id,
-    'Universidade Mackenzie',
-    'Universidade Mackenzie',
-    NULL,
-    'Instituição / Educação / Saúde',
-    'Prospecção HUB Sorocaba',
-    v_admin_id,
-    'LOGISTICS',
-    'PENDING',
-    'WAITING_LOGISTICS',
-    NOW(),
-    NOW()
-  );
-
-  INSERT INTO supplier_addresses (
-    id, supplier_id, zip_code, street, number, complement, neighborhood, city, state, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    '18000-000',
-    'Higienópolis/São Paulo',
-    'S/N',
-    NULL,
-    'Centro',
-    'São Paulo',
-    'SP',
-    NOW()
-  );
-
-  INSERT INTO supplier_materials (
-    id, supplier_id, material_name, category, estimated_volume, unit, frequency,
-    transaction_type, price_per_kg, storage_form, notes, created_at
-  ) VALUES (
-    gen_random_uuid(),
-    v_supplier_id,
-    'Papelão, papel branco/sigiloso, plásticos, latas de alumínio, tampinhas, livros e metais',
-    'Papelão, papel branco/sigiloso, plásticos, latas d',
-    0,
-    'kg',
-    'monthly',
-    'donation',
-    0,
-    'Sacos / Bags / Caixas',
-    'Estimativa: Aproximadamente 2 VUCs/semana (950 a 1.000 kg por coleta)',
     NOW()
   );
 
