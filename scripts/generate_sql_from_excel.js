@@ -176,6 +176,9 @@ let sql = `-- ============================================================
 -- Total Exato de Geradores: ${leadsList.length}
 -- ============================================================
 
+-- 1. LIMPA DADOS ANTERIORES PARA EVITAR QUALQUER DUPLICIDADE
+TRUNCATE TABLE suppliers CASCADE;
+
 DO $$
 DECLARE
   v_admin_id UUID;
