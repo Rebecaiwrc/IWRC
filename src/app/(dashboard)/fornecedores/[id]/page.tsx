@@ -1132,6 +1132,140 @@ export default function SupplierDetailPage() {
             </Card>
 
           </div>
+
+          {/* Section: Histórico de Alterações, Logs e Interações do Lead */}
+          <Card className="space-y-5 border border-slate-200/80 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <Clock size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 dark:text-white text-sm">
+                    Histórico de Alterações, Auditoria e Logs do Lead
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Acompanhe quem criou, quem alterou status ou adicionou informações neste lead.
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsInteractionModalOpen(true)}
+                className="text-xs gap-1.5"
+              >
+                <MessageSquare size={13} />
+                Registrar Contato
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Event 1: Lead Creation Record */}
+              <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700 shrink-0 mt-0.5">
+                  <CheckCircle size={15} />
+                </div>
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="font-bold text-xs text-slate-800">
+                      Lead cadastrado no sistema
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      {formatDate(supplier.created_at)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    Cadastrado pelo Comercial: <strong className="text-slate-800">{supplier.responsible?.name || 'Comercial / iWrc'}</strong> ({supplier.responsible?.email || 'contato@iwrc.com.br'}).
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[10px] bg-slate-200/70 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
+                      Origem: {supplier.lead_source || 'Prospecção Ativa'}
+                    </span>
+                    <span className="text-[10px] bg-slate-200/70 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
+                      Segmento: {supplier.supplier_type || 'Indústria'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status History Changes */}
+              {supplier.status_history && supplier.status_history.length > 0 && (
+                supplier.status_history.map((hist, hIdx) => (
+                  <div key={hist.id || hIdx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-indigo-50/40 border border-indigo-100/60">
+                    <div className="p-2 rounded-xl bg-indigo-100 text-indigo-700 shrink-0 mt-0.5">
+                      <GitBranch size={15} />
+                    </div>
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="font-bold text-xs text-indigo-950">
+                          Mudança de Status & Etapa
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {formatDate(hist.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        Alterado por <strong className="text-indigo-900">{hist.user?.name || 'Usuário do Sistema'}</strong> ({hist.user?.role || 'Comercial'}):
+                      </p>
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
+                        {hist.old_stage && (
+                          <>
+                            <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md font-semibold">
+                              {translateStage(hist.old_stage)}
+                            </span>
+                            <span className="text-slate-400 text-xs">➔</span>
+                          </>
+                        )}
+                        <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">
+                          {translateStage(hist.new_stage)}
+                        </span>
+                        {hist.new_status && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
+                            {translateStatus(hist.new_status)}
+                          </span>
+                        )}
+                      </div>
+                      {hist.notes && (
+                        <p className="text-[11px] text-slate-500 italic pt-1 border-t border-indigo-100/40 mt-1.5">
+                          &ldquo;{hist.notes}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {/* Interactions / Conversations */}
+              {supplier.interactions && supplier.interactions.length > 0 && (
+                supplier.interactions.map((inter, iIdx) => (
+                  <div key={inter.id || iIdx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-50/40 border border-emerald-100/60">
+                    <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700 shrink-0 mt-0.5">
+                      <MessageSquare size={15} />
+                    </div>
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="font-bold text-xs text-emerald-950">
+                          Contato / Interação ({translateInteractionType(inter.type as any)})
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {inter.interaction_date} {inter.interaction_time || ''}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        Registrado por <strong className="text-emerald-900">{inter.user?.name || supplier.responsible?.name || 'Comercial'}</strong>
+                      </p>
+                      <div className="p-2.5 bg-white rounded-xl border border-emerald-100 text-xs text-slate-700 mt-1">
+                        {inter.description}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+
         </div>
       ) : (
         /* ===================== VIEW B: TELA COMPLETA 360º DO GERADOR HOMOLOGADO ===================== */

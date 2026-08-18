@@ -129,6 +129,7 @@ export interface Supplier {
   logistics_analyses?: LogisticsAnalysis[];
   collections?: Collection[];
   receipts?: Receipt[];
+  status_history?: SupplierStatusHistory[];
 }
 
 export interface SupplierContact {

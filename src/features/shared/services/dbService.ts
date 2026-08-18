@@ -232,7 +232,8 @@ export const dbService = {
           tasks:supplier_tasks(*),
           logistics_analyses:logistics_analyses(*),
           collections:collections(*),
-          receipts:receipts(*)
+          receipts:receipts(*),
+          status_history:supplier_status_history(*, user:profiles(id, name, email, role))
         `)
         .eq('id', id)
         .single();
@@ -263,11 +264,15 @@ export const dbService = {
         prospecting_status: pStatus,
         materials: data.materials || [],
         contacts: data.contacts || [],
-        interactions: data.interactions || [],
+        interactions: (data.interactions || []).map((i: any) => ({
+          ...i,
+          user: (data.status_history || []).find((h: any) => h.user_id === i.user_id)?.user || undefined
+        })),
         tasks: data.tasks || [],
         logistics_analyses: data.logistics_analyses || [],
         collections: data.collections || [],
-        receipts: data.receipts || []
+        receipts: data.receipts || [],
+        status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       };
     }
 
