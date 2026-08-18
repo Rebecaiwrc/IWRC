@@ -329,13 +329,13 @@ for (const [key, item] of companiesMap.entries()) {
   ) VALUES (
     gen_random_uuid(),
     v_supplier_id,
-    ${escapeSql(addr.zip_code)},
-    ${escapeSql(addr.street)},
-    ${escapeSql(addr.number)},
+    ${escapeSql(addr.zip_code || '18000-000')},
+    ${escapeSql(addr.street || 'Endereço não informado')},
+    ${escapeSql(addr.number || 'S/N')},
     NULL,
-    ${escapeSql(addr.neighborhood)},
-    ${escapeSql(addr.city)},
-    ${escapeSql(addr.state)},
+    ${escapeSql(addr.neighborhood || 'Centro')},
+    ${escapeSql(addr.city || 'Sorocaba')},
+    ${escapeSql(addr.state || 'SP')},
     NOW()
   );
 `;
