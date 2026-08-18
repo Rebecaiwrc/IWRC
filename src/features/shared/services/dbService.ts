@@ -148,7 +148,40 @@ export const dbService = {
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data || [];
+
+      return (data || []).map((s: any, idx: number) => {
+        let pStatus: ProspectingStatus = 'NEW_LEAD';
+        if (s.current_stage === 'LOGISTICS') {
+          pStatus = 'WAITING_LOGISTICS';
+        } else if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage)) {
+          pStatus = 'QUALIFIED';
+        } else if (s.backlog_reason === 'PRESENTATION_SENT') {
+          pStatus = 'PRESENTATION_SENT';
+        } else if (s.backlog_reason === 'FIRST_CONTACT') {
+          pStatus = 'FIRST_CONTACT';
+        } else if (s.backlog_reason === 'QUALIFIED') {
+          pStatus = 'QUALIFIED';
+        } else if (s.current_status === 'APPROVED') {
+          pStatus = 'QUALIFIED';
+        } else if (s.current_status === 'IN_PROGRESS') {
+          pStatus = 'FIRST_CONTACT';
+        } else {
+          pStatus = 'NEW_LEAD';
+        }
+
+        return {
+          ...s,
+          code: s.code || ('GER-' + String((data?.length || 1) - idx).padStart(3, '0')),
+          prospecting_status: pStatus,
+          materials: s.materials || [],
+          contacts: s.contacts || [],
+          interactions: s.interactions || [],
+          tasks: s.tasks || [],
+          logistics_analyses: s.logistics_analyses || [],
+          collections: s.collections || [],
+          receipts: s.receipts || []
+        };
+      });
     }
 
     // Local Storage Mock Join Query
@@ -195,8 +228,39 @@ export const dbService = {
         `)
         .eq('id', id)
         .single();
-      if (error) return null;
-      return data;
+      if (error || !data) return null;
+
+      let pStatus: ProspectingStatus = 'NEW_LEAD';
+      if (data.current_stage === 'LOGISTICS') {
+        pStatus = 'WAITING_LOGISTICS';
+      } else if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(data.current_stage)) {
+        pStatus = 'QUALIFIED';
+      } else if (data.backlog_reason === 'PRESENTATION_SENT') {
+        pStatus = 'PRESENTATION_SENT';
+      } else if (data.backlog_reason === 'FIRST_CONTACT') {
+        pStatus = 'FIRST_CONTACT';
+      } else if (data.backlog_reason === 'QUALIFIED') {
+        pStatus = 'QUALIFIED';
+      } else if (data.current_status === 'APPROVED') {
+        pStatus = 'QUALIFIED';
+      } else if (data.current_status === 'IN_PROGRESS') {
+        pStatus = 'FIRST_CONTACT';
+      } else {
+        pStatus = 'NEW_LEAD';
+      }
+
+      return {
+        ...data,
+        code: data.code || 'GER-001',
+        prospecting_status: pStatus,
+        materials: data.materials || [],
+        contacts: data.contacts || [],
+        interactions: data.interactions || [],
+        tasks: data.tasks || [],
+        logistics_analyses: data.logistics_analyses || [],
+        collections: data.collections || [],
+        receipts: data.receipts || []
+      };
     }
 
     const suppliers = await this.getSuppliers();
@@ -364,12 +428,46 @@ export const dbService = {
     const now = new Date().toISOString();
 
     if (isSupabaseConfigured && supabase) {
+      const updatePayload: any = {
+        updated_at: now
+      };
+
+      if (supplierData.name !== undefined) updatePayload.name = supplierData.name;
+      if (supplierData.trade_name !== undefined) updatePayload.trade_name = supplierData.trade_name;
+      if (supplierData.document !== undefined) updatePayload.document = supplierData.document;
+      if (supplierData.supplier_type !== undefined) updatePayload.supplier_type = supplierData.supplier_type;
+      if (supplierData.lead_source !== undefined) updatePayload.lead_source = supplierData.lead_source;
+      if (supplierData.current_stage !== undefined) updatePayload.current_stage = supplierData.current_stage;
+      if (supplierData.current_status !== undefined) updatePayload.current_status = supplierData.current_status;
+      if (supplierData.backlog_reason !== undefined) updatePayload.backlog_reason = supplierData.backlog_reason;
+      
+      if (supplierData.internal_responsible_id !== undefined) {
+        updatePayload.internal_responsible_id = supplierData.internal_responsible_id ? supplierData.internal_responsible_id : null;
+      }
+
+      if (supplierData.prospecting_status) {
+        if (supplierData.prospecting_status === 'WAITING_LOGISTICS') {
+          updatePayload.current_stage = 'LOGISTICS';
+          updatePayload.current_status = 'PENDING';
+          updatePayload.backlog_reason = null;
+        } else if (supplierData.prospecting_status === 'QUALIFIED') {
+          updatePayload.current_stage = 'QUALIFICATION';
+          updatePayload.current_status = 'APPROVED';
+          updatePayload.backlog_reason = 'QUALIFIED';
+        } else {
+          updatePayload.current_stage = 'PROSPECTING';
+          updatePayload.backlog_reason = supplierData.prospecting_status;
+          if (['FIRST_CONTACT', 'PRESENTATION_SENT'].includes(supplierData.prospecting_status)) {
+            updatePayload.current_status = 'IN_PROGRESS';
+          } else {
+            updatePayload.current_status = 'PENDING';
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('suppliers')
-        .update({
-          ...supplierData,
-          updated_at: now
-        })
+        .update(updatePayload)
         .eq('id', id);
       if (error) throw error;
       const fullSupplier = await this.getSupplier(id);
