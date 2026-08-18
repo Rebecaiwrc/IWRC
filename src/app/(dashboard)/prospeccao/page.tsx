@@ -49,6 +49,20 @@ const PROSPECTING_COLUMNS: { key: ProspectingStatus; label: string; color: strin
 
 const STATUS_OPTIONS = PROSPECTING_COLUMNS.map(c => ({ value: c.key, label: c.label }));
 
+export const getLeadStatus = (s: Partial<Supplier>): ProspectingStatus => {
+  if (s.prospecting_status && PROSPECTING_COLUMNS.some(c => c.key === s.prospecting_status)) {
+    return s.prospecting_status;
+  }
+  if (s.current_stage === 'LOGISTICS') return 'WAITING_LOGISTICS';
+  if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage || '')) return 'QUALIFIED';
+  if (s.backlog_reason === 'PRESENTATION_SENT') return 'PRESENTATION_SENT';
+  if (s.backlog_reason === 'FIRST_CONTACT') return 'FIRST_CONTACT';
+  if (s.backlog_reason === 'QUALIFIED') return 'QUALIFIED';
+  if (s.current_status === 'APPROVED') return 'QUALIFIED';
+  if (s.current_status === 'IN_PROGRESS') return 'FIRST_CONTACT';
+  return 'NEW_LEAD';
+};
+
 const MATERIAL_OPTIONS = [
   'Papelão', 
   'Papel Branco Sigiloso', 
@@ -229,7 +243,13 @@ export default function ProspectingPage() {
   const fetchData = useCallback(async () => {
     try {
       const [s, p] = await Promise.all([dbService.getSuppliers(), dbService.getProfiles()]);
-      setSuppliers(s.filter(x => ['PROSPECTING', 'QUALIFICATION', 'LOGISTICS'].includes(x.current_stage)));
+      const list = s
+        .filter(x => !x.current_stage || ['PROSPECTING', 'QUALIFICATION', 'LOGISTICS'].includes(x.current_stage))
+        .map(x => ({
+          ...x,
+          prospecting_status: getLeadStatus(x)
+        }));
+      setSuppliers(list);
       setProfiles(p);
     } catch (err) { 
       console.error(err); 
@@ -487,6 +507,7 @@ export default function ProspectingPage() {
   // Filtered & Sorted Suppliers
   const filtered = useMemo(() => {
     return suppliers.filter(s => {
+      const pStatus = getLeadStatus(s);
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery = !q || (
         s.name.toLowerCase().includes(q) ||
@@ -498,7 +519,7 @@ export default function ProspectingPage() {
       );
 
       const matchesResponsible = responsibleFilter ? s.internal_responsible_id === responsibleFilter : true;
-      const matchesStatus = statusFilter ? s.prospecting_status === statusFilter : true;
+      const matchesStatus = statusFilter ? pStatus === statusFilter : true;
 
       const matchesMaterial = materialFilter 
         ? s.materials?.some(m => m.material_name.toLowerCase().includes(materialFilter.toLowerCase()))
@@ -539,8 +560,8 @@ export default function ProspectingPage() {
 
   const stats = useMemo(() => {
     const total = suppliers.length;
-    const qualified = suppliers.filter(s => s.prospecting_status === 'QUALIFIED').length;
-    const waitingLogistics = suppliers.filter(s => s.prospecting_status === 'WAITING_LOGISTICS').length;
+    const qualified = suppliers.filter(s => getLeadStatus(s) === 'QUALIFIED').length;
+    const waitingLogistics = suppliers.filter(s => getLeadStatus(s) === 'WAITING_LOGISTICS').length;
     const donationsCount = suppliers.filter(s => s.materials?.some(m => m.transaction_type === 'donation')).length;
     return { total, qualified, waitingLogistics, donationsCount };
   }, [suppliers]);
@@ -690,7 +711,7 @@ export default function ProspectingPage() {
                   <span className={`h-2 w-2 rounded-full ${col.color}`}/>
                   {col.label}
                   <span className="text-[10px] opacity-70 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded-full font-bold">
-                    {suppliers.filter(s => s.prospecting_status === col.key).length}
+                    {suppliers.filter(s => getLeadStatus(s) === col.key).length}
                   </span>
                 </button>
                 {i < PROSPECTING_COLUMNS.length - 1 && <span className="text-slate-200 dark:text-slate-700 mx-0.5">›</span>}
@@ -761,14 +782,14 @@ export default function ProspectingPage() {
               onChange={e => setResponsibleFilter(e.target.value)}
               className="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white cursor-pointer"
             >
-              <option value="">Todos</option>
+              <option value="">Todos os responsáveis</option>
               {profiles.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
               ))}
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2">
             <div className="flex-1">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Ordenar por</label>
               <select
@@ -799,7 +820,7 @@ export default function ProspectingPage() {
       {viewMode === 'kanban' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
           {PROSPECTING_COLUMNS.map(col => {
-            const cards = filtered.filter(s => s.prospecting_status === col.key);
+            const cards = filtered.filter(s => getLeadStatus(s) === col.key);
             const isLogCol = col.key === 'WAITING_LOGISTICS';
 
             return (

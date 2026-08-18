@@ -17,7 +17,8 @@ import {
   SupplierStatus,
   FeasibilityStatus,
   CollectionStatus,
-  AttachedDocument
+  AttachedDocument,
+  ProspectingStatus
 } from '@/types';
 import {
   mockProfiles,
@@ -34,6 +35,11 @@ import {
   mockReceipts,
   mockReceiptItems
 } from './mockData';
+
+export const isValidUuid = (str?: string | null): boolean => {
+  if (!str) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+};
 
 // --- IN-MEMORY BACKUP FOR SERVER-SIDE RENDERING ---
 let memoryDb: {
@@ -675,14 +681,19 @@ export const dbService = {
     const timeStr = now.toTimeString().split(' ')[0];
 
     if (isSupabaseConfigured && supabase) {
+      const payload: any = {
+        supplier_id: interactionData.supplier_id,
+        type: interactionData.type || 'whatsapp',
+        description: interactionData.description || '',
+        interaction_date: dateStr,
+        interaction_time: timeStr
+      };
+      if (isValidUuid(interactionData.user_id)) {
+        payload.user_id = interactionData.user_id;
+      }
       const { data, error } = await supabase
         .from('supplier_interactions')
-        .insert([{
-          ...interactionData,
-          id,
-          interaction_date: dateStr,
-          interaction_time: timeStr
-        }])
+        .insert([payload])
         .select()
         .single();
       if (error) throw error;
@@ -733,16 +744,27 @@ export const dbService = {
     const now = new Date().toISOString();
 
     if (isSupabaseConfigured && supabase) {
+      const payload: any = {
+        supplier_id: historyData.supplier_id,
+        old_stage: historyData.old_stage || null,
+        new_stage: historyData.new_stage || 'PROSPECTING',
+        old_status: historyData.old_status || null,
+        new_status: historyData.new_status || 'PENDING',
+        notes: historyData.notes || null,
+        created_at: now
+      };
+      if (isValidUuid(historyData.user_id)) {
+        payload.user_id = historyData.user_id;
+      }
       const { data, error } = await supabase
         .from('supplier_status_history')
-        .insert([{
-          ...historyData,
-          id,
-          created_at: now
-        }])
+        .insert([payload])
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.warn('Could not record status history in Supabase:', error.message);
+        return { id, ...historyData } as any;
+      }
       return data;
     }
 
