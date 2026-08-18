@@ -14,8 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ERP iWrc - Gestão de Fornecedores",
+  title: "iWrc ERP - Sistema de Gestão de Geradores",
   description: "ERP Interno para prospecção, homologação, logística e recebimento de resíduos - iWrc Economia Circular",
+  icons: {
+    icon: "/iwrc-logo.png",
+    shortcut: "/iwrc-logo.png",
+    apple: "/iwrc-logo.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
