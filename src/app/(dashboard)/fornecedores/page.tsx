@@ -263,13 +263,13 @@ export default function SuppliersPage() {
   };
 
   const stageOptions = [
-    { value: '', label: 'Todas as etapas e pareceres' },
-    { value: 'OPERATION', label: 'Ativo / Operacional' },
-    { value: 'COLLECTION', label: 'Em Preparação de Coleta' },
-    { value: 'DOCUMENTATION', label: 'Documentação Pendente' },
-    { value: 'FEASIBLE', label: 'Logística: Viável ✓' },
-    { value: 'NEED_INFO', label: 'Logística: Precisa de Info ⚠️' },
-    { value: 'INFEASIBLE', label: 'Logística: Inviável ❌' }
+    { value: '', label: language === 'pt' ? 'Todas as etapas e pareceres' : 'All stages and opinions' },
+    { value: 'OPERATION', label: language === 'pt' ? 'Ativo / Operacional' : 'Active / Operational' },
+    { value: 'COLLECTION', label: language === 'pt' ? 'Em Preparação de Coleta' : 'Preparing Collection' },
+    { value: 'DOCUMENTATION', label: language === 'pt' ? 'Documentação Pendente' : 'Pending Documentation' },
+    { value: 'FEASIBLE', label: language === 'pt' ? 'Logística: Viável ✓' : 'Logistics: Feasible ✓' },
+    { value: 'NEED_INFO', label: language === 'pt' ? 'Logística: Precisa de Info ⚠️' : 'Logistics: Needs Info ⚠️' },
+    { value: 'INFEASIBLE', label: language === 'pt' ? 'Logística: Inviável ❌' : 'Logistics: Infeasible ❌' }
   ];
 
   if (loading) {

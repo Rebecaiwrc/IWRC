@@ -761,13 +761,15 @@ export default function ProspectingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
           
           <div className="lg:col-span-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Pesquisar Lead</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              {language === 'pt' ? 'Pesquisar Lead' : 'Search Lead'}
+            </label>
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Empresa, segmento, rua, cidade, telefone..."
+                placeholder={language === 'pt' ? 'Empresa, segmento, rua, cidade, telefone...' : 'Company, segment, street, city, phone...'}
                 className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white"
               />
               <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
@@ -780,13 +782,15 @@ export default function ProspectingPage() {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Material</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              {language === 'pt' ? 'Material' : 'Material'}
+            </label>
             <select
               value={materialFilter}
               onChange={e => setMaterialFilter(e.target.value)}
               className="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white cursor-pointer"
             >
-              <option value="">Todos os materiais</option>
+              <option value="">{language === 'pt' ? 'Todos os materiais' : 'All materials'}</option>
               {MATERIAL_OPTIONS.map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
@@ -794,26 +798,30 @@ export default function ProspectingPage() {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Modalidade</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              {language === 'pt' ? 'Modalidade' : 'Modality'}
+            </label>
             <select
               value={modalityFilter}
               onChange={e => setModalityFilter(e.target.value as any)}
               className="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white cursor-pointer"
             >
-              <option value="ALL">Todas</option>
-              <option value="donation">🤝 Somente Doação</option>
-              <option value="purchase">💰 Somente Compra</option>
+              <option value="ALL">{language === 'pt' ? 'Todas' : 'All'}</option>
+              <option value="donation">{language === 'pt' ? '🤝 Somente Doação' : '🤝 Donation Only'}</option>
+              <option value="purchase">{language === 'pt' ? '💰 Somente Compra' : '💰 Purchase Only'}</option>
             </select>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Responsável</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              {language === 'pt' ? 'Responsável' : 'Responsible'}
+            </label>
             <select
               value={responsibleFilter}
               onChange={e => setResponsibleFilter(e.target.value)}
               className="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white cursor-pointer"
             >
-              <option value="">Todos os responsáveis</option>
+              <option value="">{language === 'pt' ? 'Todos os responsáveis' : 'All responsibles'}</option>
               {profiles.map(p => (
                 <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
               ))}
@@ -822,22 +830,24 @@ export default function ProspectingPage() {
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Ordenar por</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                {language === 'pt' ? 'Ordenar por' : 'Sort by'}
+              </label>
               <select
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value as any)}
                 className="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white cursor-pointer"
               >
-                <option value="recent">Mais Recentes</option>
-                <option value="name">Nome (A-Z)</option>
-                <option value="city">Cidade (A-Z)</option>
+                <option value="recent">{language === 'pt' ? 'Mais Recentes' : 'Most Recent'}</option>
+                <option value="name">{language === 'pt' ? 'Nome (A-Z)' : 'Name (A-Z)'}</option>
+                <option value="city">{language === 'pt' ? 'Cidade (A-Z)' : 'City (A-Z)'}</option>
               </select>
             </div>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
                 className="mt-5 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/40 text-xs font-semibold flex items-center gap-1 shrink-0"
-                title="Limpar filtros"
+                title={language === 'pt' ? 'Limpar filtros' : 'Clear filters'}
               >
                 <X size={14} />
               </button>
@@ -873,7 +883,7 @@ export default function ProspectingPage() {
                   <div className="flex items-center gap-2">
                     <span className={`h-2.5 w-2.5 rounded-full ${col.color}`}/>
                     <h3 className={`font-bold text-xs ${isLogCol ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                      {col.label}
+                      {translateProspectingStatus(col.key, language)}
                     </h3>
                   </div>
                   <span className="text-[11px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-extrabold px-2 py-0.5 rounded-full">
@@ -903,7 +913,7 @@ export default function ProspectingPage() {
                                 {supplier.name}
                               </p>
                               <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                                {supplier.supplier_type} • {supplier.address?.city || 'Sem cidade'}
+                                {supplier.supplier_type} • {supplier.address?.city || (language === 'pt' ? 'Sem cidade' : 'No city')}
                               </p>
                             </div>
                             <div className="flex items-center gap-1">
@@ -913,7 +923,7 @@ export default function ProspectingPage() {
                               <button
                                 onClick={() => handleDeleteLead(supplier.id, supplier.name)}
                                 className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors"
-                                title="Apagar Lead"
+                                title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -922,7 +932,7 @@ export default function ProspectingPage() {
 
                           {supplier.attached_documents && supplier.attached_documents.length > 0 && (
                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#2098D1] bg-[#E5F5F8] px-1.5 py-0.5 rounded-full border border-[#CCEAF1]">
-                              <FileCheck size={10} /> {supplier.attached_documents.length} anexo(s)
+                              <FileCheck size={10} /> {supplier.attached_documents.length} {language === 'pt' ? 'anexo(s)' : 'attachment(s)'}
                             </span>
                           )}
 
@@ -948,14 +958,14 @@ export default function ProspectingPage() {
                               onClick={() => openMaterialsModal(supplier, false)}
                               className="text-[10px] text-slate-500 hover:text-[#2098D1] font-semibold cursor-pointer"
                             >
-                              + Materiais
+                              + {language === 'pt' ? 'Materiais' : 'Materials'}
                             </button>
                             {isQ && !isLogCol && (
                               <button 
                                 onClick={() => openMaterialsModal(supplier, true)}
                                 className="flex items-center gap-1 text-[10px] font-bold text-white bg-[#2098D1] hover:bg-[#1883B5] px-2 py-0.5 rounded-full cursor-pointer shadow-xs"
                               >
-                                <Send size={10}/> Logística
+                                <Send size={10}/> {language === 'pt' ? 'Logística' : 'Logistics'}
                               </button>
                             )}
                           </div>
@@ -979,11 +989,11 @@ export default function ProspectingPage() {
                             </p>
                             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                               <span className="inline-block text-[10px] font-bold text-[#146A88] bg-[#E5F5F8] px-1.5 py-0.2 rounded">
-                                {supplier.supplier_type || 'Segmento n/d'}
+                                {supplier.supplier_type || (language === 'pt' ? 'Segmento n/d' : 'Segment n/a')}
                               </span>
                               {supplier.attached_documents && supplier.attached_documents.length > 0 && (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#2098D1] bg-[#DDF4F9] px-1.5 py-0.2 rounded border border-[#CCEAF1]">
-                                  <FileCheck size={9} /> {supplier.attached_documents.length} anexo(s)
+                                  <FileCheck size={9} /> {supplier.attached_documents.length} {language === 'pt' ? 'anexo(s)' : 'attachment(s)'}
                                 </span>
                               )}
                             </div>
@@ -999,7 +1009,7 @@ export default function ProspectingPage() {
                             <button
                               onClick={() => handleDeleteLead(supplier.id, supplier.name)}
                               className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                              title="Apagar Lead"
+                              title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
                             >
                               <Trash2 size={13} />
                             </button>
@@ -1033,15 +1043,15 @@ export default function ProspectingPage() {
                                 <span className={`text-[9px] font-bold px-1 rounded shrink-0 ${
                                   m.transaction_type === 'donation' ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'
                                 }`}>
-                                  {m.transaction_type === 'donation' ? 'Doação' : 'Compra'}
+                                  {m.transaction_type === 'donation' ? (language === 'pt' ? 'Doação' : 'Donation') : (language === 'pt' ? 'Compra' : 'Purchase')}
                                 </span>
                               </div>
                             ))}
                             <button
                               onClick={() => openMaterialsModal(supplier, false)}
-                              className="text-[9px] font-bold text-emerald-600 hover:underline pt-0.5 block"
+                              className="text-[9px] font-bold text-emerald-600 hover:underline pt-0.5 block cursor-pointer"
                             >
-                              + Gerenciar Materiais ({supplier.materials.length})
+                              + {language === 'pt' ? 'Gerenciar Materiais' : 'Manage Materials'} ({supplier.materials.length})
                             </button>
                           </div>
                         ) : (
@@ -1049,7 +1059,7 @@ export default function ProspectingPage() {
                             onClick={() => openMaterialsModal(supplier, false)}
                             className="w-full py-1 text-[10px] font-bold text-slate-500 hover:text-emerald-600 border border-dashed border-slate-200 rounded-lg hover:border-emerald-300 flex items-center justify-center gap-1 cursor-pointer"
                           >
-                            <PackagePlus size={11} /> Adicionar Materiais
+                            <PackagePlus size={11} /> {language === 'pt' ? 'Adicionar Materiais' : 'Add Materials'}
                           </button>
                         )}
 
@@ -1061,7 +1071,7 @@ export default function ProspectingPage() {
                               className="w-full text-[10px] font-medium bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                             >
                               {STATUS_OPTIONS.filter(o => o.value !== 'WAITING_LOGISTICS').map(o => (
-                                <option key={o.value} value={o.value}>{o.label}</option>
+                                <option key={o.value} value={o.value}>{translateProspectingStatus(o.value, language)}</option>
                               ))}
                             </select>
                           </div>
@@ -1072,18 +1082,18 @@ export default function ProspectingPage() {
                             onClick={() => openMaterialsModal(supplier, true)}
                             className="w-full flex items-center justify-center gap-1.5 text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs"
                           >
-                            <Send size={11}/> Enviar para Logística
+                            <Send size={11}/> {language === 'pt' ? 'Enviar para Logística' : 'Send to Logistics'}
                           </button>
                         )}
 
                         {isLogCol && (
                           <div className="flex items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50 dark:bg-indigo-950/40 px-2 py-1 rounded-lg">
-                            <Clock size={10}/> Em validação pela Logística
+                            <Clock size={10}/> {language === 'pt' ? 'Em validação pela Logística' : 'Under Logistics Review'}
                           </div>
                         )}
 
                         <div className="flex items-center justify-between text-[9px] text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-                          <span className="truncate max-w-[90px] font-medium">{supplier.responsible?.name?.split(' ')[0] || 'Sem resp.'}</span>
+                          <span className="truncate max-w-[90px] font-medium">{supplier.responsible?.name?.split(' ')[0] || (language === 'pt' ? 'Sem resp.' : 'Unassigned')}</span>
                           <span>{formatDate(supplier.created_at)}</span>
                         </div>
                       </div>
@@ -1092,7 +1102,7 @@ export default function ProspectingPage() {
 
                   {cards.length === 0 && (
                     <div className="py-16 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                      {isLogCol ? 'Nenhum lead enviado ainda' : 'Nenhum lead nesta etapa'}
+                      {isLogCol ? (language === 'pt' ? 'Nenhum lead enviado ainda' : 'No leads sent yet') : (language === 'pt' ? 'Nenhum lead nesta etapa' : 'No leads in this stage')}
                     </div>
                   )}
                 </div>
@@ -1116,13 +1126,13 @@ export default function ProspectingPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                      <th className="px-5 py-3.5">Lead / Segmento</th>
-                      <th className="px-4 py-3.5">Localização</th>
-                      <th className="px-4 py-3.5">Contato</th>
-                      <th className="px-4 py-3.5">Materiais Declarados</th>
-                      <th className="px-4 py-3.5">Status no Funil</th>
-                      <th className="px-4 py-3.5">Responsável</th>
-                      <th className="px-5 py-3.5 text-right">Ações</th>
+                      <th className="px-5 py-3.5">{language === 'pt' ? 'Lead / Segmento' : 'Lead / Segment'}</th>
+                      <th className="px-4 py-3.5">{language === 'pt' ? 'Localização' : 'Location'}</th>
+                      <th className="px-4 py-3.5">{language === 'pt' ? 'Contato' : 'Contact'}</th>
+                      <th className="px-4 py-3.5">{language === 'pt' ? 'Materiais Declarados' : 'Declared Materials'}</th>
+                      <th className="px-4 py-3.5">{language === 'pt' ? 'Status no Funil' : 'Funnel Status'}</th>
+                      <th className="px-4 py-3.5">{language === 'pt' ? 'Responsável' : 'Responsible'}</th>
+                      <th className="px-5 py-3.5 text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -1169,7 +1179,7 @@ export default function ProspectingPage() {
                                   onClick={() => openMaterialsModal(supplier, false)}
                                   className="text-[10px] text-emerald-600 font-bold hover:underline"
                                 >
-                                  + Adicionar
+                                  + {language === 'pt' ? 'Adicionar' : 'Add'}
                                 </button>
                               )}
                             </div>
@@ -1178,7 +1188,7 @@ export default function ProspectingPage() {
                           <td className="px-4 py-3.5">
                             {isLog ? (
                               <Badge variant="purple" className="gap-1">
-                                <Clock size={11} /> Aguard. Logística
+                                <Clock size={11} /> {translateProspectingStatus('WAITING_LOGISTICS', language)}
                               </Badge>
                             ) : (
                               <select
@@ -1187,7 +1197,7 @@ export default function ProspectingPage() {
                                 className="text-[11px] font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none"
                               >
                                 {STATUS_OPTIONS.filter(o => o.value !== 'WAITING_LOGISTICS').map(o => (
-                                  <option key={o.value} value={o.value}>{o.label}</option>
+                                  <option key={o.value} value={o.value}>{translateProspectingStatus(o.value, language)}</option>
                                 ))}
                               </select>
                             )}
@@ -1209,18 +1219,18 @@ export default function ProspectingPage() {
                                   onClick={() => openMaterialsModal(supplier, true)}
                                   className="inline-flex items-center gap-1 text-[11px] text-white bg-[#2098D1] hover:bg-[#1883B5] px-2.5 py-1 rounded-full font-bold shadow-xs cursor-pointer"
                                 >
-                                  <Send size={11} /> Logística
+                                  <Send size={11} /> {language === 'pt' ? 'Logística' : 'Logistics'}
                                 </button>
                               )}
                               <Link href={`/fornecedores/${supplier.id}`}>
                                 <button className="inline-flex items-center gap-1 text-[11px] text-[#2098D1] bg-[#E5F5F8] hover:bg-[#DDF4F9] px-2.5 py-1 rounded-full font-bold border border-[#CCEAF1] cursor-pointer">
-                                  <Eye size={11} /> Ficha
+                                  <Eye size={11} /> {language === 'pt' ? 'Ficha' : 'Details'}
                                 </button>
                               </Link>
                               <button
                                 onClick={() => handleDeleteLead(supplier.id, supplier.name)}
                                 className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
-                                title="Apagar Lead"
+                                title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -1235,7 +1245,11 @@ export default function ProspectingPage() {
 
               {/* Table Pagination */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-500">
-                <span>Exibindo <strong>{(currentPage - 1) * pageSize + 1}</strong> a <strong>{Math.min(currentPage * pageSize, filtered.length)}</strong> de <strong>{filtered.length}</strong> leads</span>
+                <span>
+                  {language === 'pt'
+                    ? <>Exibindo <strong>{(currentPage - 1) * pageSize + 1}</strong> a <strong>{Math.min(currentPage * pageSize, filtered.length)}</strong> de <strong>{filtered.length}</strong> leads</>
+                    : <>Showing <strong>{(currentPage - 1) * pageSize + 1}</strong> to <strong>{Math.min(currentPage * pageSize, filtered.length)}</strong> of <strong>{filtered.length}</strong> leads</>}
+                </span>
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
@@ -1507,11 +1521,11 @@ export default function ProspectingPage() {
               >
                 {isSendingToLogistics ? (
                   <>
-                    <Send size={14}/>Confirmar e Enviar para Logística
+                    <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística' : 'Confirm and Send to Logistics'}
                   </>
                 ) : (
                   <>
-                    <FileCheck size={14}/>Salvar Materiais
+                    <FileCheck size={14}/>{language === 'pt' ? 'Salvar Materiais' : 'Save Materials'}
                   </>
                 )}
               </Button>
@@ -1521,34 +1535,38 @@ export default function ProspectingPage() {
       )}
 
       {/* Modal: Cadastrar Novo Lead */}
-      <Modal isOpen={isNewLeadOpen} onClose={() => setIsNewLeadOpen(false)} title="Cadastrar Novo Lead" size="lg">
+      <Modal isOpen={isNewLeadOpen} onClose={() => setIsNewLeadOpen(false)} title={language === 'pt' ? 'Cadastrar Novo Lead' : 'Register New Lead'} size="lg">
         <form onSubmit={handleCreateLead} className="space-y-5">
           <p className="text-xs text-slate-500 bg-slate-50 rounded-lg p-3 border border-slate-100">
-            Cadastre os dados básicos e de localização do lead. Campos adicionais podem ser completados conforme o contato avança.
+            {language === 'pt' ? 'Cadastre os dados básicos e de localização do lead. Campos adicionais podem ser completados conforme o contato avança.' : 'Enter basic and location details for the lead. Additional fields can be completed as negotiations advance.'}
           </p>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Empresa & Segmento</h4>
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">
+              {language === 'pt' ? 'Empresa & Segmento' : 'Company & Segment'}
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="md:col-span-2">
                 <Input 
-                  label="Razão Social / Nome *" 
+                  label={language === 'pt' ? 'Razão Social / Nome *' : 'Company Name / Lead Name *'}
                   value={form.name} 
                   onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
-                  placeholder="Ex: Metalúrgica SP Ltda" 
+                  placeholder={language === 'pt' ? 'Ex: Metalúrgica SP Ltda' : 'e.g. Acme Recycling Corp'}
                   required
                 />
               </div>
               
               {/* Segmento do Gerador */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Segmento do Gerador *</label>
+                <label className="text-xs font-semibold text-slate-700">
+                  {language === 'pt' ? 'Segmento do Gerador *' : 'Generator Segment *'}
+                </label>
                 <select
                   value={form.segment}
                   onChange={e => setForm(p => ({ ...p, segment: e.target.value }))}
                   className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
                 >
-                  <option value="">Selecione o segmento...</option>
+                  <option value="">{language === 'pt' ? 'Selecione o segmento...' : 'Select segment...'}</option>
                   {SEGMENT_OPTIONS.map(s => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
@@ -1556,7 +1574,7 @@ export default function ProspectingPage() {
                 {form.segment === 'Outro' && (
                   <input
                     type="text"
-                    placeholder="Digite o novo segmento..."
+                    placeholder={language === 'pt' ? 'Digite o novo segmento...' : 'Enter custom segment...'}
                     value={form.custom_segment}
                     onChange={e => setForm(p => ({ ...p, custom_segment: e.target.value }))}
                     className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-400 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
@@ -1567,13 +1585,15 @@ export default function ProspectingPage() {
 
               {/* Como encontramos */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Como encontramos *</label>
+                <label className="text-xs font-semibold text-slate-700">
+                  {language === 'pt' ? 'Como encontramos *' : 'Lead Source *'}
+                </label>
                 <select
                   value={form.lead_source}
                   onChange={e => setForm(p => ({ ...p, lead_source: e.target.value }))}
                   className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
                 >
-                  <option value="">Selecione como encontramos...</option>
+                  <option value="">{language === 'pt' ? 'Selecione como encontramos...' : 'Select lead source...'}</option>
                   {LEAD_SOURCE_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
@@ -1581,7 +1601,7 @@ export default function ProspectingPage() {
                 {form.lead_source === 'Outro' && (
                   <input
                     type="text"
-                    placeholder="Digite o meio de origem..."
+                    placeholder={language === 'pt' ? 'Digite o meio de origem...' : 'Enter custom lead source...'}
                     value={form.custom_lead_source}
                     onChange={e => setForm(p => ({ ...p, custom_lead_source: e.target.value }))}
                     className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-400 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
@@ -1593,11 +1613,13 @@ export default function ProspectingPage() {
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Localização e Endereço Completo</h4>
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">
+              {language === 'pt' ? 'Localização e Endereço Completo' : 'Location and Full Address'}
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="relative">
                 <Input 
-                  label="CEP" 
+                  label="CEP / Postal Code" 
                   value={form.zip_code} 
                   onChange={e => handleCepChange(e.target.value)} 
                   placeholder="01001-000"
@@ -1605,46 +1627,46 @@ export default function ProspectingPage() {
                 />
                 {isCepLoading && (
                   <span className="absolute right-3 top-8 text-xs text-[#2098D1] flex items-center gap-1 font-semibold animate-pulse">
-                    <Loader2 size={13} className="animate-spin" /> Buscando...
+                    <Loader2 size={13} className="animate-spin" /> {language === 'pt' ? 'Buscando...' : 'Searching...'}
                   </span>
                 )}
               </div>
               <div className="md:col-span-2">
                 <Input 
-                  label="Logradouro / Rua / Avenida" 
+                  label={language === 'pt' ? 'Logradouro / Rua / Avenida' : 'Street Address'} 
                   value={form.street} 
                   onChange={e => setForm(p => ({ ...p, street: e.target.value }))} 
-                  placeholder="Ex: Avenida Paulista"
+                  placeholder={language === 'pt' ? 'Ex: Avenida Paulista' : 'e.g. 5th Avenue'}
                 />
               </div>
               <Input 
-                label="Número" 
+                label={language === 'pt' ? 'Número' : 'Number'} 
                 value={form.number} 
                 onChange={e => setForm(p => ({ ...p, number: e.target.value }))} 
-                placeholder="Ex: 1000"
+                placeholder="1000"
               />
               <Input 
-                label="Complemento" 
+                label={language === 'pt' ? 'Complemento' : 'Complement'} 
                 value={form.complement} 
                 onChange={e => setForm(p => ({ ...p, complement: e.target.value }))} 
-                placeholder="Bloco B, Galpão 3"
+                placeholder={language === 'pt' ? 'Bloco B, Galpão 3' : 'Suite 200, Warehouse'}
               />
               <Input 
-                label="Bairro" 
+                label={language === 'pt' ? 'Bairro' : 'Neighborhood'} 
                 value={form.neighborhood} 
                 onChange={e => setForm(p => ({ ...p, neighborhood: e.target.value }))} 
-                placeholder="Vila Mariana"
+                placeholder="Industrial"
               />
               <div className="md:col-span-2">
                 <Input 
-                  label="Cidade" 
+                  label={language === 'pt' ? 'Cidade' : 'City'} 
                   value={form.city} 
                   onChange={e => setForm(p => ({ ...p, city: e.target.value }))} 
-                  placeholder="São Paulo"
+                  placeholder="Sorocaba"
                 />
               </div>
               <Input 
-                label="UF" 
+                label={language === 'pt' ? 'UF / Estado' : 'State'} 
                 value={form.state} 
                 onChange={e => setForm(p => ({ ...p, state: e.target.value.toUpperCase().slice(0, 2) }))} 
                 placeholder="SP"
@@ -1653,26 +1675,57 @@ export default function ProspectingPage() {
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Contato</h4>
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">
+              {language === 'pt' ? 'Contato & Responsável' : 'Contact & Responsible'}
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input label="Telefone / WhatsApp" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="(11) 98765-4321"/>
-              <Input label="E-mail" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="contato@empresa.com"/>
+              <Input 
+                label={language === 'pt' ? 'Telefone / WhatsApp' : 'Phone / WhatsApp'} 
+                value={form.phone} 
+                onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} 
+                placeholder="(15) 99999-9999"
+              />
+              <Input 
+                label={language === 'pt' ? 'E-mail Comercial' : 'Corporate Email'} 
+                type="email"
+                value={form.email} 
+                onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
+                placeholder="contato@empresa.com.br"
+              />
+              
+              <div className="md:col-span-2 flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-700">
+                  {language === 'pt' ? 'Responsável Comercial *' : 'Commercial Responsible *'}
+                </label>
+                <select
+                  value={form.internal_responsible_id}
+                  onChange={e => setForm(p => ({ ...p, internal_responsible_id: e.target.value }))}
+                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                >
+                  <option value="">{language === 'pt' ? 'Selecione o responsável...' : 'Select responsible...'}</option>
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          <Select 
-            label="Responsável Interno (iWrc)" 
-            value={form.internal_responsible_id}
-            onChange={e => setForm(p => ({ ...p, internal_responsible_id: e.target.value }))}
-            options={[
-              { value: '', label: 'Selecione o responsável...' },
-              ...profiles.map(p => ({ value: p.id, label: p.name }))
-            ]}
-          />
-
-          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsNewLeadOpen(false)}>Cancelar</Button>
-            <Button type="submit" isLoading={isSubmitting}>Cadastrar Lead</Button>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsNewLeadOpen(false)}>
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button type="submit" disabled={isSubmitting} className="gap-2">
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> {language === 'pt' ? 'Salvando...' : 'Saving...'}
+                </>
+              ) : (
+                <>
+                  <Plus size={14} /> {language === 'pt' ? 'Cadastrar Lead' : 'Register Lead'}
+                </>
+              )}
+            </Button>
           </div>
         </form>
       </Modal>

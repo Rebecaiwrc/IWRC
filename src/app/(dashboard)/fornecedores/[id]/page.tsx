@@ -857,11 +857,11 @@ export default function SupplierDetailPage() {
                       onClick={handleOpenLogisticsModal}
                     >
                       <Truck size={14} />
-                      Responder Análise Logística
+                      {language === 'pt' ? 'Responder Análise Logística' : 'Respond to Logistics Analysis'}
                     </Button>
                   )}
                   <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
-                    Editar Lead
+                    {language === 'pt' ? 'Editar Lead' : 'Edit Lead'}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -870,7 +870,7 @@ export default function SupplierDetailPage() {
                     className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 gap-1.5"
                   >
                     <Trash2 size={13} />
-                    Excluir Lead
+                    {language === 'pt' ? 'Excluir Lead' : 'Delete Lead'}
                   </Button>
                 </div>
               </div>
@@ -878,19 +878,27 @@ export default function SupplierDetailPage() {
               {/* Row 2: Full-width metadata grid */}
               <div className="pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs text-slate-500">
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Segmento</p>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.supplier_type || 'Indústria'}</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                    {language === 'pt' ? 'Segmento' : 'Segment'}
+                  </p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.supplier_type || (language === 'pt' ? 'Indústria' : 'Industry')}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Como encontramos</p>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.lead_source || 'Busca própria'}</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                    {language === 'pt' ? 'Como encontramos' : 'Lead Source'}
+                  </p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.lead_source || (language === 'pt' ? 'Busca própria' : 'Direct Search')}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Responsável Comercial</p>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.responsible?.name || 'Não atribuído'}</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                    {language === 'pt' ? 'Responsável Comercial' : 'Commercial Responsible'}
+                  </p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.responsible?.name || (language === 'pt' ? 'Não atribuído' : 'Unassigned')}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Data de Cadastro</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                    {language === 'pt' ? 'Data de Cadastro' : 'Registration Date'}
+                  </p>
                   <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{formatDate(supplier.created_at)}</p>
                 </div>
               </div>
@@ -901,7 +909,7 @@ export default function SupplierDetailPage() {
               <div className="mt-4 flex items-start gap-3 bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-xs text-amber-800">
                 <AlertTriangle className="shrink-0 text-amber-500 mt-0.5" size={15} />
                 <div>
-                  <span className="font-bold">Atenção / Pendência da Etapa:</span>
+                  <span className="font-bold">{language === 'pt' ? 'Atenção / Pendência da Etapa:' : 'Attention / Stage Pending:'}</span>
                   <p className="font-semibold mt-0.5">{supplier.backlog_reason}</p>
                 </div>
               </div>
@@ -916,7 +924,7 @@ export default function SupplierDetailPage() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
                   <MapPin size={15} className="text-emerald-600" />
-                  Localização e Endereço para Coleta
+                  {language === 'pt' ? 'Localização e Endereço para Coleta' : 'Location and Collection Address'}
                 </h3>
               </div>
               
