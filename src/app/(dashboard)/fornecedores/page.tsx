@@ -16,7 +16,9 @@ import {
   getStageColor, 
   translateStatus, 
   getStatusColor, 
-  formatDate 
+  formatDate,
+  formatCep,
+  fetchAddressByCep
 } from '@/lib/utils';
 import { 
   Building2, 
@@ -24,14 +26,15 @@ import {
   Plus, 
   Eye, 
   MapPin, 
-  Phone,
-  UserCheck,
-  ShieldCheck,
-  FileText,
-  Key,
-  Calendar,
-  Trash2,
-  AlertTriangle
+  Phone, 
+  UserCheck, 
+  ShieldCheck, 
+  FileText, 
+  Key, 
+  Calendar, 
+  Trash2, 
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -83,6 +86,30 @@ export default function SuppliersPage() {
     city: '',
     state: ''
   });
+
+  const [isCepLoading, setIsCepLoading] = useState(false);
+
+  const handleAddressCepChange = async (val: string) => {
+    const formatted = formatCep(val);
+    setFormAddress(p => ({ ...p, zip_code: formatted }));
+
+    const clean = formatted.replace(/\D/g, '');
+    if (clean.length === 8) {
+      setIsCepLoading(true);
+      const addr = await fetchAddressByCep(clean);
+      setIsCepLoading(false);
+      if (addr) {
+        setFormAddress(p => ({
+          ...p,
+          street: addr.street || p.street,
+          neighborhood: addr.neighborhood || p.neighborhood,
+          city: addr.city || p.city,
+          state: addr.state || p.state,
+          complement: addr.complement || p.complement
+        }));
+      }
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -689,12 +716,20 @@ export default function SuppliersPage() {
               Endereço Completo
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Input
-                label="CEP"
-                value={formAddress.zip_code}
-                onChange={(e) => setFormAddress(prev => ({ ...prev, zip_code: e.target.value }))}
-                placeholder="01001-000"
-              />
+              <div className="relative">
+                <Input
+                  label="CEP"
+                  value={formAddress.zip_code}
+                  onChange={(e) => handleAddressCepChange(e.target.value)}
+                  placeholder="01001-000"
+                  maxLength={9}
+                />
+                {isCepLoading && (
+                  <span className="absolute right-3 top-8 text-xs text-[#2098D1] flex items-center gap-1 font-semibold animate-pulse">
+                    <Loader2 size={13} className="animate-spin" /> Buscando...
+                  </span>
+                )}
+              </div>
               <div className="md:col-span-2">
                 <Input
                   label="Logradouro"

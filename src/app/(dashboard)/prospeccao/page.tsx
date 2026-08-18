@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
-import { translateProspectingStatus, formatDate } from '@/lib/utils';
+import { translateProspectingStatus, formatDate, formatCep, fetchAddressByCep } from '@/lib/utils';
 import { 
   Plus, 
   MapPin, 
@@ -35,7 +35,8 @@ import {
   EyeOff,
   Layers,
   Upload,
-  FileCheck
+  FileCheck,
+  Loader2
 } from 'lucide-react';
 
 const PROSPECTING_COLUMNS: { key: ProspectingStatus; label: string; color: string; badgeVariant: 'default' | 'warning' | 'info' | 'emerald' | 'purple' }[] = [
@@ -191,6 +192,30 @@ export default function ProspectingPage() {
     state: '', 
     internal_responsible_id: ''
   });
+
+  const [isCepLoading, setIsCepLoading] = useState(false);
+
+  const handleCepChange = async (val: string) => {
+    const formatted = formatCep(val);
+    setForm(p => ({ ...p, zip_code: formatted }));
+
+    const clean = formatted.replace(/\D/g, '');
+    if (clean.length === 8) {
+      setIsCepLoading(true);
+      const addr = await fetchAddressByCep(clean);
+      setIsCepLoading(false);
+      if (addr) {
+        setForm(p => ({
+          ...p,
+          street: addr.street || p.street,
+          neighborhood: addr.neighborhood || p.neighborhood,
+          city: addr.city || p.city,
+          state: addr.state || p.state,
+          complement: addr.complement || p.complement
+        }));
+      }
+    }
+  };
 
   const [attachedFiles, setAttachedFiles] = useState<{
     id: string;
@@ -1519,12 +1544,20 @@ export default function ProspectingPage() {
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Localização e Endereço Completo</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Input 
-                label="CEP" 
-                value={form.zip_code} 
-                onChange={e => setForm(p => ({ ...p, zip_code: e.target.value }))} 
-                placeholder="01001-000"
-              />
+              <div className="relative">
+                <Input 
+                  label="CEP" 
+                  value={form.zip_code} 
+                  onChange={e => handleCepChange(e.target.value)} 
+                  placeholder="01001-000"
+                  maxLength={9}
+                />
+                {isCepLoading && (
+                  <span className="absolute right-3 top-8 text-xs text-[#2098D1] flex items-center gap-1 font-semibold animate-pulse">
+                    <Loader2 size={13} className="animate-spin" /> Buscando...
+                  </span>
+                )}
+              </div>
               <div className="md:col-span-2">
                 <Input 
                   label="Logradouro / Rua / Avenida" 

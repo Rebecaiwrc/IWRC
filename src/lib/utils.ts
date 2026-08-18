@@ -184,3 +184,37 @@ export const formatCurrency = (value: number | null | undefined): string => {
 export const formatVolume = (val: number, unit: string): string => {
   return `${val.toLocaleString('pt-BR')} ${unit}`;
 };
+
+// CEP Formatter & Free ViaCEP Integration
+export const formatCep = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
+export const fetchAddressByCep = async (cep: string): Promise<{
+  street: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  complement: string;
+} | null> => {
+  const clean = cep.replace(/\D/g, '');
+  if (clean.length !== 8) return null;
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.erro) return null;
+    return {
+      street: data.logradouro || '',
+      neighborhood: data.bairro || '',
+      city: data.localidade || '',
+      state: data.uf || '',
+      complement: data.complemento || ''
+    };
+  } catch (err) {
+    console.error('Error fetching CEP:', err);
+    return null;
+  }
+};
