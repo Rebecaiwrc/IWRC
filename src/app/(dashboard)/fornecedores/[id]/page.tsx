@@ -1,0 +1,2401 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { dbService } from '@/features/shared/services/dbService';
+import { 
+  Supplier, 
+  Profile, 
+  SupplierStage,
+  SupplierStatus,
+  AttachedDocument
+} from '@/types';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/features/auth/context/AuthContext';
+import { 
+  translateStage, 
+  getStageColor, 
+  translateStatus, 
+  getStatusColor, 
+  formatDate, 
+  formatCurrency, 
+  formatVolume,
+  translateInteractionType,
+  translateFeasibility,
+  getFeasibilityColor
+} from '@/lib/utils';
+import Link from 'next/link';
+
+import { 
+  Building2, 
+  MapPin, 
+  Phone, 
+  UserCheck, 
+  Clock, 
+  Calendar, 
+  Scale, 
+  Plus, 
+  AlertTriangle,
+  ClipboardList,
+  CheckCircle,
+  XCircle,
+  Truck,
+  Send,
+  Trash2,
+  FileText,
+  Key,
+  Eye,
+  EyeOff,
+  Upload,
+  FileCheck,
+  Download,
+  CalendarCheck,
+  MessageSquare,
+  GitBranch,
+  Lock
+} from 'lucide-react';
+import {
+  DOC_CHECKLIST,
+  transportTypeOptions,
+  responsibleOptions,
+  frequencyOptions,
+  feasibilityOptions
+} from '@/app/(dashboard)/logistica/page';
+
+export default function SupplierDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const supplierId = params.id as string;
+  const { user: currentUser } = useAuth();
+
+  // Data state
+  const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'materials' | 'logistics' | 'documents' | 'collections' | 'timeline'>('overview');
+
+  // MTR Password visibility toggle
+  const [showMtrPassword, setShowMtrPassword] = useState(false);
+
+  // Modals state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isInteractionModalOpen, setIsInteractionModalOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
+  const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+  const [isLogisticsModalOpen, setIsLogisticsModalOpen] = useState(false);
+  const [isRespondInfoModalOpen, setIsRespondInfoModalOpen] = useState(false);
+  const [respondInfoText, setRespondInfoText] = useState('');
+  const [pendingDocs, setPendingDocs] = useState<string[]>([]);
+  const [customPendingDoc, setCustomPendingDoc] = useState('');
+
+  // Logistics form state
+  const [logisticsForm, setLogisticsForm] = useState({
+    distance_km: '',
+    transport_type: 'VUC',
+    custom_transport_type: '',
+    estimated_cost: '0',
+    recommended_frequency: 'Mensal',
+    custom_frequency: '',
+    transport_responsible: 'Terceirizado da iWrc',
+    custom_transport_responsible: '',
+    conditioning_infrastructure_needed: '',
+    feasibility: 'FEASIBLE',
+    notes: '',
+    need_info_reason: ''
+  });
+
+  // Form states
+  const [editSupplier, setEditSupplier] = useState({
+    name: '',
+    trade_name: '',
+    document: '',
+    supplier_type: '',
+    custom_supplier_type: '',
+    lead_source: '',
+    custom_lead_source: '',
+    internal_responsible_id: '',
+    mtr_login: '',
+    mtr_password: '',
+    first_collection_date: '',
+    last_collection_date: '',
+    current_stage: '' as SupplierStage,
+    current_status: '' as SupplierStatus,
+    backlog_reason: ''
+  });
+
+  const [newDoc, setNewDoc] = useState({
+    name: '',
+    type: '' as AttachedDocument['type'],
+    notes: ''
+  });
+
+  const [newInteraction, setNewInteraction] = useState({
+    type: '',
+    description: ''
+  });
+
+  const [newTask, setNewTask] = useState({
+    description: '',
+    due_date: ''
+  });
+
+  const [newMaterial, setNewMaterial] = useState({
+    material_name: '',
+    category: '',
+    estimated_volume: '',
+    unit: 'kg',
+    frequency: '',
+    transaction_type: 'donation' as 'purchase' | 'donation',
+    price_per_kg: '',
+    storage_form: '',
+    notes: ''
+  });
+
+  const [newCollection, setNewCollection] = useState({
+    scheduled_date: '',
+    driver_name: '',
+    carrier_name: '',
+    notes: '',
+    material_name: '',
+    estimated_volume: '',
+    unit: 'kg'
+  });
+
+  const fetchSupplierData = async () => {
+    try {
+      const data = await dbService.getSupplier(supplierId);
+      if (!data) {
+        alert('Gerador não encontrado');
+        router.push('/fornecedores');
+        return;
+      }
+      setSupplier(data);
+
+      const isStdType = ['Indústria', 'Comércio', 'Condomínio', 'Cooperativa', 'Residencial'].includes(data.supplier_type);
+      const isStdSource = ['Busca própria', 'Zion', 'Google Search', 'Indicação'].includes(data.lead_source);
+
+      setEditSupplier({
+        name: data.name,
+        trade_name: data.trade_name || '',
+        document: data.document || '',
+        supplier_type: isStdType ? data.supplier_type : 'Outro',
+        custom_supplier_type: isStdType ? '' : data.supplier_type,
+        lead_source: isStdSource ? data.lead_source : 'Outro',
+        custom_lead_source: isStdSource ? '' : data.lead_source,
+        internal_responsible_id: data.internal_responsible_id || '',
+        mtr_login: data.mtr_login || '',
+        mtr_password: data.mtr_password || '',
+        first_collection_date: data.first_collection_date || '',
+        last_collection_date: data.last_collection_date || '',
+        current_stage: data.current_stage,
+        current_status: data.current_status,
+        backlog_reason: data.backlog_reason || ''
+      });
+
+      const p = await dbService.getProfiles();
+      setProfiles(p);
+    } catch (err) {
+      console.error('Error fetching supplier details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSupplierData();
+  }, [supplierId]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="h-10 w-10 border-4 border-slate-200 border-t-emerald-600 rounded-full animate-spin" />
+        <p className="text-sm text-slate-500 font-medium">Carregando ficha do gerador...</p>
+      </div>
+    );
+  }
+
+  if (!supplier) return null;
+
+  // Actions
+  const handleUpdateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const oldStage = supplier.current_stage;
+      const oldStatus = supplier.current_status;
+
+      const finalSegment = editSupplier.supplier_type === 'Outro'
+        ? (editSupplier.custom_supplier_type.trim() || 'Outro')
+        : editSupplier.supplier_type;
+
+      const finalSource = editSupplier.lead_source === 'Outro'
+        ? (editSupplier.custom_lead_source.trim() || 'Outro')
+        : editSupplier.lead_source;
+      
+      await dbService.updateSupplier(supplier.id, {
+        name: editSupplier.name,
+        trade_name: editSupplier.trade_name || null,
+        document: editSupplier.document || null,
+        supplier_type: finalSegment,
+        lead_source: finalSource,
+        internal_responsible_id: editSupplier.internal_responsible_id || null,
+        mtr_login: editSupplier.mtr_login || null,
+        mtr_password: editSupplier.mtr_password || null,
+        first_collection_date: editSupplier.first_collection_date || null,
+        last_collection_date: editSupplier.last_collection_date || null,
+        current_stage: editSupplier.current_stage,
+        current_status: editSupplier.current_status,
+        backlog_reason: editSupplier.backlog_reason || null
+      });
+
+      if (oldStage !== editSupplier.current_stage || oldStatus !== editSupplier.current_status) {
+        await dbService.addSupplierStatusHistory({
+          supplier_id: supplier.id,
+          old_stage: oldStage,
+          new_stage: editSupplier.current_stage,
+          old_status: oldStatus,
+          new_status: editSupplier.current_status,
+          user_id: currentUser?.id || 'usr-rebeca-buy',
+          notes: 'Alteração cadastral manual da ficha'
+        });
+      }
+
+      setIsEditModalOpen(false);
+      fetchSupplierData();
+    } catch (err) {
+      console.error('Error updating supplier:', err);
+      alert('Falha ao atualizar gerador');
+    }
+  };
+
+  const handleDownloadDoc = (doc: AttachedDocument) => {
+    if (doc.file_data) {
+      const a = document.createElement('a');
+      a.href = doc.file_data;
+      a.download = doc.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else if (doc.file_url) {
+      window.open(doc.file_url, '_blank');
+    } else {
+      alert(`Documento registrado: ${doc.name}`);
+    }
+  };
+
+  const handleDeleteSupplier = async () => {
+    if (!confirm(`Tem certeza que deseja apagar o gerador "${supplier.name}" e todo seu histórico permanentemente?`)) return;
+    try {
+      await dbService.deleteSupplier(supplier.id);
+      router.push('/fornecedores');
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao excluir gerador.');
+    }
+  };
+
+  const handleAddDocument = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDoc.name) return;
+    try {
+      await dbService.addSupplierDocument(supplier.id, {
+        name: newDoc.name,
+        type: newDoc.type,
+        notes: newDoc.notes
+      });
+      setNewDoc({ name: '', type: 'mtr', notes: '' });
+      setIsDocModalOpen(false);
+      fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleFileSelectFromPC = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      const sizeStr = file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+        : (file.size / 1024).toFixed(0) + ' KB';
+
+      let inferredType: AttachedDocument['type'] = 'other';
+      const lower = file.name.toLowerCase();
+      if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
+      else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
+      else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) inferredType = 'partnership_agreement';
+      else if (lower.includes('licenca') || lower.includes('licença')) inferredType = 'env_license';
+      else if (lower.includes('cnpj')) inferredType = 'cnpj_card';
+
+      reader.onload = async () => {
+        await dbService.addSupplierDocument(supplier.id, {
+          name: file.name,
+          size: sizeStr,
+          file_data: reader.result as string,
+          type: inferredType,
+          notes: 'Anexado diretamente na Ficha 360º'
+        });
+        fetchSupplierData();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+    setIsDocModalOpen(false);
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (!confirm('Deseja remover este documento?')) return;
+    try {
+      await dbService.deleteSupplierDocument(supplier.id, docId);
+      fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddInteraction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newInteraction.description) return;
+    try {
+      await dbService.addSupplierInteraction({
+        supplier_id: supplier.id,
+        user_id: currentUser?.id || 'usr-rebeca-buy',
+        type: newInteraction.type as any,
+        description: newInteraction.description
+      });
+      setNewInteraction({ type: 'whatsapp', description: '' });
+      setIsInteractionModalOpen(false);
+      fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTask.description) return;
+    try {
+      await dbService.addSupplierTask({
+        supplier_id: supplier.id,
+        description: newTask.description,
+        due_date: newTask.due_date || null
+      });
+      setNewTask({ description: '', due_date: '' });
+      setIsTaskModalOpen(false);
+      fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMaterial.material_name || !newMaterial.estimated_volume) return;
+    try {
+      await dbService.addSupplierMaterial({
+        supplier_id: supplier.id,
+        material_name: newMaterial.material_name,
+        category: newMaterial.category,
+        estimated_volume: Number(newMaterial.estimated_volume),
+        unit: newMaterial.unit,
+        frequency: newMaterial.frequency,
+        transaction_type: newMaterial.transaction_type,
+        price_per_kg: Number(newMaterial.price_per_kg) || 0,
+        storage_form: newMaterial.storage_form || null,
+        notes: newMaterial.notes || null
+      });
+      setNewMaterial({
+        material_name: 'Recicláveis em geral',
+        category: 'Recicláveis em geral',
+        estimated_volume: '',
+        unit: 'kg',
+        frequency: 'monthly',
+        transaction_type: 'donation',
+        price_per_kg: '0',
+        storage_form: '',
+        notes: ''
+      });
+      setIsMaterialModalOpen(false);
+      fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteMaterial = async (materialId: string) => {
+    if (!confirm('Deseja realmente remover este material?')) return;
+    try {
+      await dbService.deleteSupplierMaterial(materialId);
+      fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleOpenLogisticsModal = () => {
+    const act = supplier?.logistics_analyses?.[0];
+    setPendingDocs([]);
+    setCustomPendingDoc('');
+
+    if (act) {
+      const isStdTransport = transportTypeOptions.some(o => o.value === act.transport_type && o.value !== 'Outros');
+      const isStdResp = responsibleOptions.some(o => o.value === act.transport_responsible && o.value !== 'Outros');
+
+      const isStdFreq = frequencyOptions.some(o => o.value === act.recommended_frequency && o.value !== 'Outros');
+
+      setLogisticsForm({
+        distance_km: act.distance_km?.toString() || '',
+        transport_type: isStdTransport ? (act.transport_type || 'VUC') : 'Outros',
+        custom_transport_type: isStdTransport ? '' : (act.transport_type || ''),
+        estimated_cost: act.estimated_cost?.toString() || '0',
+        recommended_frequency: isStdFreq ? (act.recommended_frequency || 'Mensal') : 'Outros',
+        custom_frequency: isStdFreq ? '' : (act.recommended_frequency || ''),
+        transport_responsible: isStdResp ? (act.transport_responsible || 'Terceirizado da iWrc') : 'Outros',
+        custom_transport_responsible: isStdResp ? '' : (act.transport_responsible || ''),
+        conditioning_infrastructure_needed: act.conditioning_infrastructure_needed || '',
+        feasibility: act.feasibility || 'FEASIBLE',
+        notes: act.notes || '',
+        need_info_reason: supplier?.backlog_reason || ''
+      });
+      setPendingDocs((act as any).pending_docs || []);
+    } else {
+      setLogisticsForm({
+        distance_km: '',
+        transport_type: 'VUC',
+        custom_transport_type: '',
+        estimated_cost: '0',
+        recommended_frequency: 'Mensal',
+        custom_frequency: '',
+        transport_responsible: 'Terceirizado da iWrc',
+        custom_transport_responsible: '',
+        conditioning_infrastructure_needed: '',
+        feasibility: 'FEASIBLE',
+        notes: '',
+        need_info_reason: ''
+      });
+    }
+    setIsLogisticsModalOpen(true);
+  };
+
+  const toggleDoc = (key: string) => {
+    setPendingDocs(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
+
+  const handleSaveLogisticsResponse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supplier || !currentUser) return;
+    try {
+      const finalTransport = logisticsForm.transport_type === 'Outros'
+        ? (logisticsForm.custom_transport_type.trim() || 'Outros')
+        : logisticsForm.transport_type;
+
+      const finalResponsible = logisticsForm.transport_responsible === 'Outros'
+        ? (logisticsForm.custom_transport_responsible.trim() || 'Outros')
+        : logisticsForm.transport_responsible;
+
+      const finalFrequency = logisticsForm.recommended_frequency === 'Outros'
+        ? (logisticsForm.custom_frequency.trim() || 'Outros')
+        : logisticsForm.recommended_frequency;
+
+      const finalPendingDocs = pendingDocs.map(d => 
+        d === 'Outros' ? (customPendingDoc?.trim() ? `Outros: ${customPendingDoc.trim()}` : 'Outros') : d
+      );
+
+      await dbService.saveLogisticsAnalysis({
+        supplier_id: supplier.id,
+        distance_km: Number(logisticsForm.distance_km) || null,
+        transport_type: finalTransport || null,
+        estimated_cost: Number(logisticsForm.estimated_cost) || null,
+        recommended_frequency: finalFrequency || null,
+        transport_responsible: finalResponsible || null,
+        conditioning_infrastructure_needed: logisticsForm.conditioning_infrastructure_needed || null,
+        feasibility: logisticsForm.feasibility as any,
+        notes: logisticsForm.notes || null,
+        analyst_id: currentUser.id,
+        pending_docs: finalPendingDocs
+      } as any);
+
+      let newStage = supplier.current_stage;
+      let newStatus = supplier.current_status;
+      let backlogReason = null;
+
+      if (logisticsForm.feasibility === 'FEASIBLE') {
+        if (finalPendingDocs.length > 0) {
+          newStage = 'DOCUMENTATION';
+          newStatus = 'PENDING';
+          backlogReason = `Aprovado pela Logística. Pendências: ${finalPendingDocs.join(', ')}`;
+          for (const doc of finalPendingDocs) {
+            await dbService.addSupplierTask({
+              supplier_id: supplier.id,
+              description: `Obter documentação: ${doc}`,
+              due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            });
+          }
+        } else {
+          newStage = 'DOCUMENTATION';
+          newStatus = 'APPROVED';
+          backlogReason = 'Aprovado pela Logística. Pronto para documentação e agendamento.';
+        }
+      } else if (logisticsForm.feasibility === 'INFEASIBLE') {
+        newStage = 'LOGISTICS';
+        newStatus = 'REJECTED';
+        backlogReason = 'Inviável para coleta: ' + (logisticsForm.notes || '-');
+      } else if (logisticsForm.feasibility === 'NEED_INFO') {
+        newStage = 'LOGISTICS';
+        newStatus = 'PENDING';
+        backlogReason = logisticsForm.need_info_reason || logisticsForm.notes || 'Logística solicitou informações adicionais ao Comercial';
+        await dbService.addSupplierTask({
+          supplier_id: supplier.id,
+          description: `Logística precisa de info: ${backlogReason}`,
+          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        });
+      }
+
+      await dbService.updateSupplier(supplier.id, {
+        current_stage: newStage,
+        current_status: newStatus,
+        backlog_reason: backlogReason
+      });
+
+      await dbService.addSupplierStatusHistory({
+        supplier_id: supplier.id,
+        old_stage: supplier.current_stage,
+        new_stage: newStage,
+        old_status: supplier.current_status,
+        new_status: newStatus,
+        user_id: currentUser.id,
+        notes: `Parecer logístico registrado: ${translateFeasibility(logisticsForm.feasibility as any)}.${finalPendingDocs.length > 0 ? ' Pendências: ' + finalPendingDocs.join(', ') : ''}`
+      });
+
+      await dbService.addSupplierInteraction({
+        supplier_id: supplier.id,
+        user_id: currentUser.id,
+        type: 'internal_obs',
+        description: `Logística respondeu análise. Decisão: ${translateFeasibility(logisticsForm.feasibility as any)}. Notas: ${logisticsForm.notes || '-'}`
+      });
+
+      setIsLogisticsModalOpen(false);
+      await fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao salvar parecer logístico.');
+    }
+  };
+
+  const handleRespondInfoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supplier || !currentUser || !respondInfoText.trim()) return;
+    try {
+      const activeLog = supplier.logistics_analyses?.[0];
+      if (activeLog) {
+        await dbService.saveLogisticsAnalysis({
+          supplier_id: supplier.id,
+          distance_km: activeLog.distance_km,
+          transport_type: activeLog.transport_type,
+          estimated_cost: activeLog.estimated_cost,
+          recommended_frequency: activeLog.recommended_frequency,
+          transport_responsible: activeLog.transport_responsible,
+          conditioning_infrastructure_needed: activeLog.conditioning_infrastructure_needed,
+          feasibility: 'FEASIBLE',
+          notes: `Informações esclarecidas por Compras: ${respondInfoText.trim()}`,
+          analyst_id: activeLog.analyst_id,
+          pending_docs: []
+        } as any);
+      }
+
+      await dbService.updateSupplier(supplier.id, {
+        current_stage: 'COLLECTION',
+        current_status: 'PENDING',
+        backlog_reason: 'Aguardando agendamento da coleta'
+      });
+
+      await dbService.addSupplierStatusHistory({
+        supplier_id: supplier.id,
+        old_stage: supplier.current_stage,
+        new_stage: 'COLLECTION',
+        old_status: supplier.current_status,
+        new_status: 'PENDING',
+        user_id: currentUser.id,
+        notes: `Compras respondeu as informações solicitadas: ${respondInfoText.trim()}. Situação alterada para Aguardando agendamento da coleta.`
+      });
+
+      await dbService.addSupplierInteraction({
+        supplier_id: supplier.id,
+        user_id: currentUser.id,
+        type: 'internal_obs',
+        description: `Compras respondeu à Logística: ${respondInfoText.trim()}. Encaminhado para agendamento de coleta.`
+      });
+
+      await dbService.addSupplierTask({
+        supplier_id: supplier.id,
+        description: `Realizar agendamento da coleta para ${supplier.name}`,
+        due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      });
+
+      setIsRespondInfoModalOpen(false);
+      setRespondInfoText('');
+      await fetchSupplierData();
+      alert('Informações enviadas com sucesso! Gerador encaminhado para Aguardando agendamento da coleta na Logística.');
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao enviar informações.');
+    }
+  };
+
+  const handleReleaseForScheduling = async () => {
+    if (!supplier || !currentUser) return;
+    if (!confirm(`Deseja liberar "${supplier.name}" para a Logística realizar o agendamento da coleta?`)) return;
+    try {
+      await dbService.updateSupplier(supplier.id, {
+        current_stage: 'COLLECTION',
+        current_status: 'PENDING',
+        backlog_reason: 'Aguardando agendamento da coleta'
+      });
+
+      await dbService.addSupplierStatusHistory({
+        supplier_id: supplier.id,
+        old_stage: supplier.current_stage,
+        new_stage: 'COLLECTION',
+        old_status: supplier.current_status,
+        new_status: 'PENDING',
+        user_id: currentUser.id,
+        notes: 'Comercial liberou o gerador para agendamento de coleta na Logística.'
+      });
+
+      await dbService.addSupplierInteraction({
+        supplier_id: supplier.id,
+        user_id: currentUser.id,
+        type: 'internal_obs',
+        description: 'Gerador homologado e liberado para a fila de Agendamento da Logística.'
+      });
+
+      await dbService.addSupplierTask({
+        supplier_id: supplier.id,
+        description: `Agendar 1ª coleta para ${supplier.name}`,
+        due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      });
+
+      await fetchSupplierData();
+      alert('Gerador enviado com sucesso para a fila de Agendamento de Coletas da Logística!');
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao enviar para agendamento.');
+    }
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      await dbService.completeSupplierTask(taskId, currentUser?.id || 'usr-rebeca-buy');
+      fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddCollection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCollection.scheduled_date || !newCollection.material_name || !newCollection.estimated_volume) return;
+    try {
+      await dbService.createCollection(
+        {
+          supplier_id: supplier.id,
+          scheduled_date: newCollection.scheduled_date,
+          driver_name: newCollection.driver_name || null,
+          carrier_name: newCollection.carrier_name || null,
+          notes: newCollection.notes || null,
+          status: 'SCHEDULED'
+        },
+        [
+          {
+            material_name: newCollection.material_name,
+            estimated_volume: Number(newCollection.estimated_volume),
+            unit: newCollection.unit
+          }
+        ]
+      );
+
+      // Update supplier stage to OPERATION / APPROVED and clear backlog_reason
+      await dbService.updateSupplier(supplier.id, {
+        current_stage: 'OPERATION',
+        current_status: 'APPROVED',
+        last_collection_date: newCollection.scheduled_date,
+        first_collection_date: supplier.first_collection_date || newCollection.scheduled_date,
+        backlog_reason: null
+      });
+
+      await dbService.addSupplierStatusHistory({
+        supplier_id: supplier.id,
+        old_stage: supplier.current_stage,
+        new_stage: 'OPERATION',
+        old_status: supplier.current_status,
+        new_status: 'APPROVED',
+        user_id: currentUser?.id || 'usr-rebeca-buy',
+        notes: `Coleta agendada para ${formatDate(newCollection.scheduled_date)}. Gerador passa a constar como Ativo.`
+      });
+
+      setNewCollection({
+        scheduled_date: '',
+        driver_name: '',
+        carrier_name: '',
+        notes: '',
+        material_name: '',
+        estimated_volume: '',
+        unit: 'kg'
+      });
+      setIsCollectionModalOpen(false);
+      fetchSupplierData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Build timeline events
+  const timelineEvents: any[] = [];
+
+  timelineEvents.push({
+    id: `create-${supplier.id}`,
+    type: 'registration',
+    title: 'Cadastro no Sistema',
+    description: `Gerador ${supplier.name} cadastrado via ${supplier.lead_source} (${supplier.supplier_type}).`,
+    date: supplier.created_at,
+    user: supplier.responsible?.name || undefined
+  });
+
+  supplier.interactions?.forEach(i => {
+    timelineEvents.push({
+      id: `int-${i.id}`,
+      type: 'interaction',
+      title: `Contato via ${translateInteractionType(i.type)}`,
+      description: i.description,
+      date: `${i.interaction_date}T${i.interaction_time}Z`,
+      user: profiles.find(p => p.id === i.user_id)?.name
+    });
+  });
+
+  supplier.collections?.forEach(c => {
+    timelineEvents.push({
+      id: `col-${c.id}`,
+      type: 'collection',
+      title: c.status === 'COMPLETED' ? 'Coleta Realizada' : 'Coleta Agendada',
+      description: `Coleta para ${formatDate(c.scheduled_date)}. Motorista: ${c.driver_name || '-'}. Transportadora: ${c.carrier_name || '-'}`,
+      date: c.created_at
+    });
+  });
+
+  const sortedTimeline = timelineEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const activeLogistics = supplier.logistics_analyses?.[0];
+  const primaryContact = supplier.contacts?.find(c => c.is_primary) || supplier.contacts?.[0];
+  const isLeadInEvaluation = ['PROSPECTING', 'QUALIFICATION', 'LOGISTICS'].includes(supplier.current_stage) && 
+    (!activeLogistics || !activeLogistics.feasibility || activeLogistics.feasibility === 'PENDING' || activeLogistics.feasibility === 'IN_PROGRESS');
+
+  return (
+    <div className="space-y-6 font-sans">
+      
+      {/* ===================== VIEW A: ANÁLISE DO LEAD / LOGÍSTICA ===================== */}
+      {isLeadInEvaluation ? (
+        <div className="space-y-6">
+          {/* Top Breadcrumb */}
+          <div className="flex items-center justify-between">
+            <Link 
+              href={supplier.current_stage === 'LOGISTICS' ? "/logistica" : "/prospeccao"} 
+              className="text-xs text-slate-500 hover:text-slate-900 font-semibold transition-all flex items-center gap-1"
+            >
+              ← Voltar para {supplier.current_stage === 'LOGISTICS' ? "Análise Logística" : "Funil de Prospecção"}
+            </Link>
+            <span className="text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold uppercase px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800 flex items-center gap-1.5">
+              {supplier.current_stage === 'LOGISTICS' ? (
+                <>
+                  <Truck size={13} />
+                  Lead em Análise Logística
+                </>
+              ) : supplier.current_stage === 'PROSPECTING' ? (
+                <>
+                  <GitBranch size={13} />
+                  Lead em Prospecção
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={13} />
+                  Lead em Qualificação
+                </>
+              )}
+            </span>
+          </div>
+
+          {/* Lead Header Card */}
+          <Card className="border-t-4 border-t-indigo-600">
+            <div className="space-y-5">
+              {/* Row 1: Title & Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">{supplier.name}</h1>
+                  <Badge variant={getStageColor(supplier.current_stage)}>
+                    {translateStage(supplier.current_stage)}
+                  </Badge>
+                  <Badge variant={getStatusColor(supplier.current_status)}>
+                    {translateStatus(supplier.current_status)}
+                  </Badge>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {supplier.current_stage === 'LOGISTICS' && (
+                    <Button 
+                      size="sm" 
+                      className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs" 
+                      onClick={handleOpenLogisticsModal}
+                    >
+                      <Truck size={14} />
+                      Responder Análise Logística
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                    Editar Lead
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDeleteSupplier} 
+                    className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 gap-1.5"
+                  >
+                    <Trash2 size={13} />
+                    Excluir Lead
+                  </Button>
+                </div>
+              </div>
+
+              {/* Row 2: Full-width metadata grid */}
+              <div className="pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs text-slate-500">
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Segmento</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.supplier_type || 'Indústria'}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Como encontramos</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.lead_source || 'Busca própria'}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Responsável Comercial</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.responsible?.name || 'Não atribuído'}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Data de Cadastro</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{formatDate(supplier.created_at)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Backlog Reason */}
+            {supplier.backlog_reason && (
+              <div className="mt-4 flex items-start gap-3 bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-xs text-amber-800">
+                <AlertTriangle className="shrink-0 text-amber-500 mt-0.5" size={15} />
+                <div>
+                  <span className="font-bold">Atenção / Pendência da Etapa:</span>
+                  <p className="font-semibold mt-0.5">{supplier.backlog_reason}</p>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* 4 Focused Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Card 1: Localização & Contatos */}
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+                  <MapPin size={15} className="text-emerald-600" />
+                  Localização e Endereço para Coleta
+                </h3>
+              </div>
+              
+              <div className="space-y-3 text-xs">
+                {supplier.address?.street ? (
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl space-y-1">
+                    <p className="font-bold text-slate-800 dark:text-slate-200">
+                      {supplier.address.street}, {supplier.address.number || 'S/N'}
+                      {supplier.address.complement && ` (${supplier.address.complement})`}
+                    </p>
+                    <p className="text-slate-500">
+                      {supplier.address.neighborhood ? `${supplier.address.neighborhood} • ` : ''}
+                      {supplier.address.city} - {supplier.address.state}
+                      {supplier.address.zip_code && ` • CEP: ${supplier.address.zip_code}`}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-50 text-slate-400 rounded-xl">Endereço ainda não informado.</div>
+                )}
+
+                {/* Primary Contact */}
+                {primaryContact ? (
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl space-y-1.5">
+                    <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Contato do Lead</p>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className="font-semibold text-slate-900 dark:text-white">{primaryContact.name} {primaryContact.role ? `(${primaryContact.role})` : ''}</span>
+                      <span className="text-emerald-600 font-bold flex items-center gap-1"><Phone size={12}/>{primaryContact.whatsapp || primaryContact.phone || '-'}</span>
+                    </div>
+                    {primaryContact.email && <p className="text-slate-500 text-[11px]">{primaryContact.email}</p>}
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+
+            {/* Card 2: Parecer e Resposta da Logística */}
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+                  <Truck size={15} className="text-indigo-600" />
+                  Parecer da Análise Logística
+                </h3>
+                {supplier.current_stage === 'LOGISTICS' ? (
+                  <Button size="sm" variant="outline" onClick={handleOpenLogisticsModal} className="text-xs">
+                    {activeLogistics ? 'Editar Parecer' : 'Responder'}
+                  </Button>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                    <Lock size={10} /> Bloqueado
+                  </span>
+                )}
+              </div>
+
+              {supplier.current_stage !== 'LOGISTICS' ? (
+                <div className="py-8 text-center text-slate-400 text-xs space-y-2.5 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 p-6">
+                  <div className="h-10 w-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                    <Lock size={18} />
+                  </div>
+                  <p className="font-bold text-slate-700">Análise Logística Bloqueada</p>
+                  <p className="text-slate-500 text-[11px] max-w-xs mx-auto">
+                    A análise logística só é liberada para resposta quando este lead for qualificado e avançar para a etapa de <strong>Logística</strong>.
+                  </p>
+                </div>
+              ) : activeLogistics ? (
+                <div className="space-y-3 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/60">
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">Situação / Viabilidade</span>
+                      <div className="mt-1">
+                        <Badge variant={activeLogistics.feasibility === 'FEASIBLE' ? 'success' : activeLogistics.feasibility === 'INFEASIBLE' ? 'danger' : 'warning'}>
+                          {translateFeasibility(activeLogistics.feasibility as any)}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">Distância Calculada</span>
+                      <p className="font-black text-slate-800 text-sm mt-0.5">{activeLogistics.distance_km ? `${activeLogistics.distance_km} km` : 'Não calculada'}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">Frete Estimado</span>
+                      <p className="font-black text-slate-800 text-sm mt-0.5">{formatCurrency(activeLogistics.estimated_cost)}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">Tipo de Veículo</span>
+                      <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.transport_type || 'VUC'}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">Responsável pelo Frete</span>
+                      <p className="font-semibold text-slate-800 mt-0.5">{activeLogistics.transport_responsible || '-'}</p>
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">Frequência Recomendada</span>
+                      <p className="font-semibold text-slate-800 mt-0.5">{activeLogistics.recommended_frequency || '-'}</p>
+                    </div>
+                  </div>
+
+                  {activeLogistics.conditioning_infrastructure_needed && (
+                    <div>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">Infraestrutura de Acondicionamento</span>
+                      <p className="font-semibold text-slate-800 mt-0.5">{activeLogistics.conditioning_infrastructure_needed}</p>
+                    </div>
+                  )}
+
+                  {activeLogistics.notes && (
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-150">
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">Observações da Logística</span>
+                      <p className="font-medium text-slate-700 mt-0.5">{activeLogistics.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-slate-400 text-xs space-y-3">
+                  <Truck size={28} className="mx-auto text-slate-300 opacity-60" />
+                  <p>Nenhuma resposta logística registrada ainda.</p>
+                  <Button size="sm" onClick={handleOpenLogisticsModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    Responder Análise Logística
+                  </Button>
+                </div>
+              )}
+            </Card>
+
+            {/* Card 3: Materiais Declarados */}
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+                  <Scale size={15} className="text-emerald-600" />
+                  Materiais Declarados ({supplier.materials?.length || 0})
+                </h3>
+                <Button size="sm" variant="outline" onClick={() => setIsMaterialModalOpen(true)} className="text-xs gap-1">
+                  <Plus size={12} /> Adicionar
+                </Button>
+              </div>
+
+              {supplier.materials && supplier.materials.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                        <th className="px-3 py-2">Material</th>
+                        <th className="px-3 py-2">Volume / Frequência</th>
+                        <th className="px-3 py-2">Modalidade</th>
+                        <th className="px-3 py-2">Armazenamento</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {supplier.materials.map(mat => (
+                        <tr key={mat.id}>
+                          <td className="px-3 py-2.5 font-bold text-slate-800">{mat.material_name}</td>
+                          <td className="px-3 py-2.5 text-slate-600">{formatVolume(mat.estimated_volume, mat.unit)} • {mat.frequency}</td>
+                          <td className="px-3 py-2.5">
+                            {mat.transaction_type === 'purchase' ? (
+                              <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-[10px] border border-amber-200">
+                                Compra ({formatCurrency(mat.price_per_kg)}/kg)
+                              </span>
+                            ) : (
+                              <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200">
+                                Doação
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-500">{mat.storage_form || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-slate-400 text-xs">Nenhum material cadastrado para este lead.</div>
+              )}
+            </Card>
+
+            {/* Card 4: Documentos & Anexos */}
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+                  <FileText size={15} className="text-indigo-600" />
+                  Documentos & Anexos do Lead ({supplier.attached_documents?.length || 0})
+                </h3>
+                <Button size="sm" variant="outline" onClick={() => setIsDocModalOpen(true)} className="text-xs gap-1">
+                  <Upload size={12} /> Anexar
+                </Button>
+              </div>
+
+              {supplier.attached_documents && supplier.attached_documents.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {supplier.attached_documents.map(doc => (
+                    <div key={doc.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileCheck size={16} className="text-indigo-600 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs text-slate-800 truncate" title={doc.name}>{doc.name}</p>
+                          <span className="text-[9px] uppercase font-semibold text-slate-400">
+                            {doc.type === 'mtr' ? 'MTR' : doc.type === 'donation_letter' ? 'Carta de Doação' : doc.type === 'cnpj_card' ? 'Cartão CNPJ' : 'Anexo'}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadDoc(doc)}
+                        className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors shrink-0"
+                        title="Baixar / Visualizar"
+                      >
+                        <Download size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-slate-400 text-xs">Nenhum documento anexado pelo Comercial.</div>
+              )}
+            </Card>
+
+          </div>
+        </div>
+      ) : (
+        /* ===================== VIEW B: TELA COMPLETA 360º DO GERADOR HOMOLOGADO ===================== */
+        <>
+          {/* Top Breadcrumb */}
+          <div className="flex items-center justify-between">
+            <Link href="/fornecedores" className="text-xs text-slate-500 hover:text-slate-900 font-semibold transition-all">
+              ← Voltar para Geradores
+            </Link>
+            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase">
+              Código: {supplier.code || 'GER-001'}
+            </span>
+          </div>
+
+          {/* Main Header Panel */}
+          <Card className="border-t-4 border-t-emerald-600">
+            <div className="space-y-5">
+              {/* Row 1: Code + Title + Status + Action Buttons */}
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-black font-mono bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-300">
+                    {supplier.code || 'GER-001'}
+                  </span>
+                  <h1 className="text-2xl font-black text-slate-900 leading-tight">{supplier.name}</h1>
+                  <Badge variant={getStageColor(supplier.current_stage)}>
+                    {translateStage(supplier.current_stage)}
+                  </Badge>
+                  <Badge variant={getStatusColor(supplier.current_status)}>
+                    {translateStatus(supplier.current_status)}
+                  </Badge>
+                </div>
+
+                {/* Quick Actions Panel */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                    Editar Ficha
+                  </Button>
+                  
+                  {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setIsInteractionModalOpen(true)}>
+                        Registrar Contato
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setIsTaskModalOpen(true)}>
+                        Criar Tarefa
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Realizar Agendamento */}
+                  <Button 
+                    size="sm" 
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-bold" 
+                    onClick={handleReleaseForScheduling}
+                  >
+                    <CalendarCheck size={14} />
+                    Realizar Agendamento
+                  </Button>
+
+                  {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER' || currentUser?.role === 'LOGISTICS') && (
+                    <Button size="sm" className="gap-1.5 bg-[#2098D1] hover:bg-[#1883B5]" onClick={() => setIsCollectionModalOpen(true)}>
+                      <Calendar size={14} />
+                      Agendar Coleta
+                    </Button>
+                  )}
+
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDeleteSupplier} 
+                    className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 gap-1.5"
+                  >
+                    <Trash2 size={13} />
+                    Excluir Gerador
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Row 2: Full-Width 360° Metadata Grid */}
+              <div className="pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 text-xs">
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Segmento</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.supplier_type || 'Indústria'}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Como encontramos</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.lead_source || 'Busca própria'}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">CNPJ/CPF</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.document || 'Não informado'}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Responsável iWrc</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.responsible?.name || 'Não atribuído'}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Última Atualização</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{formatDate(supplier.updated_at)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Logistics Requested Info Banner for Compras vs Status for Logística */}
+            {activeLogistics?.feasibility === 'NEED_INFO' ? (
+              (currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') ? (
+                <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-amber-50 border-2 border-amber-300 p-4 rounded-xl text-xs text-amber-900 shadow-xs">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="shrink-0 text-amber-600 mt-0.5" size={20} />
+                    <div>
+                      <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded">
+                        Atenção Compras / Comercial: Informação Solicitada pela Logística
+                      </span>
+                      <p className="font-semibold text-sm text-slate-800 mt-1">
+                        {supplier.backlog_reason || activeLogistics.notes || 'A Logística precisa de esclarecimentos adicionais.'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 shrink-0"
+                    onClick={() => setIsRespondInfoModalOpen(true)}
+                  >
+                    <MessageSquare size={14} />
+                    Responder Informações Solicitadas
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-6 flex items-start gap-3 bg-amber-50/80 border border-amber-200 p-4 rounded-xl text-xs text-amber-900">
+                  <Clock className="shrink-0 text-amber-600 mt-0.5" size={18} />
+                  <div className="space-y-0.5">
+                    <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800">
+                      Aguardando Retorno do Comercial / Compras
+                    </span>
+                    <p className="font-semibold text-slate-700">
+                      {supplier.backlog_reason || activeLogistics.notes || 'Solicitação de informações enviada para Compras.'}
+                    </p>
+                  </div>
+                </div>
+              )
+            ) : supplier.backlog_reason && (
+              <div className="mt-6 flex items-start gap-3 bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-amber-800">
+                <AlertTriangle className="shrink-0 text-amber-500 mt-0.5" size={16} />
+                <div className="space-y-1">
+                  <span className="font-bold">Pendência Operacional / Atenção da Etapa</span>
+                  <p className="font-semibold leading-relaxed">{supplier.backlog_reason}</p>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Tabs Navigation */}
+          <div className="flex border-b border-slate-200 overflow-x-auto">
+            {[
+              { key: 'overview', label: 'Visão Geral & MTR', icon: Building2 },
+              { key: 'materials', label: `Materiais (${supplier.materials?.length || 0})`, icon: Scale },
+              { key: 'documents', label: `Documentos (${supplier.attached_documents?.length || 0})`, icon: FileText },
+              { key: 'logistics', label: 'Logística', icon: Truck },
+              { key: 'collections', label: 'Coletas / Entregas', icon: Calendar },
+              { key: 'timeline', label: 'Histórico', icon: Clock }
+            ].map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as any)}
+                  className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'border-emerald-500 text-emerald-600 bg-emerald-50/20'
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <Icon size={16} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Tab Panels */}
+          <div className="space-y-6">
+            
+            {/* Tab 1: Visão Geral */}
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <div className="md:col-span-2 space-y-6">
+                  {/* MTR & Credentials Card */}
+                  <Card className="border-l-4 border-l-indigo-600 bg-indigo-50/10">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <Key size={16} className="text-indigo-600" />
+                        Acesso e Credenciais do MTR (SIGOR / SINIR)
+                      </h3>
+                      <button 
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="text-xs text-indigo-600 hover:underline font-bold"
+                      >
+                        Editar Acesso
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Login / Usuário MTR</p>
+                        <p className="font-bold text-slate-800 mt-1 font-mono text-sm">
+                          {supplier.mtr_login || <span className="text-slate-300 font-sans font-normal italic">Não cadastrado</span>}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Senha do MTR</p>
+                          {supplier.mtr_password && (
+                            <button 
+                              onClick={() => setShowMtrPassword(p => !p)}
+                              className="text-slate-400 hover:text-slate-600"
+                              title={showMtrPassword ? 'Ocultar' : 'Exibir senha'}
+                            >
+                              {showMtrPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                          )}
+                        </div>
+                        <p className="font-bold text-slate-800 mt-1 font-mono text-sm">
+                          {supplier.mtr_password ? (
+                            showMtrPassword ? supplier.mtr_password : '••••••••••••'
+                          ) : (
+                            <span className="text-slate-300 font-sans font-normal italic">Não cadastrada</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Operational Dates */}
+                  <Card>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <CalendarCheck size={16} className="text-emerald-600" />
+                        Histórico de Entregas e Coletas
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-3 bg-slate-50 rounded-xl">
+                        <span className="font-bold text-slate-400 uppercase text-[10px]">Primeira Entrega / Coleta</span>
+                        <p className="font-bold text-slate-800 text-sm mt-1">
+                          {supplier.first_collection_date ? formatDate(supplier.first_collection_date) : <span className="text-slate-400 font-normal italic">Nenhuma registrada</span>}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-slate-50 rounded-xl">
+                        <span className="font-bold text-slate-400 uppercase text-[10px]">Última Entrega / Coleta</span>
+                        <p className="font-bold text-slate-800 text-sm mt-1">
+                          {supplier.last_collection_date ? formatDate(supplier.last_collection_date) : <span className="text-slate-400 font-normal italic">Nenhuma registrada</span>}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Right Side Overview Column */}
+                <div className="space-y-6">
+                  {/* Contacts Summary */}
+                  <Card>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <Phone size={16} className="text-emerald-600" />
+                        Contatos
+                      </h3>
+                    </div>
+                    {supplier.contacts && supplier.contacts.length > 0 ? (
+                      <div className="space-y-3">
+                        {supplier.contacts.map(c => (
+                          <div key={c.id} className="p-3 bg-slate-50 rounded-xl space-y-1">
+                            <p className="font-bold text-slate-800 text-xs">{c.name} {c.role ? `(${c.role})` : ''}</p>
+                            <p className="text-emerald-600 font-semibold text-xs flex items-center gap-1"><Phone size={12}/>{c.whatsapp || c.phone || '-'}</p>
+                            {c.email && <p className="text-slate-400 text-[11px]">{c.email}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center text-slate-400 text-xs">Nenhum contato cadastrado.</div>
+                    )}
+                  </Card>
+
+                  {/* Tasks Summary */}
+                  <Card>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <ClipboardList size={16} className="text-emerald-600" />
+                        Tarefas e Pendências
+                      </h3>
+                      <Button size="sm" variant="outline" onClick={() => setIsTaskModalOpen(true)} className="text-xs">
+                        + Tarefa
+                      </Button>
+                    </div>
+
+                    {supplier.tasks && supplier.tasks.length > 0 ? (
+                      <div className="space-y-2">
+                        {supplier.tasks.map(task => (
+                          <div key={task.id} className="p-2.5 bg-slate-50 rounded-xl flex items-center justify-between text-xs gap-2">
+                            <div>
+                              <p className={`font-semibold text-slate-800 ${task.status === 'completed' ? 'line-through opacity-50' : ''}`}>
+                                {task.description}
+                              </p>
+                              {task.due_date && <span className="text-[10px] text-slate-400">Prazo: {formatDate(task.due_date)}</span>}
+                            </div>
+                            {task.status === 'pending' && (
+                              <button
+                                onClick={() => handleCompleteTask(task.id)}
+                                className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded font-bold cursor-pointer hover:bg-emerald-100"
+                              >
+                                Concluir
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center text-slate-400 text-xs">Nenhuma pendência ativa.</div>
+                    )}
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Materiais */}
+            {activeTab === 'materials' && (
+              <Card>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Scale size={16} className="text-emerald-600" />
+                    Materiais Declarados
+                  </h3>
+                  {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
+                    <Button size="sm" className="gap-1.5" onClick={() => setIsMaterialModalOpen(true)}>
+                      <Plus size={14} />
+                      Adicionar Material
+                    </Button>
+                  )}
+                </div>
+
+                {supplier.materials && supplier.materials.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <th className="px-4 py-3">Material</th>
+                          <th className="px-4 py-3">Est. Volume / Frequência</th>
+                          <th className="px-4 py-3">Modalidade</th>
+                          <th className="px-4 py-3">Acondicionamento</th>
+                          {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
+                            <th className="px-4 py-3 text-right">Ações</th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-sm">
+                        {supplier.materials.map(mat => (
+                          <tr key={mat.id} className="hover:bg-slate-50/50">
+                            <td className="px-4 py-3 font-semibold text-slate-800">{mat.material_name}</td>
+                            <td className="px-4 py-3 font-medium text-slate-700">
+                              {formatVolume(mat.estimated_volume, mat.unit)} / {mat.frequency}
+                            </td>
+                            <td className="px-4 py-3">
+                              {mat.transaction_type === 'purchase' ? (
+                                <div className="flex flex-col text-xs text-amber-700">
+                                  <span className="font-bold">Compra</span>
+                                  <span className="text-[10px] text-slate-400">{formatCurrency(mat.price_per_kg)}/kg</span>
+                                </div>
+                              ) : (
+                                <Badge variant="success">Doação</Badge>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-slate-500">{mat.storage_form || '-'}</td>
+                            {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
+                              <td className="px-4 py-3 text-right">
+                                <button
+                                  onClick={() => handleDeleteMaterial(mat.id)}
+                                  className="text-slate-400 hover:text-rose-500 p-1.5 rounded transition-colors cursor-pointer"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-slate-400 text-sm">
+                    Nenhum material declarado para este gerador.
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Tab 3: Documentos & Anexos */}
+            {activeTab === 'documents' && (
+              <Card>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                      <FileText size={16} className="text-emerald-600" />
+                      Documentos & Termos Homologados
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Termo de Parceria, MTRs, Cartas de Doação e Licenças Ambientais.</p>
+                  </div>
+                  <Button size="sm" className="gap-1.5" onClick={() => setIsDocModalOpen(true)}>
+                    <Upload size={14} />
+                    Anexar Documento
+                  </Button>
+                </div>
+
+                {supplier.attached_documents && supplier.attached_documents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {supplier.attached_documents.map(doc => (
+                      <div key={doc.id} className="p-4 bg-[#F7FCFD] border border-[#CCEAF1] rounded-2xl space-y-2 relative group hover:border-[#2098D1] transition-all">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-[#E5F5F8] text-[#2098D1] flex items-center justify-center font-bold shrink-0">
+                              <FileCheck size={18} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-xs text-[#0D2439] leading-tight truncate max-w-[160px]">{doc.name}</p>
+                              <span className="text-[10px] uppercase font-bold text-[#146A88] tracking-wider block mt-0.5">
+                                {doc.type === 'mtr' ? 'MTR' : doc.type === 'donation_letter' ? 'Carta de Doação' : doc.type === 'partnership_agreement' ? 'Termo de Parceria' : 'Documento'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleDownloadDoc(doc)}
+                              className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] p-1.5 rounded-full transition-colors"
+                              title="Baixar / Visualizar documento"
+                            >
+                              <Download size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
+                              title="Remover documento"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        {doc.notes && <p className="text-[11px] text-slate-500 bg-white p-2 rounded-xl border border-[#CCEAF1]">{doc.notes}</p>}
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-[#E5F4F7]">
+                          <span>Anexado em {formatDate(doc.uploaded_at)}</span>
+                          <span className="font-bold text-[#48780E] bg-[#EBF7D4] px-1.5 py-0.2 rounded-full">Válido</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-16 text-center text-slate-400 text-sm space-y-2">
+                    <FileText size={32} className="mx-auto text-slate-300" />
+                    <p>Nenhum documento ou termo anexado para este gerador.</p>
+                    <Button variant="outline" size="sm" onClick={() => setIsDocModalOpen(true)} className="mt-2 gap-1">
+                      <Upload size={12} /> Anexar Primeiro Documento
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Tab 4: Logística */}
+            {activeTab === 'logistics' && (
+              <Card>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Truck size={16} className="text-emerald-600" />
+                    Parecer e Viabilidade Logística
+                  </h3>
+                  <Button size="sm" variant="outline" onClick={handleOpenLogisticsModal} className="text-xs">
+                    {activeLogistics ? 'Editar Parecer' : 'Preencher Parecer'}
+                  </Button>
+                </div>
+
+                {activeLogistics ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <span className="font-bold text-slate-400 uppercase text-[9px]">Distância</span>
+                          <p className="font-bold text-slate-800 text-sm mt-0.5">{activeLogistics.distance_km ? `${activeLogistics.distance_km} km` : '-'}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <span className="font-bold text-slate-400 uppercase text-[9px]">Frete Estimado</span>
+                          <p className="font-bold text-slate-800 text-sm mt-0.5">{formatCurrency(activeLogistics.estimated_cost)}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-400 uppercase text-[9px]">Tipo de Veículo</span>
+                        <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.transport_type || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-400 uppercase text-[9px]">Responsável pelo Transporte</span>
+                        <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.transport_responsible || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-400 uppercase text-[9px]">Frequência Recomendada</span>
+                        <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.recommended_frequency || '-'}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <span className="font-bold text-slate-400 uppercase text-[9px]">Parecer da Análise</span>
+                        <div className="mt-1">
+                          <Badge variant={activeLogistics.feasibility === 'FEASIBLE' ? 'success' : activeLogistics.feasibility === 'INFEASIBLE' ? 'danger' : 'warning'}>
+                            {translateFeasibility(activeLogistics.feasibility as any)}
+                          </Badge>
+                        </div>
+                      </div>
+                      {activeLogistics.conditioning_infrastructure_needed && (
+                        <div>
+                          <span className="font-bold text-slate-400 uppercase text-[9px]">Infraestrutura Necessária</span>
+                          <p className="text-slate-800 mt-0.5">{activeLogistics.conditioning_infrastructure_needed}</p>
+                        </div>
+                      )}
+                      {activeLogistics.notes && (
+                        <div>
+                          <span className="font-bold text-slate-400 uppercase text-[9px]">Observações da Logística</span>
+                          <p className="text-slate-800 mt-0.5 p-3 bg-slate-50 rounded-lg border border-slate-150">{activeLogistics.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-slate-400 text-sm space-y-3">
+                    <p>Nenhuma análise logística registrada para este gerador.</p>
+                    <Button size="sm" onClick={handleOpenLogisticsModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                      Preencher Análise Logística
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Tab 5: Coletas */}
+            {activeTab === 'collections' && (
+              <Card>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Calendar size={16} className="text-emerald-600" />
+                    Histórico de Coletas Programadas
+                  </h3>
+                  <Button size="sm" className="gap-1.5" onClick={() => setIsCollectionModalOpen(true)}>
+                    <Plus size={14} />
+                    Agendar Coleta
+                  </Button>
+                </div>
+
+                {supplier.collections && supplier.collections.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <th className="px-4 py-3">Data Agendada</th>
+                          <th className="px-4 py-3">Situação</th>
+                          <th className="px-4 py-3">Motorista</th>
+                          <th className="px-4 py-3">Transportadora</th>
+                          <th className="px-4 py-3">Notas</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {supplier.collections.map(col => (
+                          <tr key={col.id} className="hover:bg-slate-50/50">
+                            <td className="px-4 py-3 font-bold text-slate-800">{formatDate(col.scheduled_date)}</td>
+                            <td className="px-4 py-3">
+                              <Badge variant={col.status === 'COMPLETED' ? 'success' : 'warning'}>
+                                {col.status === 'COMPLETED' ? 'Realizada' : 'Agendada'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">{col.driver_name || '-'}</td>
+                            <td className="px-4 py-3 text-slate-600">{col.carrier_name || '-'}</td>
+                            <td className="px-4 py-3 text-slate-500">{col.notes || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-slate-400 text-sm">
+                    Nenhuma coleta registrada para este gerador.
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Tab 6: Histórico */}
+            {activeTab === 'timeline' && (
+              <Card>
+                <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3 mb-6">
+                  <Clock size={16} className="text-emerald-600" />
+                  Linha do Tempo de Interações
+                </h3>
+
+                <div className="space-y-6 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-200">
+                  {sortedTimeline.map(item => (
+                    <div key={item.id} className="relative flex items-start gap-4 pl-8">
+                      <div className="absolute left-2 -translate-x-1/2 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-600 shadow-sm" />
+                      <div className="flex-1 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-slate-900">{item.title}</span>
+                          <span className="text-[10px] text-slate-400">{formatDate(item.date)}</span>
+                        </div>
+                        <p className="text-xs text-slate-600">{item.description}</p>
+                        {item.user && <p className="text-[10px] text-emerald-600 font-semibold">Por: {item.user}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+          </div>
+        </>
+      )}
+
+      {/* Modal: Editar Ficha */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Editar Ficha do Gerador" size="lg">
+        <form onSubmit={handleUpdateSupplier} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Input label="Razão Social *" value={editSupplier.name} onChange={e => setEditSupplier(p => ({ ...p, name: e.target.value }))} required />
+            <Input label="Nome Fantasia" value={editSupplier.trade_name} onChange={e => setEditSupplier(p => ({ ...p, trade_name: e.target.value }))} />
+            <Input label="CNPJ / CPF" value={editSupplier.document} onChange={e => setEditSupplier(p => ({ ...p, document: e.target.value }))} />
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Segmento do Gerador *</label>
+              <select
+                value={editSupplier.supplier_type}
+                onChange={e => setEditSupplier(p => ({ ...p, supplier_type: e.target.value }))}
+                className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              >
+                <option value="Indústria">Indústria</option>
+                <option value="Comércio">Comércio</option>
+                <option value="Condomínio">Condomínio</option>
+                <option value="Cooperativa">Cooperativa</option>
+                <option value="Residencial">Residencial</option>
+                <option value="Outro">Outro (digitar)</option>
+              </select>
+              {editSupplier.supplier_type === 'Outro' && (
+                <input
+                  type="text"
+                  placeholder="Digite o segmento..."
+                  value={editSupplier.custom_supplier_type}
+                  onChange={e => setEditSupplier(p => ({ ...p, custom_supplier_type: e.target.value }))}
+                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-400 rounded-lg"
+                />
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Como encontramos *</label>
+              <select
+                value={editSupplier.lead_source}
+                onChange={e => setEditSupplier(p => ({ ...p, lead_source: e.target.value }))}
+                className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              >
+                <option value="Busca própria">Busca própria</option>
+                <option value="Zion">Zion</option>
+                <option value="Google Search">Google Search</option>
+                <option value="Indicação">Indicação</option>
+                <option value="Outro">Outro (digitar)</option>
+              </select>
+              {editSupplier.lead_source === 'Outro' && (
+                <input
+                  type="text"
+                  placeholder="Digite a origem..."
+                  value={editSupplier.custom_lead_source}
+                  onChange={e => setEditSupplier(p => ({ ...p, custom_lead_source: e.target.value }))}
+                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-400 rounded-lg"
+                />
+              )}
+            </div>
+
+            <Select
+              label="Responsável Interno"
+              value={editSupplier.internal_responsible_id}
+              onChange={e => setEditSupplier(p => ({ ...p, internal_responsible_id: e.target.value }))}
+              options={profiles.map(p => ({ value: p.id, label: p.name }))}
+            />
+          </div>
+
+          <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl space-y-3">
+            <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Credenciais MTR</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Input
+                label="Login do MTR"
+                value={editSupplier.mtr_login}
+                onChange={e => setEditSupplier(p => ({ ...p, mtr_login: e.target.value }))}
+                placeholder="Ex: usuario.sigor"
+              />
+              <Input
+                label="Senha do MTR"
+                value={editSupplier.mtr_password}
+                onChange={e => setEditSupplier(p => ({ ...p, mtr_password: e.target.value }))}
+                placeholder="Senha de emissão de MTR"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">Salvar Alterações</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Anexar Documento */}
+      <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title="Anexar Documento do Gerador" size="md">
+        <div className="space-y-5">
+          {/* Quick upload from PC */}
+          <div className="p-4 bg-[#F0F9FB] border border-[#CCEAF1] rounded-2xl text-center space-y-2">
+            <Upload size={24} className="mx-auto text-[#2098D1]" />
+            <p className="text-xs font-bold text-[#0D2439]">Anexar arquivos do Computador</p>
+            <p className="text-[11px] text-[#547990]">Selecione um ou vários arquivos (PDF, imagens, MTRs, contratos):</p>
+            <label className="inline-flex items-center gap-1.5 bg-[#2098D1] hover:bg-[#1883B5] text-white px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer shadow-md shadow-[#2098D1]/20">
+              <Plus size={14} />
+              <span>Buscar Arquivos no PC</span>
+              <input
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileSelectFromPC}
+              />
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="h-px bg-[#E2F4F7] flex-1" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase">ou preencha manualmente</span>
+            <div className="h-px bg-[#E2F4F7] flex-1" />
+          </div>
+
+          <form onSubmit={handleAddDocument} className="space-y-4">
+            <Input
+              label="Nome do Arquivo / Título *"
+              value={newDoc.name}
+              onChange={e => setNewDoc(p => ({ ...p, name: e.target.value }))}
+              placeholder="Ex: Termo_Parceria_2026.pdf ou MTR-9821"
+              required
+            />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Tipo de Documento *</label>
+              <select
+                value={newDoc.type}
+                onChange={e => setNewDoc(p => ({ ...p, type: e.target.value as any }))}
+                className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                required
+              >
+                <option value="">Selecione o tipo de documento...</option>
+                <option value="mtr">MTR (Manifesto de Transporte)</option>
+                <option value="donation_letter">Carta de Doação</option>
+                <option value="partnership_agreement">Termo de Parceria / Contrato</option>
+                <option value="env_license">Licença Ambiental</option>
+                <option value="cnpj_card">Cartão CNPJ</option>
+                <option value="other">Outro Documento</option>
+              </select>
+            </div>
+            <Input
+              label="Observações / Validade"
+              value={newDoc.notes}
+              onChange={e => setNewDoc(p => ({ ...p, notes: e.target.value }))}
+              placeholder="Ex: Válido até 31/12/2026"
+            />
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <Button type="button" variant="outline" onClick={() => setIsDocModalOpen(false)}>Cancelar</Button>
+              <Button type="submit">Salvar Documento</Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      {/* Modal: Adicionar Material */}
+      <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title="Adicionar Material Declarado" size="md">
+        <form onSubmit={handleAddMaterial} className="space-y-4">
+          <Input
+            label="Nome do Material *"
+            value={newMaterial.material_name}
+            onChange={e => setNewMaterial(p => ({ ...p, material_name: e.target.value }))}
+            placeholder="Ex: Papelão Ondulado, Plástico Filme..."
+            required
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Volume Estimado *"
+              type="number"
+              value={newMaterial.estimated_volume}
+              onChange={e => setNewMaterial(p => ({ ...p, estimated_volume: e.target.value }))}
+              placeholder="500"
+              required
+            />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Unidade</label>
+              <select
+                value={newMaterial.unit}
+                onChange={e => setNewMaterial(p => ({ ...p, unit: e.target.value }))}
+                className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none"
+              >
+                <option value="kg">kg</option>
+                <option value="ton">ton</option>
+                <option value="un">un</option>
+                <option value="m³">m³</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsMaterialModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">Salvar Material</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Agendar Coleta */}
+      <Modal isOpen={isCollectionModalOpen} onClose={() => setIsCollectionModalOpen(false)} title="Agendar Coleta de Materiais" size="md">
+        <form onSubmit={handleAddCollection} className="space-y-4">
+          <Input
+            label="Data Programada *"
+            type="date"
+            value={newCollection.scheduled_date}
+            onChange={e => setNewCollection(p => ({ ...p, scheduled_date: e.target.value }))}
+            required
+          />
+          <Input
+            label="Material a Coletar *"
+            value={newCollection.material_name}
+            onChange={e => setNewCollection(p => ({ ...p, material_name: e.target.value }))}
+            placeholder="Ex: Papelão e Sucata"
+            required
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Volume Estimado *"
+              type="number"
+              value={newCollection.estimated_volume}
+              onChange={e => setNewCollection(p => ({ ...p, estimated_volume: e.target.value }))}
+              placeholder="1000"
+              required
+            />
+            <Input
+              label="Motorista"
+              value={newCollection.driver_name}
+              onChange={e => setNewCollection(p => ({ ...p, driver_name: e.target.value }))}
+              placeholder="Ex: José Silva"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsCollectionModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">Agendar Coleta</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Tarefa */}
+      <Modal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} title="Criar Nova Tarefa / Pendência" size="md">
+        <form onSubmit={handleAddTask} className="space-y-4">
+          <Input
+            label="Descrição da Tarefa *"
+            value={newTask.description}
+            onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))}
+            placeholder="Ex: Solicitar novo login de MTR"
+            required
+          />
+          <Input
+            label="Prazo"
+            type="date"
+            value={newTask.due_date}
+            onChange={e => setNewTask(p => ({ ...p, due_date: e.target.value }))}
+          />
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsTaskModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">Criar Tarefa</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Contato */}
+      <Modal isOpen={isInteractionModalOpen} onClose={() => setIsInteractionModalOpen(false)} title="Registrar Contato com Gerador" size="md">
+        <form onSubmit={handleAddInteraction} className="space-y-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-slate-700">Tipo de Contato *</label>
+            <select
+              value={newInteraction.type}
+              onChange={e => setNewInteraction(p => ({ ...p, type: e.target.value }))}
+              className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+              required
+            >
+              <option value="">Selecione o tipo de contato...</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="phone">Ligação Telefônica</option>
+              <option value="email">E-mail</option>
+              <option value="meeting">Reunião Presencial / Online</option>
+              <option value="visit">Visita Técnica</option>
+              <option value="internal_obs">Anotação Interna</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-slate-700">Resumo do Contato *</label>
+            <textarea
+              value={newInteraction.description}
+              onChange={e => setNewInteraction(p => ({ ...p, description: e.target.value }))}
+              placeholder="Descreva os pontos alinhados..."
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none min-h-[90px]"
+              required
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsInteractionModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">Registrar</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Resposta / Parecer Logístico (Idêntico ao da tela de Logística) */}
+      <Modal isOpen={isLogisticsModalOpen} onClose={() => setIsLogisticsModalOpen(false)}
+        title={`Análise Logística — ${supplier.name}`} size="lg">
+        <form onSubmit={handleSaveLogisticsResponse} className="space-y-5">
+
+          {/* Materials recap */}
+          {supplier.materials && supplier.materials.length > 0 && (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
+              <span className="font-bold text-slate-600">Materiais Declarados:</span>
+              <div className="grid grid-cols-2 gap-1 mt-1">
+                {supplier.materials.map((m, i) => (
+                  <span key={i} className="font-semibold text-slate-700">
+                    • {m.material_name}: {formatVolume(m.estimated_volume, m.unit)} ({m.transaction_type === 'purchase' ? 'Compra' : 'Doação'})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Documents attached */}
+          {supplier.attached_documents && supplier.attached_documents.length > 0 && (
+            <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-lg text-xs space-y-1">
+              <span className="font-bold text-indigo-700">Documentos Anexados pelo Comercial:</span>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {supplier.attached_documents.map(d => (
+                  <span key={d.id} className="inline-flex items-center gap-1 font-bold text-indigo-800 bg-white px-2 py-0.5 rounded border border-indigo-200">
+                    <FileCheck size={12} /> {d.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Location */}
+          {supplier.address && (
+            <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-2 rounded-lg">
+              <MapPin size={13} className="text-slate-400" />
+              <span>{supplier.address.street || 'Endereço'}, {supplier.address.number || 'S/N'} — {supplier.address.neighborhood || ''} • {supplier.address.city}/{supplier.address.state}</span>
+            </div>
+          )}
+
+          {/* Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input label="Distância até o local (km)" type="number"
+              value={logisticsForm.distance_km}
+              onChange={e => setLogisticsForm(p => ({ ...p, distance_km: e.target.value }))}
+              placeholder="Ex: 45" />
+
+            <Input label="Custo estimado de frete (R$)" type="number"
+              value={logisticsForm.estimated_cost}
+              onChange={e => setLogisticsForm(p => ({ ...p, estimated_cost: e.target.value }))}
+              placeholder="Ex: 350" />
+
+            {/* Tipo de Veículo */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Tipo de Veículo *</label>
+              <select
+                value={logisticsForm.transport_type}
+                onChange={e => setLogisticsForm(p => ({ ...p, transport_type: e.target.value }))}
+                className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+              >
+                {transportTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              {logisticsForm.transport_type === 'Outros' && (
+                <input
+                  type="text"
+                  placeholder="Digite o outro tipo de transporte..."
+                  value={logisticsForm.custom_transport_type}
+                  onChange={e => setLogisticsForm(p => ({ ...p, custom_transport_type: e.target.value }))}
+                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              )}
+            </div>
+
+            {/* Responsável pelo Transporte */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Responsável pelo Transporte *</label>
+              <select
+                value={logisticsForm.transport_responsible}
+                onChange={e => setLogisticsForm(p => ({ ...p, transport_responsible: e.target.value }))}
+                className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+              >
+                {responsibleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              {logisticsForm.transport_responsible === 'Outros' && (
+                <input
+                  type="text"
+                  placeholder="Digite o responsável..."
+                  value={logisticsForm.custom_transport_responsible}
+                  onChange={e => setLogisticsForm(p => ({ ...p, custom_transport_responsible: e.target.value }))}
+                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              )}
+            </div>
+
+            {/* Frequência Recomendada */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Frequência Recomendada *</label>
+              <select
+                value={logisticsForm.recommended_frequency}
+                onChange={e => setLogisticsForm(p => ({ ...p, recommended_frequency: e.target.value }))}
+                className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+              >
+                {frequencyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              {logisticsForm.recommended_frequency === 'Outros' && (
+                <input
+                  type="text"
+                  placeholder="Especifique a frequência (ex: 2x por semana, a cada 10 dias)..."
+                  value={logisticsForm.custom_frequency}
+                  onChange={e => setLogisticsForm(p => ({ ...p, custom_frequency: e.target.value }))}
+                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              )}
+            </div>
+
+            <Select label="Decisão de Viabilidade *" value={logisticsForm.feasibility}
+              onChange={e => setLogisticsForm(p => ({ ...p, feasibility: e.target.value }))}
+              options={feasibilityOptions} />
+          </div>
+
+            {/* Documentation checklist (shown only when Necessita Informação Adicional) */}
+            {logisticsForm.feasibility === 'NEED_INFO' && (
+              <div className="space-y-2 p-3.5 bg-amber-50/70 border border-amber-300 rounded-xl">
+                <label className="text-xs font-bold text-amber-900 uppercase tracking-widest block">Documentação Pendente a ser Solicitada</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {DOC_CHECKLIST.map(doc => (
+                    <label key={doc.key} className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                      pendingDocs.includes(doc.key)
+                        ? 'border-amber-300 bg-amber-100 text-amber-900'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                    }`}>
+                      <input type="checkbox" className="rounded accent-amber-500"
+                        checked={pendingDocs.includes(doc.key)}
+                        onChange={() => toggleDoc(doc.key)} />
+                      {doc.label}
+                    </label>
+                  ))}
+                </div>
+
+                {pendingDocs.includes('Outros') && (
+                  <input
+                    type="text"
+                    placeholder="Especifique qual outra documentação está pendente..."
+                    value={customPendingDoc}
+                    onChange={e => setCustomPendingDoc(e.target.value)}
+                    className="w-full mt-2 px-3 py-2 text-xs bg-white border border-amber-400 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                    required
+                  />
+                )}
+
+                {pendingDocs.length > 0 && (
+                  <p className="text-[10px] text-amber-700 font-semibold flex items-center gap-1 mt-1">
+                    <AlertTriangle size={10} />
+                    {pendingDocs.length} pendência(s) marcada(s) para Compras providenciar.
+                  </p>
+                )}
+              </div>
+            )}
+
+          {logisticsForm.feasibility === 'NEED_INFO' && (
+            <Input label="O que precisa ser esclarecido com Compras? (Gera pendência automática) *"
+              value={logisticsForm.need_info_reason}
+              onChange={e => setLogisticsForm(p => ({ ...p, need_info_reason: e.target.value }))}
+              placeholder="Ex: Confirmar se o acesso do caminhão Truck comporta portão de 4m" required />
+          )}
+
+          <Input label="Infraestrutura necessária no local"
+            value={logisticsForm.conditioning_infrastructure_needed}
+            onChange={e => setLogisticsForm(p => ({ ...p, conditioning_infrastructure_needed: e.target.value }))}
+            placeholder="Ex: Deixar 2 caçambas de 30m³, disponibilizar paleteira..." />
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-slate-700">Observações Gerais da Logística</label>
+            <textarea value={logisticsForm.notes}
+              onChange={e => setLogisticsForm(p => ({ ...p, notes: e.target.value }))}
+              placeholder="Justifique a decisão, rotas sugeridas, pedágios ou restrições de trânsito..."
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]" />
+          </div>
+
+          {logisticsForm.feasibility === 'FEASIBLE' && (
+            <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700 font-semibold">
+              <CheckCircle size={16} />
+              Este lead será homologado e integrado ao módulo de <strong>Geradores</strong>.
+            </div>
+          )}
+
+          {logisticsForm.feasibility === 'INFEASIBLE' && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-semibold">
+              <XCircle size={16} />
+              Este lead será marcado como <strong>Inviável</strong> e constará em Geradores com status de inviabilidade.
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsLogisticsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">Salvar Parecer</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Responder Informações para Logística (Compras) */}
+      <Modal isOpen={isRespondInfoModalOpen} onClose={() => setIsRespondInfoModalOpen(false)}
+        title={`Esclarecimentos Solicitados pela Logística — ${supplier.name}`} size="lg">
+        <form onSubmit={handleRespondInfoSubmit} className="space-y-5">
+          
+          {/* Card 1: Dúvidas e Solicitações da Logística */}
+          <div className="bg-amber-50/90 border border-amber-300 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+              <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+              O que a Logística precisa saber / solicitou:
+            </div>
+            
+            {/* Main reason / question */}
+            <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs">
+              <p className="text-xs font-bold text-slate-400 uppercase text-[10px] tracking-wider">Dúvida / Esclarecimento Principal:</p>
+              <p className="text-sm font-bold text-amber-950 mt-1 leading-relaxed">
+                {supplier.backlog_reason || activeLogistics?.notes || 'A Logística solicitou esclarecimentos adicionais de rota, acesso ou documentação.'}
+              </p>
+            </div>
+
+            {/* Pending documents checklist from Logistics */}
+            {activeLogistics?.pending_docs && activeLogistics.pending_docs.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">
+                  Documentação Solicitada pela Logística:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeLogistics.pending_docs.map((doc, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1 rounded-lg">
+                      📋 {doc}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Logistics context details */}
+            {activeLogistics && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 border-t border-amber-200 text-xs text-amber-900">
+                <div>
+                  <span className="text-[10px] text-amber-700 font-semibold block">Veículo Planejado:</span>
+                  <span className="font-bold">{activeLogistics.transport_type || 'VUC'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-amber-700 font-semibold block">Distância Estimada:</span>
+                  <span className="font-bold">{activeLogistics.distance_km ? `${activeLogistics.distance_km} km` : 'A calcular'}</span>
+                </div>
+                {activeLogistics.conditioning_infrastructure_needed && (
+                  <div className="col-span-2 sm:col-span-1">
+                    <span className="text-[10px] text-amber-700 font-semibold block">Infraestrutura Solicitada:</span>
+                    <span className="font-bold truncate block" title={activeLogistics.conditioning_infrastructure_needed}>
+                      {activeLogistics.conditioning_infrastructure_needed}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Card 2: Campos de Resposta de Compras */}
+          <div className="space-y-3.5">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                <span>Sua Resposta e Esclarecimentos para a Logística *</span>
+                <span className="text-[10px] font-normal text-slate-400">Seja detalhado sobre acesso, restrições e portão</span>
+              </label>
+              <textarea
+                value={respondInfoText}
+                onChange={e => setRespondInfoText(e.target.value)}
+                placeholder="Ex: Conversei com o responsável Fábio. O portão tem 4,5m de altura livre, comporta caminhão Truck sem problemas de segunda a sexta das 08h às 17h. O contato para recepção do motorista na expedição é (11) 98888-7777..."
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 min-h-[110px]"
+                required
+              />
+            </div>
+
+            {/* Optional Document Upload inside the response */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Upload size={14} className="text-indigo-600" />
+                Anexar Documento ou Foto Solicitada (Opcional)
+              </label>
+              <input
+                type="file"
+                multiple
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (!files || files.length === 0 || !supplier) return;
+
+                  Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    const sizeStr = file.size > 1024 * 1024 
+                      ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+                      : (file.size / 1024).toFixed(0) + ' KB';
+
+                    let inferredType: AttachedDocument['type'] = 'other';
+                    const lower = file.name.toLowerCase();
+                    if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
+                    else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
+                    else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) inferredType = 'partnership_agreement';
+                    else if (lower.includes('licenca') || lower.includes('licença')) inferredType = 'env_license';
+                    else if (lower.includes('cnpj')) inferredType = 'cnpj_card';
+
+                    reader.onload = async () => {
+                      await dbService.addSupplierDocument(supplier.id, {
+                        name: file.name,
+                        size: sizeStr,
+                        file_data: reader.result as string,
+                        type: inferredType,
+                        notes: 'Anexado em resposta à solicitação da Logística'
+                      });
+                      fetchSupplierData();
+                    };
+                    reader.readAsDataURL(file);
+                  });
+                }}
+                className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+              />
+              <p className="text-[10px] text-slate-400">
+                Você pode anexar arquivos aqui (ex: Carta de Doação, Cartão CNPJ, fotos do portão ou doca de carga).
+              </p>
+            </div>
+          </div>
+
+          {/* Banner explicativo de envio */}
+          <div className="flex items-center gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-800 font-medium">
+            <Send size={14} className="shrink-0 text-indigo-600" />
+            <span>
+              Ao clicar em <strong>Enviar Resposta à Logística</strong>, esses esclarecimentos serão registrados e o lead voltará automaticamente para a fila de avaliação da Logística.
+            </span>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsRespondInfoModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5">
+              <Send size={14} />
+              Enviar Resposta à Logística
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+    </div>
+  );
+}

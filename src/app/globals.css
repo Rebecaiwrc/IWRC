@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  --background: #EAF7FA;
+  --foreground: #0E2439;
+  --primary: #2098D1;
+  --primary-hover: #1783B5;
+  --accent-lime: #9ECE42;
+  --border-light: #D4EFF5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background: #EAF7FA;
+  color: #0E2439;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  min-height: 100vh;
+}
+
+/* Custom smooth scrollbar in iWrc cyan */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #E2F4F7;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #A6DEEB;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2098D1;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulseSlow {
+  0%, 100% {
+    transform: scale(1) translate(0, 0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15) translate(20px, -20px);
+    opacity: 0.85;
+  }
+}
+
+@keyframes pulseSlowReverse {
+  0%, 100% {
+    transform: scale(1) translate(0, 0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.2) translate(-20px, 15px);
+    opacity: 0.75;
+  }
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 9s ease-in-out infinite;
+}
+
+.animate-pulse-slow-reverse {
+  animation: pulseSlowReverse 11s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: floatGentle 4.5s ease-in-out infinite;
+}
