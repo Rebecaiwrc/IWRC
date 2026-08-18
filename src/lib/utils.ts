@@ -7,17 +7,38 @@ import {
   ProspectingStatus
 } from '@/types';
 
+// Helpers to get active language
+const getActiveLang = (lang?: 'pt' | 'en'): 'pt' | 'en' => {
+  if (lang) return lang;
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('iwrc_lang');
+    if (saved === 'en' || saved === 'pt') return saved;
+  }
+  return 'pt';
+};
+
 // Stages translator
-export const translateStage = (stage: SupplierStage): string => {
-  const mapping: Record<SupplierStage, string> = {
-    PROSPECTING: 'Prospecção',
-    QUALIFICATION: 'Qualificação',
-    LOGISTICS: 'Análise Logística',
-    DOCUMENTATION: 'Documentação',
-    COLLECTION: 'Preparação de Coleta',
-    OPERATION: 'Ativo/Operacional'
+export const translateStage = (stage: SupplierStage, lang?: 'pt' | 'en'): string => {
+  const currentLang = getActiveLang(lang);
+  const mapping: Record<'pt' | 'en', Record<SupplierStage, string>> = {
+    pt: {
+      PROSPECTING: 'Prospecção',
+      QUALIFICATION: 'Qualificação',
+      LOGISTICS: 'Análise Logística',
+      DOCUMENTATION: 'Documentação',
+      COLLECTION: 'Preparação de Coleta',
+      OPERATION: 'Ativo/Operacional'
+    },
+    en: {
+      PROSPECTING: 'Prospecting',
+      QUALIFICATION: 'Qualification',
+      LOGISTICS: 'Logistics Analysis',
+      DOCUMENTATION: 'Documentation',
+      COLLECTION: 'Collection Prep',
+      OPERATION: 'Active / Operational'
+    }
   };
-  return mapping[stage] || stage;
+  return mapping[currentLang]?.[stage] || stage;
 };
 
 export const getStageColor = (stage: SupplierStage): 'default' | 'info' | 'purple' | 'warning' | 'emerald' => {
@@ -33,15 +54,25 @@ export const getStageColor = (stage: SupplierStage): 'default' | 'info' | 'purpl
 };
 
 // Prospecting status translator (used by Compras team)
-export const translateProspectingStatus = (status: ProspectingStatus): string => {
-  const mapping: Record<ProspectingStatus, string> = {
-    NEW_LEAD: 'Novo Lead',
-    FIRST_CONTACT: 'Primeiro Contato Feito',
-    PRESENTATION_SENT: 'Apresentação Enviada',
-    QUALIFIED: 'Qualificado ✓',
-    WAITING_LOGISTICS: 'Aguard. Logística'
+export const translateProspectingStatus = (status: ProspectingStatus, lang?: 'pt' | 'en'): string => {
+  const currentLang = getActiveLang(lang);
+  const mapping: Record<'pt' | 'en', Record<ProspectingStatus, string>> = {
+    pt: {
+      NEW_LEAD: 'Novo Lead',
+      FIRST_CONTACT: 'Primeiro Contato Feito',
+      PRESENTATION_SENT: 'Apresentação Enviada',
+      QUALIFIED: 'Qualificado ✓',
+      WAITING_LOGISTICS: 'Aguard. Logística'
+    },
+    en: {
+      NEW_LEAD: 'New Lead',
+      FIRST_CONTACT: 'First Contact Made',
+      PRESENTATION_SENT: 'Presentation Sent',
+      QUALIFIED: 'Qualified ✓',
+      WAITING_LOGISTICS: 'Awaiting Logistics'
+    }
   };
-  return mapping[status] || status;
+  return mapping[currentLang]?.[status] || status;
 };
 
 export const getProspectingColor = (status: ProspectingStatus): 'default' | 'warning' | 'info' | 'success' | 'purple' => {
@@ -56,16 +87,27 @@ export const getProspectingColor = (status: ProspectingStatus): 'default' | 'war
 };
 
 // Statuses translator
-export const translateStatus = (status: SupplierStatus): string => {
-  const mapping: Record<SupplierStatus, string> = {
-    PENDING: 'Pendente',
-    IN_PROGRESS: 'Em Andamento',
-    APPROVED: 'Aprovado',
-    REJECTED: 'Rejeitado/Inviável',
-    COMPLETED: 'Concluído',
-    INACTIVE: 'Inativo'
+export const translateStatus = (status: SupplierStatus, lang?: 'pt' | 'en'): string => {
+  const currentLang = getActiveLang(lang);
+  const mapping: Record<'pt' | 'en', Record<SupplierStatus, string>> = {
+    pt: {
+      PENDING: 'Pendente',
+      IN_PROGRESS: 'Em Andamento',
+      APPROVED: 'Aprovado',
+      REJECTED: 'Rejeitado/Inviável',
+      COMPLETED: 'Concluído',
+      INACTIVE: 'Inativo'
+    },
+    en: {
+      PENDING: 'Pending',
+      IN_PROGRESS: 'In Progress',
+      APPROVED: 'Approved',
+      REJECTED: 'Rejected / Infeasible',
+      COMPLETED: 'Completed',
+      INACTIVE: 'Inactive'
+    }
   };
-  return mapping[status] || status;
+  return mapping[currentLang]?.[status] || status;
 };
 
 export const getStatusColor = (status: SupplierStatus): 'warning' | 'info' | 'success' | 'danger' | 'emerald' | 'default' => {
@@ -81,15 +123,25 @@ export const getStatusColor = (status: SupplierStatus): 'warning' | 'info' | 'su
 };
 
 // Feasibility translator
-export const translateFeasibility = (feasibility: FeasibilityStatus): string => {
-  const mapping: Record<FeasibilityStatus, string> = {
-    PENDING: 'Pendente',
-    IN_PROGRESS: 'Em análise',
-    FEASIBLE: 'Viável',
-    INFEASIBLE: 'Inviável',
-    NEED_INFO: 'Necessita info adicional'
+export const translateFeasibility = (feasibility: FeasibilityStatus, lang?: 'pt' | 'en'): string => {
+  const currentLang = getActiveLang(lang);
+  const mapping: Record<'pt' | 'en', Record<FeasibilityStatus, string>> = {
+    pt: {
+      PENDING: 'Pendente',
+      IN_PROGRESS: 'Em análise',
+      FEASIBLE: 'Viável',
+      INFEASIBLE: 'Inviável',
+      NEED_INFO: 'Necessita info adicional'
+    },
+    en: {
+      PENDING: 'Pending',
+      IN_PROGRESS: 'Under Analysis',
+      FEASIBLE: 'Feasible',
+      INFEASIBLE: 'Infeasible',
+      NEED_INFO: 'Needs Info'
+    }
   };
-  return mapping[feasibility] || feasibility;
+  return mapping[currentLang]?.[feasibility] || feasibility;
 };
 
 export const getFeasibilityColor = (feasibility: FeasibilityStatus): 'warning' | 'info' | 'success' | 'danger' | 'purple' => {

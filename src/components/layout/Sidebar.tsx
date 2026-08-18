@@ -21,10 +21,13 @@ import {
   Settings
 } from 'lucide-react';
 import { dbService } from '@/features/shared/services/dbService';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
+import { LanguageSelector } from '@/components/ui/LanguageSelector';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const { user, logout, switchUserById } = useAuth();
+  const { t } = useLanguage();
   
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [logisticsQueueCount, setLogisticsQueueCount] = useState(0);
@@ -82,10 +85,10 @@ export const Sidebar: React.FC = () => {
   };
 
   const getRoleLabel = (role: UserRole) => {
-    if (role === 'SUPER_ADMIN') return 'Super Admin';
-    if (role === 'ADMIN') return 'Gestão';
-    if (role === 'BUYER') return 'Comercial';
-    return 'Logística';
+    if (role === 'SUPER_ADMIN') return t('role.superAdmin', 'Super Admin');
+    if (role === 'ADMIN') return t('role.admin', 'Gestão');
+    if (role === 'BUYER') return t('role.buyer', 'Comercial');
+    return t('role.logistics', 'Logística');
   };
 
   const isLogisticsRole = user?.role === 'LOGISTICS';
@@ -93,23 +96,23 @@ export const Sidebar: React.FC = () => {
 
   const navigationItems = isLogisticsRole
     ? [
-        ...(isSuperAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
-        { name: 'Logística', href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
-        { name: 'Geradores', href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
-        { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
-        { name: 'Recebimentos', href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
-        { name: 'Configurações', href: '/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        ...(isSuperAdmin ? [{ name: t('nav.masterPanel', 'Painel Master'), href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
+        { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
+        { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
+        { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
+        { name: t('nav.dashboard', 'Dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        { name: t('nav.settings', 'Configurações'), href: '/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ]
     : [
-        ...(isSuperAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
-        { name: 'Prospecção', href: '/prospeccao', icon: GitBranch, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER'] },
-        { name: 'Geradores', href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
-        { name: 'Logística', href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
-        { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
-        { name: 'Recebimentos', href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
-        { name: 'Configurações', href: '/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        ...(isSuperAdmin ? [{ name: t('nav.masterPanel', 'Painel Master'), href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
+        { name: t('nav.prospecting', 'Prospecção'), href: '/prospeccao', icon: GitBranch, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER'] },
+        { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
+        { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
+        { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
+        { name: t('nav.dashboard', 'Dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        { name: t('nav.settings', 'Configurações'), href: '/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ];
 
   const allowedItems = navigationItems.filter(item => {
@@ -221,7 +224,15 @@ export const Sidebar: React.FC = () => {
 
         {/* Profile & Switcher Footer */}
         {isExpanded ? (
-          <div className="p-3 border-t border-[#E2F4F7] bg-[#F7FCFD] animate-fadeIn">
+          <div className="p-3 border-t border-[#E2F4F7] bg-[#F7FCFD] animate-fadeIn space-y-2.5">
+            {/* Language Selector Banner */}
+            <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-[#D8EFF5]">
+              <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+                Idioma / Language:
+              </span>
+              <LanguageSelector variant="dropdown" />
+            </div>
+
             {user && (
               <div className="space-y-2.5">
                 <div className="flex items-center gap-2.5 p-2 bg-white rounded-xl border border-[#D8EFF5]">
@@ -242,7 +253,7 @@ export const Sidebar: React.FC = () => {
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-[#CCEAF1] hover:bg-[#EBF7FA] text-[#136F90] rounded-xl text-xs font-bold transition-colors cursor-pointer"
                   >
                     <LogOut size={13} />
-                    Sair do Sistema
+                    {t('nav.logout', 'Sair do Sistema')}
                   </button>
                 </div>
               </div>
@@ -250,6 +261,7 @@ export const Sidebar: React.FC = () => {
           </div>
         ) : (
           <div className="p-2 border-t border-[#E2F4F7] bg-[#F7FCFD] flex flex-col items-center gap-2">
+            <LanguageSelector variant="compact" />
             {user && (
               <div 
                 className="h-8 w-8 rounded-full bg-[#E5F5F8] text-[#2098D1] font-black flex items-center justify-center text-xs border border-[#CCEAF1]"

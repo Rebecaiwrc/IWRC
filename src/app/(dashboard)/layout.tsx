@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { LanguageSelector } from '@/components/ui/LanguageSelector';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -32,7 +33,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen overflow-hidden bg-[#EAF7FA] font-sans">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <main className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
+        {/* Top Utility Bar */}
+        <header className="sticky top-0 z-30 bg-[#EAF7FA]/80 backdrop-blur-md px-6 py-3 border-b border-[#D8EFF5]/60 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-[#146482] uppercase tracking-wider">
+              iWrc Economia Circular • Hub Sorocaba
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <LanguageSelector variant="dropdown" />
+          </div>
+        </header>
+
+        <main className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6 flex-1">
           {children}
         </main>
       </div>

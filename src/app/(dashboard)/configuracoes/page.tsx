@@ -1,7 +1,7 @@
-'use client';
-
 import React, { useState } from 'react';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
+import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { dbService } from '@/features/shared/services/dbService';
 import { Card } from '@/components/ui/Card';
@@ -21,11 +21,13 @@ import {
   Info,
   Sparkles,
   Lock,
-  Smartphone
+  Smartphone,
+  Globe
 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, switchUserById } = useAuth();
+  const { t, language } = useLanguage();
 
   // Profile Form State
   const [profileName, setProfileName] = useState(user?.name || '');
@@ -52,9 +54,9 @@ export default function SettingsPage() {
   // Password strength calculation
   const getPasswordStrength = (pass: string) => {
     if (!pass) return { text: '', color: '', percent: 0 };
-    if (pass.length < 6) return { text: 'Muito fraca (mínimo 6 dígitos)', color: 'bg-rose-500 text-rose-600', percent: 25 };
-    if (pass.length < 8) return { text: 'Média', color: 'bg-amber-500 text-amber-600', percent: 60 };
-    return { text: 'Forte e Segura', color: 'bg-emerald-500 text-emerald-600', percent: 100 };
+    if (pass.length < 6) return { text: language === 'pt' ? 'Muito fraca (mínimo 6 dígitos)' : 'Weak (min 6 chars)', color: 'bg-rose-500 text-rose-600', percent: 25 };
+    if (pass.length < 8) return { text: language === 'pt' ? 'Média' : 'Medium', color: 'bg-amber-500 text-amber-600', percent: 60 };
+    return { text: language === 'pt' ? 'Forte e Segura' : 'Strong & Secure', color: 'bg-emerald-500 text-emerald-600', percent: 100 };
   };
 
   const strength = getPasswordStrength(newPassword);
@@ -63,7 +65,7 @@ export default function SettingsPage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profileName.trim()) {
-      setProfileErrorMsg('O nome não pode ficar em branco.');
+      setProfileErrorMsg(language === 'pt' ? 'O nome não pode ficar em branco.' : 'Name cannot be blank.');
       return;
     }
 
@@ -80,11 +82,11 @@ export default function SettingsPage() {
 
         if (error) throw error;
       }
-      setProfileSuccessMsg('Perfil atualizado com sucesso!');
+      setProfileSuccessMsg(language === 'pt' ? 'Perfil atualizado com sucesso!' : 'Profile updated successfully!');
       setTimeout(() => setProfileSuccessMsg(null), 4000);
     } catch (err: any) {
       console.error(err);
-      setProfileErrorMsg(err.message || 'Erro ao atualizar informações do perfil.');
+      setProfileErrorMsg(err.message || (language === 'pt' ? 'Erro ao atualizar informações do perfil.' : 'Error updating profile info.'));
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -97,19 +99,19 @@ export default function SettingsPage() {
     setPasswordSuccessMsg(null);
 
     if (!currentPassword) {
-      setPasswordErrorMsg('Informe sua senha atual.');
+      setPasswordErrorMsg(language === 'pt' ? 'Informe sua senha atual.' : 'Please enter your current password.');
       return;
     }
     if (!newPassword || newPassword.length < 6) {
-      setPasswordErrorMsg('A nova senha deve ter no mínimo 6 caracteres.');
+      setPasswordErrorMsg(language === 'pt' ? 'A nova senha deve ter no mínimo 6 caracteres.' : 'New password must have at least 6 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordErrorMsg('A confirmação de senha não confere com a nova senha.');
+      setPasswordErrorMsg(language === 'pt' ? 'A confirmação de senha não confere com a nova senha.' : 'Password confirmation does not match.');
       return;
     }
     if (newPassword === currentPassword) {
-      setPasswordErrorMsg('A nova senha não pode ser igual à senha atual.');
+      setPasswordErrorMsg(language === 'pt' ? 'A nova senha não pode ser igual à senha atual.' : 'New password cannot be the same as current password.');
       return;
     }
 
@@ -117,7 +119,7 @@ export default function SettingsPage() {
 
     try {
       if (!isSupabaseConfigured || !supabase || !user?.email) {
-        throw new Error('Serviço de autenticação não está disponível no momento.');
+        throw new Error(language === 'pt' ? 'Serviço de autenticação não está disponível no momento.' : 'Authentication service unavailable.');
       }
 
       // 1. Re-authenticate to verify that current password is correct
@@ -127,7 +129,7 @@ export default function SettingsPage() {
       });
 
       if (signInErr) {
-        throw new Error('A senha atual informada está incorreta.');
+        throw new Error(language === 'pt' ? 'A senha atual informada está incorreta.' : 'Current password entered is incorrect.');
       }
 
       // 2. Update to new password
@@ -137,14 +139,14 @@ export default function SettingsPage() {
 
       if (updateErr) throw updateErr;
 
-      setPasswordSuccessMsg('Sua senha foi alterada com sucesso!');
+      setPasswordSuccessMsg(language === 'pt' ? 'Sua senha foi alterada com sucesso!' : 'Your password was changed successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => setPasswordSuccessMsg(null), 5000);
     } catch (err: any) {
       console.error(err);
-      setPasswordErrorMsg(err.message || 'Falha ao alterar senha.');
+      setPasswordErrorMsg(err.message || (language === 'pt' ? 'Falha ao alterar senha.' : 'Failed to change password.'));
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -152,10 +154,10 @@ export default function SettingsPage() {
 
   const getRoleLabel = (role?: string) => {
     switch (role) {
-      case 'SUPER_ADMIN': return 'Super Administrador (Master)';
-      case 'ADMIN': return 'Administrador Geral';
-      case 'BUYER': return 'Comercial & Compras';
-      case 'LOGISTICS': return 'Logística & Operações';
+      case 'SUPER_ADMIN': return t('role.superAdmin', 'Super Admin');
+      case 'ADMIN': return t('role.admin', 'Administrador Geral');
+      case 'BUYER': return t('role.buyer', 'Comercial & Compras');
+      case 'LOGISTICS': return t('role.logistics', 'Logística & Operações');
       default: return role || 'Usuário';
     }
   };
@@ -171,12 +173,17 @@ export default function SettingsPage() {
               <Sliders size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Configurações & Perfil</h1>
-              <p className="text-xs text-slate-500 mt-0.5">Gerencie seus dados pessoais, preferências de alertas e segurança de acesso.</p>
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {t('settings.title', 'Configurações & Perfil')}
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {t('settings.subtitle', 'Gerencie seus dados pessoais, preferências de alertas e segurança de acesso.')}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <LanguageSelector variant="dropdown" />
             <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5">
               <Shield size={13} className="text-[#2098D1]" />
               {getRoleLabel(user?.role)}
@@ -189,6 +196,22 @@ export default function SettingsPage() {
 
         {/* Left Column: Profile & Account Information */}
         <div className="lg:col-span-1 space-y-6">
+          
+          {/* Language Preference Card */}
+          <Card className="!p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <Globe size={18} className="text-[#2098D1]" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                {t('settings.languageTitle', 'Idioma do Sistema')}
+              </h3>
+            </div>
+            <p className="text-xs text-slate-400">
+              {t('settings.languageSubtitle', 'Escolha o idioma de exibição para todas as telas do ERP.')}
+            </p>
+
+            <LanguageSelector variant="full" className="w-full justify-center" />
+          </Card>
+
           <Card className="!p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
             <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-tr from-[#136F90] to-[#2098D1] text-white flex items-center justify-center font-black text-2xl shadow-lg shadow-[#2098D1]/20">
               {user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -206,9 +229,9 @@ export default function SettingsPage() {
                 <span className="font-bold text-slate-700 dark:text-slate-200">Sorocaba - SP</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Status da Conta:</span>
+                <span className="text-slate-400">Status:</span>
                 <span className="text-emerald-600 font-bold flex items-center gap-1">
-                  <CheckCircle2 size={12} /> Ativa
+                  <CheckCircle2 size={12} /> {language === 'pt' ? 'Ativo' : 'Active'}
                 </span>
               </div>
             </div>
@@ -218,12 +241,12 @@ export default function SettingsPage() {
           <Card className="!p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
             <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
               <Bell size={15} className="text-[#2098D1]" />
-              Preferências de Alertas
+              {t('settings.alertPreferences', 'Preferências de Alertas')}
             </h3>
 
             <div className="space-y-3 text-xs">
               <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 cursor-pointer">
-                <span className="text-slate-700 dark:text-slate-300 font-medium">Novos Leads e Prospecção</span>
+                <span className="text-slate-700 dark:text-slate-300 font-medium">{t('settings.notifyLeads', 'Novos Leads e Prospecção')}</span>
                 <input
                   type="checkbox"
                   checked={notifyNewLeads}
@@ -233,7 +256,7 @@ export default function SettingsPage() {
               </label>
 
               <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 cursor-pointer">
-                <span className="text-slate-700 dark:text-slate-300 font-medium">Agendamento de Coletas</span>
+                <span className="text-slate-700 dark:text-slate-300 font-medium">{t('settings.notifyCollections', 'Agendamento de Coletas')}</span>
                 <input
                   type="checkbox"
                   checked={notifyCollections}
