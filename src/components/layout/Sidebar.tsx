@@ -17,7 +17,8 @@ import {
   RotateCcw,
   Pin,
   PinOff,
-  ShieldCheck
+  ShieldCheck,
+  Settings
 } from 'lucide-react';
 import { dbService } from '@/features/shared/services/dbService';
 
@@ -98,6 +99,7 @@ export const Sidebar: React.FC = () => {
         { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: 'Recebimentos', href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        { name: 'Configurações', href: '/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ]
     : [
         ...(isSuperAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
@@ -107,6 +109,7 @@ export const Sidebar: React.FC = () => {
         { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: 'Recebimentos', href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        { name: 'Configurações', href: '/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ];
 
   const allowedItems = navigationItems.filter(item => {
