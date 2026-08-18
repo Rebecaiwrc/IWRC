@@ -341,36 +341,50 @@ export default function ProspectingPage() {
 
   const updateStatus = async (supplierId: string, newStatus: ProspectingStatus) => {
     const s = suppliers.find(x => x.id === supplierId);
-    if (!s || s.prospecting_status === newStatus) return;
+    if (!s || getLeadStatus(s) === newStatus) return;
     const stage = newStatus === 'WAITING_LOGISTICS' ? 'LOGISTICS'
                 : newStatus === 'QUALIFIED'         ? 'QUALIFICATION' : 'PROSPECTING';
-    try {
-      await dbService.updateSupplier(supplierId, {
-        prospecting_status: newStatus, 
-        current_stage: stage,
-        current_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS'
-      });
-      await dbService.addSupplierStatusHistory({
-        supplier_id: supplierId, 
-        old_stage: s.current_stage, 
-        new_stage: stage,
-        old_status: s.current_status, 
-        new_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS',
-        user_id: currentUser?.id || 'usr-rebeca-buy',
-        notes: 'Status prospecção: ' + translateProspectingStatus(newStatus)
-      });
-      
-      await fetchData();
+    const oldSuppliers = [...suppliers];
 
-      // IF MOVED TO "QUALIFICADO", AUTOMATICALLY OPEN MATERIALS MODAL
-      if (newStatus === 'QUALIFIED') {
-        const updatedSupplier = await dbService.getSupplier(supplierId);
-        if (updatedSupplier) {
-          openMaterialsModal(updatedSupplier, false);
-        }
+    // ⚡ 1. OPTIMISTIC UPDATE: Instant 0ms visual feedback on the board
+    setSuppliers(prev => prev.map(item => {
+      if (item.id === supplierId) {
+        return {
+          ...item,
+          prospecting_status: newStatus,
+          current_stage: stage,
+          current_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS'
+        };
       }
+      return item;
+    }));
+
+    // Auto-open materials modal when qualified
+    if (newStatus === 'QUALIFIED') {
+      openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, false);
+    }
+
+    // ⚡ 2. ASYNC BACKGROUND PERSISTENCE: Save to Supabase in parallel
+    try {
+      await Promise.all([
+        dbService.updateSupplier(supplierId, {
+          prospecting_status: newStatus, 
+          current_stage: stage,
+          current_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS'
+        }),
+        dbService.addSupplierStatusHistory({
+          supplier_id: supplierId, 
+          old_stage: s.current_stage, 
+          new_stage: stage,
+          old_status: s.current_status, 
+          new_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS',
+          user_id: currentUser?.id,
+          notes: 'Status prospecção: ' + translateProspectingStatus(newStatus)
+        })
+      ]);
     } catch (err) { 
-      console.error(err); 
+      console.error('Error persisting status change:', err);
+      setSuppliers(oldSuppliers);
     }
   };
 
@@ -388,15 +402,15 @@ export default function ProspectingPage() {
     if (!activeMaterialSupplier || !currentUser) return;
     setIsSubmitting(true);
     try {
-      // 1. Save materials
-      for (const mat of materials) {
+      // 1. Parallel save materials
+      const materialPromises = materials.map(mat => {
         const finalName = mat.material_name === 'Outro' 
           ? (mat.custom_material_name?.trim() || 'Material Diversos') 
           : mat.material_name;
 
-        if (!finalName) continue;
+        if (!finalName) return Promise.resolve(null);
 
-        await dbService.addSupplierMaterial({
+        return dbService.addSupplierMaterial({
           supplier_id: activeMaterialSupplier.id, 
           material_name: finalName, 
           category: finalName,
@@ -408,9 +422,11 @@ export default function ProspectingPage() {
           storage_form: mat.storage_form, 
           notes: null
         });
-      }
+      });
 
-      // 2. Save all attached files from PC to supplier's permanent documents
+      await Promise.all(materialPromises);
+
+      // 2. Save all attached files
       if (attachedFiles.length > 0) {
         await dbService.addSupplierDocuments(activeMaterialSupplier.id, attachedFiles);
       }
@@ -448,7 +464,7 @@ export default function ProspectingPage() {
       : form.lead_source;
 
     try {
-      await dbService.createSupplier(
+      const createdSupplier = await dbService.createSupplier(
         { 
           name: form.name, 
           trade_name: form.trade_name || form.name, 
@@ -475,6 +491,17 @@ export default function ProspectingPage() {
         }
       );
 
+      // ⚡ Direct state insertion: Appears instantly without waiting for slow table refetch
+      if (createdSupplier) {
+        setSuppliers(prev => [
+          {
+            ...createdSupplier,
+            prospecting_status: 'NEW_LEAD'
+          },
+          ...prev
+        ]);
+      }
+
       setForm({ 
         name: '', 
         trade_name: '', 
@@ -494,8 +521,7 @@ export default function ProspectingPage() {
         internal_responsible_id: currentUser?.id || '' 
       });
 
-      setIsNewLeadOpen(false); 
-      fetchData();
+      setIsNewLeadOpen(false);
     } catch (err: any) { 
       console.error(err); 
       alert(`Falha ao cadastrar lead: ${err.message || err.details || 'Verifique sua conexão com o Supabase.'}`); 
