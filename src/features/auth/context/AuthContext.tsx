@@ -13,6 +13,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   switchProfile: (role: UserRole) => Promise<void>;
   switchUserById: (userId: string) => Promise<void>;
+  markPasswordChanged: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +23,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const markPasswordChanged = () => {
+    setUser(prev => prev ? { ...prev, must_change_password: false } : null);
+  };
+
   useEffect(() => {
     async function loadUser() {
       try {
@@ -30,7 +35,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
             const profile = await dbService.getProfile(session.user.id);
-            setUser(profile);
+            const mustChange = Boolean(
+              session.user.user_metadata?.must_change_password || 
+              profile?.must_change_password
+            );
+            if (profile) {
+              setUser({ ...profile, must_change_password: mustChange });
+            } else {
+              setUser(null);
+            }
           } else {
             setUser(null);
           }
@@ -39,7 +52,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             async (event, session) => {
               if (session?.user) {
                 const profile = await dbService.getProfile(session.user.id);
-                setUser(profile);
+                const mustChange = Boolean(
+                  session.user.user_metadata?.must_change_password || 
+                  profile?.must_change_password
+                );
+                if (profile) {
+                  setUser({ ...profile, must_change_password: mustChange });
+                } else {
+                  setUser(null);
+                }
               } else {
                 setUser(null);
               }
@@ -87,8 +108,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!profile) {
             throw new Error('Usuário autenticado, mas o registro de perfil não foi encontrado na tabela "profiles" do Supabase.');
           }
-          setUser(profile);
-          return profile;
+          const mustChange = Boolean(
+            data.user.user_metadata?.must_change_password || 
+            profile?.must_change_password
+          );
+          const fullUser = { ...profile, must_change_password: mustChange };
+          setUser(fullUser);
+          return fullUser;
         }
 
         throw new Error('Usuário não encontrado no Supabase.');
@@ -131,7 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, logout, switchProfile, switchUserById }}>
+    <AuthContext.Provider value={{ user, loading, error, login, logout, switchProfile, switchUserById, markPasswordChanged }}>
       {children}
     </AuthContext.Provider>
   );

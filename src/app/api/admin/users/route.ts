@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         email: cleanEmail,
         password: cleanPassword,
         email_confirm: true,
-        user_metadata: { name: cleanName }
+        user_metadata: { name: cleanName, must_change_password: true }
       });
 
       if (adminErr) throw adminErr;
@@ -69,7 +69,7 @@ export async function POST(req: Request) {
         email: cleanEmail,
         password: cleanPassword,
         options: {
-          data: { name: cleanName }
+          data: { name: cleanName, must_change_password: true }
         }
       });
 
@@ -79,25 +79,31 @@ export async function POST(req: Request) {
     }
 
     // 2. Upsert profile in `profiles` table
-    const { data: profile, error: profErr } = await supabase
+    const profilePayload: any = {
+      id: userId,
+      email: cleanEmail,
+      name: cleanName,
+      role: userRole,
+      must_change_password: true,
+      created_at: new Date().toISOString()
+    };
+
+    let { data: profile, error: profErr } = await supabase
       .from('profiles')
-      .upsert({
-        id: userId,
-        email: cleanEmail,
-        name: cleanName,
-        role: userRole,
-        created_at: new Date().toISOString()
-      })
+      .upsert(profilePayload)
       .select()
       .single();
 
     if (profErr) {
-      console.warn('Profile upsert warning:', profErr);
+      console.warn('Profile upsert warning (retrying without must_change_password column if missing):', profErr);
+      delete profilePayload.must_change_password;
+      const retry = await supabase.from('profiles').upsert(profilePayload).select().single();
+      profile = retry.data;
     }
 
     return NextResponse.json({ 
       success: true, 
-      user: profile || { id: userId, email, name, role: userRole } 
+      user: profile ? { ...profile, must_change_password: true } : { id: userId, email: cleanEmail, name: cleanName, role: userRole, must_change_password: true } 
     });
   } catch (err: any) {
     console.error('Error creating user in admin API:', err);

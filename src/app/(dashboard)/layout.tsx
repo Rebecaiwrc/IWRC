@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
+import { ForcePasswordChangeModal } from '@/features/auth/components/ForcePasswordChangeModal';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -51,6 +52,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      {/* Mandatory Initial Password Change Modal */}
+      <ForcePasswordChangeModal />
     </div>
   );
 }

@@ -93,6 +93,7 @@ export interface Profile {
   name: string;
   role: UserRole;
   created_at: string;
+  must_change_password?: boolean;
 }
 
 export interface Supplier {

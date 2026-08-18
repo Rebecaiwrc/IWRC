@@ -555,6 +555,9 @@ export default function SuperAdminPanelPage() {
             onChange={e => setNewUserForm(prev => ({ ...prev, password: e.target.value }))}
             required
           />
+          <p className="text-[11px] text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/50 flex items-center gap-1.5 font-medium">
+            🔒 O novo usuário será obrigado a cadastrar uma nova senha pessoal no primeiro acesso ao sistema.
+          </p>
 
           <Select
             label="Função / Cargo do Usuário"
