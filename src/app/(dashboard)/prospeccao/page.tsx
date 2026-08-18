@@ -435,8 +435,7 @@ export default function ProspectingPage() {
           document: '', 
           supplier_type: finalSegment, 
           lead_source: finalLeadSource, 
-          internal_responsible_id: form.internal_responsible_id, 
-          prospecting_status: 'NEW_LEAD' 
+          internal_responsible_id: form.internal_responsible_id || currentUser?.id || undefined
         },
         { 
           zip_code: form.zip_code, 
@@ -477,9 +476,9 @@ export default function ProspectingPage() {
 
       setIsNewLeadOpen(false); 
       fetchData();
-    } catch (err) { 
+    } catch (err: any) { 
       console.error(err); 
-      alert('Falha ao cadastrar lead.'); 
+      alert(`Falha ao cadastrar lead: ${err.message || err.details || 'Verifique sua conexão com o Supabase.'}`); 
     } finally { 
       setIsSubmitting(false); 
     }

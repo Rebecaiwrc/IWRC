@@ -212,42 +212,74 @@ export const dbService = {
     const now = new Date().toISOString();
 
     if (isSupabaseConfigured && supabase) {
-      // 1. Insert Supplier
+      // 1. Insert Supplier with sanitized columns matching PostgreSQL schema
+      const supplierPayload: any = {
+        name: supplierData.name,
+        trade_name: supplierData.trade_name || supplierData.name,
+        document: supplierData.document || null,
+        supplier_type: supplierData.supplier_type || 'Indústria',
+        lead_source: supplierData.lead_source || 'Busca própria',
+        current_stage: supplierData.current_stage || 'PROSPECTING',
+        current_status: supplierData.current_status || 'PENDING',
+        backlog_reason: supplierData.backlog_reason || null,
+      };
+
+      if (supplierData.internal_responsible_id && supplierData.internal_responsible_id.trim() !== '') {
+        supplierPayload.internal_responsible_id = supplierData.internal_responsible_id;
+      }
+
       const { data: supplier, error: sErr } = await supabase
         .from('suppliers')
-        .insert([{
-          ...supplierData,
-          id: supplierId,
-          created_at: now,
-          updated_at: now
-        }])
+        .insert([supplierPayload])
         .select()
         .single();
-      if (sErr) throw sErr;
+      
+      if (sErr) {
+        console.error('Error inserting supplier:', sErr);
+        throw sErr;
+      }
+
+      const insertedSupplierId = supplier.id;
 
       // 2. Insert Address
-      const { error: aErr } = await supabase
-        .from('supplier_addresses')
-        .insert([{
-          ...addressData,
-          supplier_id: supplierId,
-          created_at: now
-        }]);
-      if (aErr) throw aErr;
+      if (addressData) {
+        const { error: aErr } = await supabase
+          .from('supplier_addresses')
+          .insert([{
+            supplier_id: insertedSupplierId,
+            zip_code: addressData.zip_code || '',
+            street: addressData.street || '',
+            number: addressData.number || '',
+            complement: addressData.complement || null,
+            neighborhood: addressData.neighborhood || '',
+            city: addressData.city || '',
+            state: addressData.state || ''
+          }]);
+        if (aErr) {
+          console.error('Error inserting supplier address:', aErr);
+        }
+      }
 
       // 3. Insert Contact
-      const { error: cErr } = await supabase
-        .from('supplier_contacts')
-        .insert([{
-          ...contactData,
-          supplier_id: supplierId,
-          is_primary: true,
-          created_at: now
-        }]);
-      if (cErr) throw cErr;
+      if (contactData) {
+        const { error: cErr } = await supabase
+          .from('supplier_contacts')
+          .insert([{
+            supplier_id: insertedSupplierId,
+            name: contactData.name || supplierData.name || 'Contato Principal',
+            role: contactData.role || null,
+            phone: contactData.phone || null,
+            whatsapp: contactData.whatsapp || null,
+            email: contactData.email || null,
+            is_primary: true
+          }]);
+        if (cErr) {
+          console.error('Error inserting supplier contact:', cErr);
+        }
+      }
 
-      const fullSupplier = await this.getSupplier(supplierId);
-      if (!fullSupplier) throw new Error('Failed to retrieve created supplier');
+      const fullSupplier = await this.getSupplier(insertedSupplierId);
+      if (!fullSupplier) return supplier as Supplier;
       return fullSupplier;
     }
 
