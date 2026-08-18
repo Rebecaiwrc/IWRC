@@ -23,6 +23,7 @@ import {
   Truck
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
 
 export default function DashboardPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   const fetchData = async () => {
     try {
@@ -132,13 +134,15 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-black text-[#0D2439] tracking-tight">Painel Operacional</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-[#0D2439] tracking-tight">
+              {t('dashboard.title', 'Painel Operacional')}
+            </h1>
             <span className="text-[10px] font-black uppercase tracking-wider bg-[#E5F5F8] text-[#136F90] px-2.5 py-0.5 rounded-full border border-[#CCEAF1]">
-              Visão Geral
+              {language === 'pt' ? 'Visão Geral' : 'Overview'}
             </span>
           </div>
           <p className="text-[#3F6880] text-sm mt-1 font-medium">
-            Olá, <span className="font-bold text-[#0D2439]">{user?.name}</span>. Acompanhe a circularidade e o fluxo de geradores hoje.
+            {language === 'pt' ? `Olá, ${user?.name}. Acompanhe a circularidade e o fluxo de geradores hoje.` : `Hello, ${user?.name}. Track waste circularity and generator pipeline today.`}
           </p>
         </div>
         
@@ -146,7 +150,7 @@ export default function DashboardPage() {
           <Link href="/fornecedores?new=true">
             <Button size="md" className="gap-2 shrink-0">
               <Plus size={16} />
-              Novo Gerador
+              {t('action.newSupplier', 'Novo Gerador')}
             </Button>
           </Link>
         )}
@@ -159,7 +163,9 @@ export default function DashboardPage() {
             <Building2 size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total de Leads / Geradores</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'pt' ? 'Total de Leads / Geradores' : 'Total Leads / Generators'}
+            </p>
             <h3 className="text-2xl font-black text-[#0D2439] mt-0.5">{totalSuppliers}</h3>
           </div>
         </Card>
@@ -169,7 +175,9 @@ export default function DashboardPage() {
             <Clock size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Em Negociação</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'pt' ? 'Em Negociação' : 'In Negotiation'}
+            </p>
             <h3 className="text-2xl font-black text-[#0D2439] mt-0.5">{prospectingCount + qualificationCount}</h3>
           </div>
         </Card>
@@ -179,7 +187,9 @@ export default function DashboardPage() {
             <Truck size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Coletas Programadas</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'pt' ? 'Coletas Programadas' : 'Scheduled Collections'}
+            </p>
             <h3 className="text-2xl font-black text-[#0D2439] mt-0.5">{pendingCollections}</h3>
           </div>
         </Card>
@@ -189,7 +199,9 @@ export default function DashboardPage() {
             <Recycle size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Resíduos Processados</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+              {language === 'pt' ? 'Resíduos Processados' : 'Processed Waste'}
+            </p>
             <h3 className="text-2xl font-black text-[#0D2439] mt-0.5">{formatVolume(totalWeight, 'kg')}</h3>
           </div>
         </Card>

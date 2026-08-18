@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
 import {
   translateFeasibility,
   getFeasibilityColor,
@@ -83,6 +84,7 @@ export const feasibilityOptions = [
 
 export default function LogisticsPage() {
   const { user: currentUser } = useAuth();
+  const { t, language } = useLanguage();
 
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -527,21 +529,23 @@ export default function LogisticsPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-slate-900 leading-tight">Logística & Coletas</h1>
+        <h1 className="text-2xl font-black text-slate-900 leading-tight">
+          {t('logistics.title', 'Logística & Coletas')}
+        </h1>
         <p className="text-slate-500 text-sm mt-1">
-          Analise a viabilidade dos leads enviados pelo Comercial e realize os agendamentos operacionais de coleta.
+          {t('logistics.subtitle', 'Analise a viabilidade dos leads enviados pelo Comercial e realize os agendamentos operacionais de coleta.')}
         </p>
       </div>
 
       {/* Flow banner */}
       <div className="flex items-center gap-2 text-xs font-medium text-slate-500 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-2.5 overflow-x-auto flex-nowrap">
-        <span className="flex items-center gap-1 text-indigo-600 font-bold whitespace-nowrap"><Truck size={12} /> Compras qualifica</span>
+        <span className="flex items-center gap-1 text-indigo-600 font-bold whitespace-nowrap"><Truck size={12} /> {language === 'pt' ? 'Compras qualifica' : 'Commercial qualifies'}</span>
         <ArrowRight size={12} className="text-indigo-300 shrink-0" />
-        <span className="font-bold text-indigo-700 whitespace-nowrap">Logística responde viabilidade</span>
+        <span className="font-bold text-indigo-700 whitespace-nowrap">{language === 'pt' ? 'Logística responde viabilidade' : 'Logistics evaluates feasibility'}</span>
         <ArrowRight size={12} className="text-indigo-300 shrink-0" />
-        <span className="flex items-center gap-1 text-purple-700 font-bold whitespace-nowrap"><Building2 size={12} /> Exibição em Geradores</span>
+        <span className="flex items-center gap-1 text-purple-700 font-bold whitespace-nowrap"><Building2 size={12} /> {language === 'pt' ? 'Exibição em Geradores' : 'Generator Registry'}</span>
         <ArrowRight size={12} className="text-indigo-300 shrink-0" />
-        <span className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap"><CalendarCheck size={12} /> Agendamento de Coleta</span>
+        <span className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap"><CalendarCheck size={12} /> {language === 'pt' ? 'Agendamento de Coleta' : 'Collection Scheduled'}</span>
       </div>
 
       {/* Tabs Navigation */}
@@ -549,21 +553,21 @@ export default function LogisticsPage() {
         <button onClick={() => setActiveTab('queue')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'queue' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
           <Clock size={14} />
-          Aguardando Análise
+          {language === 'pt' ? 'Aguardando Análise' : 'Awaiting Analysis'}
           {queue.length > 0 && <span className="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">{queue.length}</span>}
         </button>
 
         <button onClick={() => setActiveTab('scheduling')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'scheduling' ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
           <Calendar size={14} />
-          Agendamento de Coletas
+          {language === 'pt' ? 'Agendamento de Coletas' : 'Collection Scheduling'}
           {schedulingQueue.length > 0 && <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">{schedulingQueue.length}</span>}
         </button>
 
         <button onClick={() => setActiveTab('history')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
           <CheckCircle size={14} />
-          Histórico de Pareceres
+          {language === 'pt' ? 'Histórico de Pareceres' : 'Opinion History'}
           <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full font-black">{history.length}</span>
         </button>
       </div>
@@ -574,20 +578,24 @@ export default function LogisticsPage() {
           {queue.length === 0 ? (
             <div className="p-12 text-center text-slate-400 space-y-2">
               <Clock size={36} className="mx-auto text-slate-300 opacity-60" />
-              <p className="font-semibold text-sm">Nenhum lead pendente de análise inicial no momento.</p>
-              <p className="text-xs text-slate-400">Assim que Compras mandar um lead para análise, ele aparecerá aqui. Após responder, ele vai para Geradores.</p>
+              <p className="font-semibold text-sm">
+                {language === 'pt' ? 'Nenhum lead pendente de análise inicial no momento.' : 'No leads pending initial analysis at the moment.'}
+              </p>
+              <p className="text-xs text-slate-400">
+                {language === 'pt' ? 'Assim que Compras mandar um lead para análise, ele aparecerá aqui.' : 'Once Commercial sends a lead for analysis, it will appear here.'}
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto text-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <th className="px-6 py-4">Lead</th>
-                    <th className="px-6 py-4">Endereço de Coleta</th>
-                    <th className="px-6 py-4">Materiais Declarados</th>
-                    <th className="px-6 py-4">Documentos / Anexos</th>
-                    <th className="px-6 py-4">Responsável Comercial</th>
-                    <th className="px-6 py-4 text-right">Ações</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Lead / Gerador' : 'Lead / Generator'}</th>
+                    <th className="px-6 py-4">{t('logistics.colAddress', 'Endereço de Coleta')}</th>
+                    <th className="px-6 py-4">{t('logistics.colMaterials', 'Materiais Declarados')}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Documentos / Anexos' : 'Documents / Attachments'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Responsável Comercial' : 'Commercial Responsible'}</th>
+                    <th className="px-6 py-4 text-right">{t('suppliers.actions', 'Ações')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

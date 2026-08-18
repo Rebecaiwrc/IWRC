@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { 
   translateStage, 
   getStageColor, 
@@ -72,6 +73,7 @@ export default function SupplierDetailPage() {
   const router = useRouter();
   const supplierId = params.id as string;
   const { user: currentUser } = useAuth();
+  const { t, language } = useLanguage();
 
   // Data state
   const [supplier, setSupplier] = useState<Supplier | null>(null);

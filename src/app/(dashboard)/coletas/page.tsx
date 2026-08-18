@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { dbService } from '@/features/shared/services/dbService';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { Collection } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -24,6 +25,7 @@ import {
 import Link from 'next/link';
 
 export default function CollectionsPage() {
+  const { t, language } = useLanguage();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,7 +48,9 @@ export default function CollectionsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="h-10 w-10 border-4 border-slate-200 border-t-emerald-600 rounded-full animate-spin" />
-        <p className="text-sm text-slate-500 font-medium">Carregando coletas...</p>
+        <p className="text-sm text-slate-500 font-medium">
+          {language === 'pt' ? 'Carregando coletas...' : 'Loading collections...'}
+        </p>
       </div>
     );
   }
@@ -56,27 +60,31 @@ export default function CollectionsPage() {
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-slate-900 leading-tight">Programação de Coletas</h1>
-        <p className="text-slate-500 text-sm mt-1">Acompanhe as coletas programadas e realize o recebimento dos materiais.</p>
+        <h1 className="text-2xl font-black text-slate-900 leading-tight">
+          {t('collections.title', 'Programação de Coletas')}
+        </h1>
+        <p className="text-slate-500 text-sm mt-1">
+          {t('collections.subtitle', 'Acompanhe as coletas programadas e realize o recebimento dos materiais.')}
+        </p>
       </div>
 
       {/* Collections list */}
       <Card className="overflow-hidden !p-0 border border-slate-200 dark:border-slate-800">
         {collections.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
-            Nenhuma coleta cadastrada.
+            {language === 'pt' ? 'Nenhuma coleta cadastrada.' : 'No collections registered yet.'}
           </div>
         ) : (
           <div className="overflow-x-auto text-sm">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="px-6 py-4">Data Prevista</th>
-                  <th className="px-6 py-4">Fornecedor</th>
-                  <th className="px-6 py-4">Materiais Previstos</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Operação (Motorista/Frete)</th>
-                  <th className="px-6 py-4 text-right">Ação</th>
+                  <th className="px-6 py-4">{t('collections.colDate', 'Data Prevista')}</th>
+                  <th className="px-6 py-4">{t('collections.colGenerator', 'Gerador / Fornecedor')}</th>
+                  <th className="px-6 py-4">{language === 'pt' ? 'Materiais Previstos' : 'Expected Materials'}</th>
+                  <th className="px-6 py-4">{t('collections.colStatus', 'Status')}</th>
+                  <th className="px-6 py-4">{t('collections.colVehicle', 'Operação (Motorista/Frete)')}</th>
+                  <th className="px-6 py-4 text-right">{t('suppliers.actions', 'Ação')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

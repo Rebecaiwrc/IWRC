@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { formatDate, formatVolume } from '@/lib/utils';
 import { Scale, Building2, Calendar, ClipboardCheck, Plus, Trash2 } from 'lucide-react';
 
@@ -34,6 +35,7 @@ export default function ReceiptsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user: currentUser } = useAuth();
+  const { t, language } = useLanguage();
   
   const targetCollectionId = searchParams.get('collectionId');
 
@@ -253,8 +255,12 @@ export default function ReceiptsPage() {
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-slate-900 leading-tight">Recebimento de Materiais (Balança)</h1>
-        <p className="text-slate-500 text-sm mt-1">Registrar pesagem final e controle físico de entrada de materiais na base.</p>
+        <h1 className="text-2xl font-black text-slate-900 leading-tight">
+          {t('receipts.title', 'Balança e Recebimento de Cargas')}
+        </h1>
+        <p className="text-slate-500 text-sm mt-1">
+          {t('receipts.subtitle', 'Registro de pesagem de entrada, pesagem de saída, MTR digital e cálculo de peso líquido.')}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -264,7 +270,7 @@ export default function ReceiptsPage() {
           <Card>
             <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3 mb-6">
               <Scale size={16} className="text-emerald-600" />
-              Lançamento de Pesagem
+              {language === 'pt' ? 'Lançamento de Pesagem' : 'Weighbridge Record Entry'}
             </h3>
 
             <form onSubmit={handleSaveReceipt} className="space-y-6">

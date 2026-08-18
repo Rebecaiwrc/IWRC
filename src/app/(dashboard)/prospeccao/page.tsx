@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { translateProspectingStatus, formatDate, formatCep, fetchAddressByCep } from '@/lib/utils';
 import { 
   Plus, 
@@ -126,16 +127,17 @@ const newLine = (): MaterialLine => ({
 
 export default function ProspectingPage() {
   const { user: currentUser } = useAuth();
+  const { t, language } = useLanguage();
   
-  // Data State
+  // Data States
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // View Controls
+  // View Preference: Kanban or List/Table
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
-  const [cardDensity, setCardDensity] = useState<'detailed' | 'compact'>('detailed');
-  const [showMetrics, setShowMetrics] = useState<boolean>(true);
+  const [cardDensity, setCardDensity] = useState<'compact' | 'detailed'>('detailed');
+  const [showMetrics, setShowMetrics] = useState(true);
 
   // Initialize and persist showMetrics in localStorage
   useEffect(() => {
@@ -606,12 +608,16 @@ export default function ProspectingPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Funil de Prospecção</h1>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              {t('prospecting.title', 'Funil de Prospecção')}
+            </h1>
             <span className="text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-              {suppliers.length} leads em prospecção
+              {suppliers.length} {language === 'pt' ? 'leads em prospecção' : 'leads in prospecting'}
             </span>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gerencie contatos comerciais e envie os qualificados para validação logística.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            {t('prospecting.subtitle', 'Gerencie contatos comerciais e envie os qualificados para validação logística.')}
+          </p>
         </div>
         
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
@@ -624,7 +630,7 @@ export default function ProspectingPage() {
                   ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' 
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="Visualização em Funil Kanban"
+              title="Kanban"
             >
               <LayoutGrid size={14} />
               Kanban
@@ -636,10 +642,10 @@ export default function ProspectingPage() {
                   ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' 
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="Visualização em Lista / Tabela (+200 leads)"
+              title="Table / List"
             >
               <TableIcon size={14} />
-              Tabela
+              {t('prospecting.viewTable', 'Tabela')}
             </button>
           </div>
 
@@ -650,7 +656,7 @@ export default function ProspectingPage() {
               title={cardDensity === 'detailed' ? 'Modo Compacto' : 'Modo Detalhado'}
             >
               {cardDensity === 'detailed' ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-              <span>{cardDensity === 'detailed' ? 'Compacto' : 'Detalhado'}</span>
+              <span>{cardDensity === 'detailed' ? (language === 'pt' ? 'Compacto' : 'Compact') : (language === 'pt' ? 'Detalhado' : 'Detailed')}</span>
             </button>
           )}
 
@@ -662,15 +668,14 @@ export default function ProspectingPage() {
                 ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:text-slate-900 dark:hover:text-white'
                 : 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
             }`}
-            title={showMetrics ? 'Ocultar indicadores e resumo do funil' : 'Exibir indicadores e resumo do funil'}
           >
             {showMetrics ? <EyeOff size={13} /> : <Eye size={13} />}
-            <span>{showMetrics ? 'Ocultar Indicadores' : 'Mostrar Indicadores'}</span>
+            <span>{showMetrics ? (language === 'pt' ? 'Ocultar Indicadores' : 'Hide Metrics') : (language === 'pt' ? 'Mostrar Indicadores' : 'Show Metrics')}</span>
           </button>
 
           {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
             <Button onClick={() => setIsNewLeadOpen(true)} className="gap-2 shrink-0 shadow-sm">
-              <Plus size={16}/> Cadastrar Lead
+              <Plus size={16}/> {t('action.newLead', 'Cadastrar Lead')}
             </Button>
           )}
         </div>

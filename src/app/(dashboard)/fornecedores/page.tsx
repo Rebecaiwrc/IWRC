@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { 
   translateStage, 
   getStageColor, 
@@ -42,6 +43,7 @@ export default function SuppliersPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user: currentUser } = useAuth();
+  const { t, language } = useLanguage();
   
   // Data State
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -286,20 +288,22 @@ export default function SuppliersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black text-slate-900 leading-tight">Geradores Homologados</h1>
+            <h1 className="text-2xl font-black text-slate-900 leading-tight">
+              {t('suppliers.title', 'Geradores Homologados')}
+            </h1>
             <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-              {filteredSuppliers.length} geradores ativos
+              {filteredSuppliers.length} {language === 'pt' ? 'geradores ativos' : 'active generators'}
             </span>
           </div>
           <p className="text-slate-500 text-sm mt-1">
-            Empresas e condomínios com retorno da Logística ou homologados para rotinas de coleta e documentação.
+            {t('suppliers.subtitle', 'Empresas e condomínios com retorno da Logística ou homologados para rotinas de coleta e documentação.')}
           </p>
         </div>
         
         {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
           <Button onClick={() => setIsModalOpen(true)} className="gap-2 shrink-0">
             <Plus size={16} />
-            Cadastrar Gerador Direto
+            {t('action.newSupplier', 'Cadastrar Gerador Direto')}
           </Button>
         )}
       </div>
@@ -313,10 +317,10 @@ export default function SuppliersPage() {
             </div>
             <div>
               <span className="font-bold text-sm text-amber-950 block">
-                🔔 Atenção Compras: {needInfoSuppliers.length} gerador(es) aguardando informações adicionais!
+                🔔 {language === 'pt' ? `Atenção Compras: ${needInfoSuppliers.length} gerador(es) aguardando informações adicionais!` : `Notice Commercial: ${needInfoSuppliers.length} generator(s) awaiting additional information!`}
               </span>
               <span className="text-amber-800 text-xs mt-0.5 block">
-                A Logística respondeu a análise solicitando esclarecimentos adicionais de acesso ou documentação.
+                {language === 'pt' ? 'A Logística respondeu a análise solicitando esclarecimentos adicionais de acesso ou documentação.' : 'Logistics requested additional access or documentation details.'}
               </span>
             </div>
           </div>
@@ -324,7 +328,7 @@ export default function SuppliersPage() {
             onClick={() => setStageFilter('NEED_INFO')}
             className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs transition-colors shrink-0 cursor-pointer shadow-xs"
           >
-            Filtrar Pendências de Info ({needInfoSuppliers.length})
+            {language === 'pt' ? `Filtrar Pendências de Info (${needInfoSuppliers.length})` : `Filter Pending Info (${needInfoSuppliers.length})`}
           </button>
         </div>
       )}
@@ -333,17 +337,17 @@ export default function SuppliersPage() {
       <Card className="flex flex-col md:flex-row gap-4 items-end">
         <div className="flex-1 w-full">
           <Input
-            label="Pesquisa Rápida"
+            label={language === 'pt' ? 'Pesquisa Rápida' : 'Quick Search'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por Código (GER-xxx), Razão Social, Fantasia, Segmento ou Cidade..."
+            placeholder={t('suppliers.searchPlaceholder', 'Buscar por Código (GER-xxx), Razão Social, Fantasia, Segmento ou Cidade...')}
             className="w-full"
           />
         </div>
         
         <div className="w-full md:w-52">
           <Select
-            label="Etapa Operacional"
+            label={language === 'pt' ? 'Etapa Operacional' : 'Operational Stage'}
             value={stageFilter}
             onChange={(e) => setStageFilter(e.target.value)}
             options={stageOptions}
@@ -352,11 +356,11 @@ export default function SuppliersPage() {
 
         <div className="w-full md:w-56">
           <Select
-            label="Responsável Interno"
+            label={language === 'pt' ? 'Responsável Comercial' : 'Commercial Responsible'}
             value={responsibleFilter}
             onChange={(e) => setResponsibleFilter(e.target.value)}
             options={[
-              { value: '', label: 'Todos os responsáveis' },
+              { value: '', label: language === 'pt' ? 'Todos os responsáveis' : 'All responsibles' },
               ...profiles.map(p => ({ value: p.id, label: p.name }))
             ]}
           />
@@ -368,23 +372,27 @@ export default function SuppliersPage() {
         {filteredSuppliers.length === 0 ? (
           <div className="p-16 text-center text-slate-400">
             <Building2 size={36} className="mx-auto text-slate-300 mb-2 opacity-60" />
-            <p className="font-semibold text-sm">Nenhum gerador ativo encontrado para os filtros selecionados.</p>
-            <p className="text-xs text-slate-400 mt-1">Os leads aprovados pela Logística aparecem automaticamente aqui.</p>
+            <p className="font-semibold text-sm">
+              {language === 'pt' ? 'Nenhum gerador ativo encontrado para os filtros selecionados.' : 'No active generators found for the selected filters.'}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {language === 'pt' ? 'Os leads aprovados pela Logística aparecem automaticamente aqui.' : 'Leads approved by logistics will appear here automatically.'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="px-6 py-4">Código & Gerador</th>
-                  <th className="px-6 py-4">Segmento</th>
-                  <th className="px-6 py-4">Localização</th>
-                  <th className="px-6 py-4">Contato</th>
-                  <th className="px-6 py-4">Etapa / Situação</th>
-                  <th className="px-6 py-4">Última Coleta</th>
-                  <th className="px-6 py-4">MTR / Acesso</th>
-                  <th className="px-6 py-4">Responsável</th>
-                  <th className="px-6 py-4 text-right">Ações</th>
+                  <th className="px-6 py-4">{t('suppliers.colName', 'Código & Gerador')}</th>
+                  <th className="px-6 py-4">{t('suppliers.colSegment', 'Segmento')}</th>
+                  <th className="px-6 py-4">{t('suppliers.colCity', 'Localização')}</th>
+                  <th className="px-6 py-4">{language === 'pt' ? 'Contato' : 'Contact'}</th>
+                  <th className="px-6 py-4">{t('suppliers.colStage', 'Etapa / Situação')}</th>
+                  <th className="px-6 py-4">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
+                  <th className="px-6 py-4">{language === 'pt' ? 'MTR / Acesso' : 'MTR / Access'}</th>
+                  <th className="px-6 py-4">{t('suppliers.colResponsible', 'Responsável')}</th>
+                  <th className="px-6 py-4 text-right">{t('suppliers.actions', 'Ações')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
