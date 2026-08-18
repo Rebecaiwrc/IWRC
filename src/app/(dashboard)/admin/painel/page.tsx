@@ -179,6 +179,28 @@ export default function SuperAdminPanelPage() {
     );
   }
 
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.email?.toLowerCase().includes('adm@123.com');
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center max-w-md mx-auto p-6">
+        <div className="p-4 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-600">
+          <Lock size={36} />
+        </div>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white">Acesso Restrito ao Super Admin</h2>
+        <p className="text-sm text-slate-500">
+          Este centro de controle e gerenciamento de infraestrutura é de uso exclusivo do Super Administrador do sistema.
+        </p>
+        <Link
+          href="/prospeccao"
+          className="mt-2 bg-[#2098D1] hover:bg-[#1984B8] text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-[#2098D1]/20 transition-all"
+        >
+          Voltar para a Área Operacional
+        </Link>
+      </div>
+    );
+  }
+
   const dbPercent = metrics?.dbUsagePercentage || 0;
   const isHealthyQuota = dbPercent < 50;
   const isWarningQuota = dbPercent >= 50 && dbPercent < 80;

@@ -88,11 +88,11 @@ export const Sidebar: React.FC = () => {
   };
 
   const isLogisticsRole = user?.role === 'LOGISTICS';
-  const isSuperAdminOrAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.email?.toLowerCase().includes('adm@123.com');
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.email?.toLowerCase().includes('adm@123.com');
 
   const navigationItems = isLogisticsRole
     ? [
-        ...(isSuperAdminOrAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN', 'ADMIN'] }] : []),
+        ...(isSuperAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
         { name: 'Logística', href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
         { name: 'Geradores', href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
         { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
@@ -100,7 +100,7 @@ export const Sidebar: React.FC = () => {
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ]
     : [
-        ...(isSuperAdminOrAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN', 'ADMIN'] }] : []),
+        ...(isSuperAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
         { name: 'Prospecção', href: '/prospeccao', icon: GitBranch, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER'] },
         { name: 'Geradores', href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
         { name: 'Logística', href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
