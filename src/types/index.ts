@@ -1,5 +1,33 @@
 // Database Enums
-export type UserRole = 'ADMIN' | 'BUYER' | 'LOGISTICS';
+export type UserRole = 'ADMIN' | 'BUYER' | 'LOGISTICS' | 'SUPER_ADMIN';
+
+export interface SystemHealthStatus {
+  service: string;
+  status: 'ONLINE' | 'DEGRADED' | 'OFFLINE';
+  latencyMs: number;
+  message?: string;
+  lastChecked: string;
+}
+
+export interface DatabaseQuotaMetrics {
+  totalRows: number;
+  totalSuppliers: number;
+  totalAddresses: number;
+  totalContacts: number;
+  totalMaterials: number;
+  totalCollections: number;
+  totalReceipts: number;
+  totalInteractions: number;
+  totalHistory: number;
+  totalTasks: number;
+  totalProfiles: number;
+  estimatedDbSizeMb: number;
+  freeTierDbLimitMb: number; // 500 MB
+  dbUsagePercentage: number;
+  activeUsersMonth: number;
+  freeTierMauLimit: number; // 50,000 MAU
+  mauUsagePercentage: number;
+}
 
 export type SupplierStage =
   | 'PROSPECTING'

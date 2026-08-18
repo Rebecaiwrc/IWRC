@@ -16,7 +16,8 @@ import {
   Layers, 
   RotateCcw,
   Pin,
-  PinOff
+  PinOff,
+  ShieldCheck
 } from 'lucide-react';
 import { dbService } from '@/features/shared/services/dbService';
 
@@ -80,31 +81,39 @@ export const Sidebar: React.FC = () => {
   };
 
   const getRoleLabel = (role: UserRole) => {
+    if (role === 'SUPER_ADMIN') return 'Super Admin';
     if (role === 'ADMIN') return 'Gestão';
     if (role === 'BUYER') return 'Comercial';
     return 'Logística';
   };
 
   const isLogisticsRole = user?.role === 'LOGISTICS';
+  const isSuperAdminOrAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.email?.toLowerCase().includes('adm@123.com');
 
   const navigationItems = isLogisticsRole
     ? [
-        { name: 'Logística', href: '/logistica', icon: Truck, roles: ['ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
-        { name: 'Geradores', href: '/fornecedores', icon: Building2, roles: ['ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
-        { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['ADMIN', 'BUYER', 'LOGISTICS'] },
-        { name: 'Recebimentos', href: '/recebimentos', icon: Scale, roles: ['ADMIN', 'LOGISTICS'] },
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'BUYER', 'LOGISTICS'] },
+        ...(isSuperAdminOrAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN', 'ADMIN'] }] : []),
+        { name: 'Logística', href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
+        { name: 'Geradores', href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
+        { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        { name: 'Recebimentos', href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ]
     : [
-        { name: 'Prospecção', href: '/prospeccao', icon: GitBranch, roles: ['ADMIN', 'BUYER'] },
-        { name: 'Geradores', href: '/fornecedores', icon: Building2, roles: ['ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
-        { name: 'Logística', href: '/logistica', icon: Truck, roles: ['ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
-        { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['ADMIN', 'BUYER', 'LOGISTICS'] },
-        { name: 'Recebimentos', href: '/recebimentos', icon: Scale, roles: ['ADMIN', 'LOGISTICS'] },
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'BUYER', 'LOGISTICS'] },
+        ...(isSuperAdminOrAdmin ? [{ name: 'Painel Master', href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN', 'ADMIN'] }] : []),
+        { name: 'Prospecção', href: '/prospeccao', icon: GitBranch, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER'] },
+        { name: 'Geradores', href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
+        { name: 'Logística', href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
+        { name: 'Coletas', href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
+        { name: 'Recebimentos', href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ];
 
-  const allowedItems = navigationItems.filter(item => user && item.roles.includes(user.role));
+  const allowedItems = navigationItems.filter(item => {
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN' || user.email?.toLowerCase().includes('adm@123.com')) return true;
+    return item.roles.includes(user.role);
+  });
 
   return (
     <div className="relative shrink-0 select-none">

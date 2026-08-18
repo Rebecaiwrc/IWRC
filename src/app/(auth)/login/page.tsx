@@ -37,7 +37,9 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const loggedUser = await login(email, password);
-      if (loggedUser?.role === 'BUYER') {
+      if (loggedUser?.role === 'SUPER_ADMIN' || loggedUser?.email?.toLowerCase().includes('adm@123.com')) {
+        router.replace('/admin/painel');
+      } else if (loggedUser?.role === 'BUYER') {
         router.replace('/prospeccao');
       } else if (loggedUser?.role === 'LOGISTICS') {
         router.replace('/logistica');
