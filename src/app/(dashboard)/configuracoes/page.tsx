@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
