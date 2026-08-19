@@ -509,7 +509,39 @@ export const dbService = {
 
   async deleteSupplier(id: string): Promise<void> {
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('suppliers').delete().eq('id', id);
+      try {
+        // Safe cascade deletion of child records to satisfy FK constraints in Supabase
+        const { data: receiptsData } = await supabase.from('receipts').select('id').eq('supplier_id', id);
+        if (receiptsData && receiptsData.length > 0) {
+          const receiptIds = receiptsData.map(r => r.id);
+          await supabase.from('receipt_items').delete().in('receipt_id', receiptIds);
+          await supabase.from('receipts').delete().eq('supplier_id', id);
+        }
+
+        const { data: collectionsData } = await supabase.from('collections').select('id').eq('supplier_id', id);
+        if (collectionsData && collectionsData.length > 0) {
+          const collectionIds = collectionsData.map(c => c.id);
+          await supabase.from('collection_items').delete().in('collection_id', collectionIds);
+          await supabase.from('collections').delete().eq('supplier_id', id);
+        }
+
+        await supabase.from('logistics_analyses').delete().eq('supplier_id', id);
+        await supabase.from('supplier_tasks').delete().eq('supplier_id', id);
+        await supabase.from('supplier_interactions').delete().eq('supplier_id', id);
+        await supabase.from('supplier_status_history').delete().eq('supplier_id', id);
+        await supabase.from('supplier_materials').delete().eq('supplier_id', id);
+        await supabase.from('supplier_contacts').delete().eq('supplier_id', id);
+        await supabase.from('supplier_addresses').delete().eq('supplier_id', id);
+
+        const { error } = await supabase.from('suppliers').delete().eq('id', id);
+        if (error) {
+          console.error('Supabase error deleting supplier:', error);
+          throw new Error(error.message || 'Erro ao excluir gerador.');
+        }
+      } catch (err: any) {
+        console.error('Error during supplier cascade deletion:', err);
+        throw new Error(err.message || 'Falha ao apagar gerador e registros relacionados.');
+      }
       return;
     }
 
