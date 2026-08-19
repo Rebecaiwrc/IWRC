@@ -115,6 +115,7 @@ export default function SaidasPage() {
   });
 
   const isBuyer = currentUser?.role === 'BUYER';
+  const canManageDispatches = currentUser?.role === 'LOGISTICS' || currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
   const isResponsibleForSupplier = useCallback((s?: Supplier | null) => {
     if (!s || !currentUser) return false;
@@ -196,6 +197,11 @@ export default function SaidasPage() {
 
   const handleSaveDispatch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManageDispatches) {
+      alert(language === 'pt' ? 'Apenas a equipe de Logística e Administradores podem registrar saídas de materiais do Hub.' : 'Only Logistics and Administrators can register material dispatches.');
+      return;
+    }
+
     if (!form.buyer_name || !form.quantity_kg) {
       alert(language === 'pt' ? 'Preencha o comprador e a quantidade de material.' : 'Please fill in buyer and quantity.');
       return;
@@ -255,6 +261,11 @@ export default function SaidasPage() {
   };
 
   const handleDeleteDispatch = async (id: string, buyer: string) => {
+    if (!canManageDispatches) {
+      alert(language === 'pt' ? 'Apenas a equipe de Logística e Administradores podem excluir saídas de materiais.' : 'Only Logistics and Administrators can delete material dispatches.');
+      return;
+    }
+
     if (!confirm(language === 'pt' ? `Deseja realmente excluir a saída para "${buyer}"?` : `Do you really want to delete dispatch for "${buyer}"?`)) return;
     try {
       await dbService.deleteMaterialDispatch(id);
@@ -314,13 +325,15 @@ export default function SaidasPage() {
             </span>
           )}
 
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold gap-2 shadow-lg shadow-purple-600/20 rounded-xl"
-          >
-            <Plus size={16} />
-            {language === 'pt' ? 'Registrar Saída de Material' : 'Register Outbound Dispatch'}
-          </Button>
+          {canManageDispatches && (
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold gap-2 shadow-lg shadow-purple-600/20 rounded-xl cursor-pointer"
+            >
+              <Plus size={16} />
+              {language === 'pt' ? 'Registrar Saída de Material' : 'Register Outbound Dispatch'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -571,13 +584,15 @@ export default function SaidasPage() {
                           <Printer size={15} />
                         </button>
 
-                        <button
-                          onClick={() => handleDeleteDispatch(disp.id, disp.buyer_name)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors cursor-pointer"
-                          title={language === 'pt' ? 'Excluir Saída' : 'Delete Dispatch'}
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {canManageDispatches && (
+                          <button
+                            onClick={() => handleDeleteDispatch(disp.id, disp.buyer_name)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors cursor-pointer"
+                            title={language === 'pt' ? 'Excluir Saída' : 'Delete Dispatch'}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
 
