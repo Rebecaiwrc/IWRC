@@ -33,7 +33,8 @@ import {
   formatVolume,
   translateInteractionType,
   translateFeasibility,
-  getFeasibilityColor
+  getFeasibilityColor,
+  getLogisticsSlaInfo
 } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -914,6 +915,16 @@ export default function SupplierDetailPage() {
                   <Badge variant={getStatusColor(supplier.current_status)}>
                     {translateStatus(supplier.current_status)}
                   </Badge>
+                  {supplier.current_stage === 'LOGISTICS' && (() => {
+                    const sla = getLogisticsSlaInfo(supplier, 5, language);
+                    if (!sla) return null;
+                    return (
+                      <Badge variant={sla.badgeVariant} className="font-black gap-1 shadow-xs">
+                        {sla.isOverdue ? <AlertTriangle size={12} className="animate-pulse" /> : <Clock size={12} />}
+                        {sla.statusLabel}
+                      </Badge>
+                    );
+                  })()}
                 </div>
 
                 {/* Quick Actions */}

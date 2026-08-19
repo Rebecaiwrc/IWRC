@@ -117,6 +117,10 @@ export interface Supplier {
   last_collection_date?: string | null;
   attached_documents?: AttachedDocument[];
   
+  // Logistics SLA (Gabs response tracking)
+  sent_to_logistics_at?: string | null;
+  logistics_deadline?: string | null;
+  
   created_at: string;
   updated_at: string;
   

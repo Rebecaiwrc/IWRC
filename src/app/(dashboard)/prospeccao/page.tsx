@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
-import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, fetchAddressByCep } from '@/lib/utils';
+import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, fetchAddressByCep, getLogisticsSlaInfo } from '@/lib/utils';
 import { 
   Plus, 
   MapPin, 
@@ -38,7 +38,8 @@ import {
   Upload,
   FileCheck,
   Loader2,
-  Lock
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 
 const PROSPECTING_COLUMNS: { key: ProspectingStatus; label: string; color: string; badgeVariant: 'default' | 'warning' | 'info' | 'emerald' | 'purple' }[] = [
@@ -392,6 +393,9 @@ export default function ProspectingPage() {
                 : newStatus === 'QUALIFIED'         ? 'QUALIFICATION' : 'PROSPECTING';
     const oldSuppliers = [...suppliers];
 
+    const now = new Date().toISOString();
+    const deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
     // ⚡ 1. OPTIMISTIC UPDATE: Instant 0ms visual feedback on the board
     setSuppliers(prev => prev.map(item => {
       if (item.id === supplierId) {
@@ -399,7 +403,9 @@ export default function ProspectingPage() {
           ...item,
           prospecting_status: newStatus,
           current_stage: stage,
-          current_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS'
+          current_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS',
+          sent_to_logistics_at: newStatus === 'WAITING_LOGISTICS' ? (item.sent_to_logistics_at || now) : item.sent_to_logistics_at,
+          logistics_deadline: newStatus === 'WAITING_LOGISTICS' ? (item.logistics_deadline || deadline) : item.logistics_deadline
         };
       }
       return item;
@@ -976,6 +982,8 @@ export default function ProspectingPage() {
                     const isNewLeadCol = col.key === 'NEW_LEAD';
                     const canModifyLogistics = canUserModifyLeadInLogistics(supplier);
                     const isDraggable = !isLogCol || canModifyLogistics;
+                    const sla = isLogCol ? getLogisticsSlaInfo(supplier, 5, language) : null;
+                    const isOverdue = sla?.isOverdue;
 
                     if (cardDensity === 'compact') {
                       return (
@@ -990,11 +998,13 @@ export default function ProspectingPage() {
                             e.dataTransfer.setData('text/plain', supplier.id);
                           }}
                           className={`bg-white dark:bg-slate-950 border p-2.5 rounded-xl shadow-xs hover:shadow-md transition-all duration-150 space-y-2 ${
-                            isLogCol && !canModifyLogistics 
-                              ? 'opacity-75 cursor-not-allowed border-indigo-100 dark:border-indigo-900/30' 
-                              : isLogCol && canModifyLogistics
-                                ? 'cursor-grab active:cursor-grabbing border-indigo-300 dark:border-indigo-700 bg-indigo-50/20'
-                                : 'border-slate-200 dark:border-slate-800 cursor-grab active:cursor-grabbing hover:border-emerald-300'
+                            isLogCol && isOverdue
+                              ? 'border-rose-400 dark:border-rose-700 bg-rose-50/20'
+                              : isLogCol && !canModifyLogistics 
+                                ? 'opacity-75 cursor-not-allowed border-indigo-100 dark:border-indigo-900/30' 
+                                : isLogCol && canModifyLogistics
+                                  ? 'cursor-grab active:cursor-grabbing border-indigo-300 dark:border-indigo-700 bg-indigo-50/20'
+                                  : 'border-slate-200 dark:border-slate-800 cursor-grab active:cursor-grabbing hover:border-emerald-300'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-1.5">
@@ -1021,6 +1031,19 @@ export default function ProspectingPage() {
                               )}
                             </div>
                           </div>
+
+                          {isLogCol && sla && (
+                            <div className="flex items-center gap-1">
+                              <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                                isOverdue 
+                                  ? 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse' 
+                                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                              }`}>
+                                {isOverdue ? <AlertTriangle size={10} /> : <Clock size={10} />}
+                                {sla.statusLabel}
+                              </span>
+                            </div>
+                          )}
 
                           {supplier.attached_documents && supplier.attached_documents.length > 0 && (
                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#2098D1] bg-[#E5F5F8] px-1.5 py-0.5 rounded-full border border-[#CCEAF1]">
@@ -1094,11 +1117,13 @@ export default function ProspectingPage() {
                           e.dataTransfer.setData('text/plain', supplier.id);
                         }}
                         className={`bg-white border p-3 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 space-y-2.5 ${
-                          isLogCol && !canModifyLogistics 
-                            ? 'opacity-80 cursor-not-allowed bg-slate-50/50 border-[#D6EFF5]' 
-                            : isLogCol && canModifyLogistics
-                              ? 'cursor-grab active:cursor-grabbing border-indigo-300 bg-indigo-50/10 hover:border-indigo-500'
-                              : 'border-[#D6EFF5] cursor-grab active:cursor-grabbing hover:border-[#2098D1]'
+                          isLogCol && isOverdue
+                            ? 'border-rose-400 bg-rose-50/20 shadow-rose-100/50'
+                            : isLogCol && !canModifyLogistics 
+                              ? 'opacity-80 cursor-not-allowed bg-slate-50/50 border-[#D6EFF5]' 
+                              : isLogCol && canModifyLogistics
+                                ? 'cursor-grab active:cursor-grabbing border-indigo-300 bg-indigo-50/10 hover:border-indigo-500'
+                                : 'border-[#D6EFF5] cursor-grab active:cursor-grabbing hover:border-[#2098D1]'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -1136,6 +1161,26 @@ export default function ProspectingPage() {
                             )}
                           </div>
                         </div>
+
+                        {/* Logistics SLA Box */}
+                        {isLogCol && sla && (
+                          <div className={`p-2 rounded-xl border text-[10px] flex items-center justify-between gap-2 shadow-xs ${
+                            isOverdue 
+                              ? 'bg-rose-50 border-rose-300 text-rose-800' 
+                              : 'bg-indigo-50/70 border-indigo-200 text-indigo-800'
+                          }`}>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              {isOverdue ? <AlertTriangle size={13} className="text-rose-600 animate-pulse shrink-0" /> : <Clock size={13} className="text-indigo-600 shrink-0" />}
+                              <div className="flex flex-col">
+                                <span className="font-black text-[10px] leading-tight">{sla.statusLabel}</span>
+                                <span className="text-[9px] text-slate-500">{language === 'pt' ? 'Prazo Gabs: 5 dias corridos' : 'Gabs SLA: 5 calendar days'}</span>
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/80 shrink-0 border border-slate-200">
+                              {language === 'pt' ? 'Envio: ' : 'Sent: '}{formatDate(sla.sentAt.toISOString())}
+                            </span>
+                          </div>
+                        )}
 
                         {supplier.address?.street ? (
                           <div className="flex items-start gap-1.5 text-[10px] text-slate-500">

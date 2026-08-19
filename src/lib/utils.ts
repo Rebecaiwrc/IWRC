@@ -4,7 +4,8 @@ import {
   FeasibilityStatus, 
   CollectionStatus, 
   InteractionType,
-  ProspectingStatus
+  ProspectingStatus,
+  Supplier
 } from '@/types';
 
 // Helpers to get active language
@@ -415,3 +416,98 @@ export const fetchAddressByCep = async (cep: string): Promise<{
     return null;
   }
 };
+
+// --- LOGISTICS SLA (GABS 5-DAY RETURN TRACKING) ---
+export interface LogisticsSlaInfo {
+  sentAt: Date;
+  deadlineDate: Date;
+  daysElapsed: number;
+  daysRemaining: number;
+  isOverdue: boolean;
+  statusLabel: string;
+  badgeVariant: 'warning' | 'danger' | 'info' | 'purple' | 'success';
+}
+
+export const getLogisticsSlaInfo = (supplier?: Supplier | null, slaDays: number = 5, lang?: 'pt' | 'en'): LogisticsSlaInfo | null => {
+  if (!supplier) return null;
+
+  // Check if logistics analysis was already completed
+  const act = supplier.logistics_analyses?.[0];
+  const isCompleted = Boolean(
+    act && 
+    act.feasibility && 
+    ['FEASIBLE', 'NEED_INFO', 'INFEASIBLE'].includes(act.feasibility)
+  );
+
+  const isInLogistics = supplier.current_stage === 'LOGISTICS' || supplier.prospecting_status === 'WAITING_LOGISTICS';
+  if (!isInLogistics || isCompleted) {
+    return null;
+  }
+
+  // Determine when it was sent to logistics
+  let sentAt: Date;
+  if (supplier.sent_to_logistics_at) {
+    sentAt = new Date(supplier.sent_to_logistics_at);
+  } else {
+    // Fallback: check status history for transition to LOGISTICS or WAITING_LOGISTICS
+    const histEntry = supplier.status_history?.find(
+      h => h.new_stage === 'LOGISTICS' || h.notes?.includes('WAITING_LOGISTICS') || h.notes?.toLowerCase().includes('logística')
+    );
+    if (histEntry?.created_at) {
+      sentAt = new Date(histEntry.created_at);
+    } else {
+      sentAt = new Date(supplier.updated_at || supplier.created_at || Date.now());
+    }
+  }
+
+  // Calculate deadline and diff
+  const now = new Date();
+  const deadlineDate = supplier.logistics_deadline
+    ? new Date(supplier.logistics_deadline)
+    : new Date(sentAt.getTime() + slaDays * 24 * 60 * 60 * 1000);
+
+  const diffMs = now.getTime() - sentAt.getTime();
+  const daysElapsed = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  const remainingMs = deadlineDate.getTime() - now.getTime();
+  const daysRemaining = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+  
+  const isOverdue = now.getTime() > deadlineDate.getTime() || daysRemaining < 0;
+
+  const currentLang = getActiveLang(lang);
+  let statusLabel = '';
+  let badgeVariant: 'warning' | 'danger' | 'info' | 'purple' | 'success' = 'purple';
+
+  if (isOverdue) {
+    const overdueDays = Math.max(1, Math.abs(daysRemaining) || (daysElapsed - slaDays));
+    statusLabel = currentLang === 'pt' 
+      ? `🚨 Pendente (>5 dias: +${overdueDays}d)`
+      : `🚨 Overdue (>5 days: +${overdueDays}d)`;
+    badgeVariant = 'danger';
+  } else if (daysRemaining === 0) {
+    statusLabel = currentLang === 'pt'
+      ? `⚠️ Vence hoje (${daysElapsed}d decorrido)`
+      : `⚠️ Due today (${daysElapsed}d elapsed)`;
+    badgeVariant = 'warning';
+  } else if (daysRemaining === 1) {
+    statusLabel = currentLang === 'pt'
+      ? `⏳ Vence amanhã (1 dia rest.)`
+      : `⏳ Due tomorrow (1 day left)`;
+    badgeVariant = 'warning';
+  } else {
+    statusLabel = currentLang === 'pt'
+      ? `⏳ No prazo (${daysRemaining} dias rest.)`
+      : `⏳ On time (${daysRemaining} days left)`;
+    badgeVariant = 'purple';
+  }
+
+  return {
+    sentAt,
+    deadlineDate,
+    daysElapsed,
+    daysRemaining,
+    isOverdue,
+    statusLabel,
+    badgeVariant
+  };
+};
+

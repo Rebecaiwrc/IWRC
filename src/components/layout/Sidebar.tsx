@@ -24,6 +24,7 @@ import {
 import { dbService } from '@/features/shared/services/dbService';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
+import { getLogisticsSlaInfo } from '@/lib/utils';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
@@ -32,6 +33,7 @@ export const Sidebar: React.FC = () => {
   
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [logisticsQueueCount, setLogisticsQueueCount] = useState(0);
+  const [logisticsOverdueCount, setLogisticsOverdueCount] = useState(0);
   const [geradoresCount, setGeradoresCount] = useState(0);
 
   // Pin & Auto-hide (Hover) states
@@ -65,7 +67,9 @@ export const Sidebar: React.FC = () => {
           dbService.getSuppliers()
         ]);
         setAllProfiles(profiles);
-        setLogisticsQueueCount(suppliers.filter(s => s.current_stage === 'LOGISTICS').length);
+        const inLog = suppliers.filter(s => s.current_stage === 'LOGISTICS');
+        setLogisticsQueueCount(inLog.length);
+        setLogisticsOverdueCount(inLog.filter(s => getLogisticsSlaInfo(s, 5)?.isOverdue).length);
         setGeradoresCount(suppliers.filter(s => ['DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage)).length);
       } catch (err) {
         console.error(err);
@@ -209,16 +213,18 @@ export const Sidebar: React.FC = () => {
                     isActive 
                       ? 'bg-white text-[#2098D1]'
                       : item.href === '/logistica'
-                        ? 'bg-amber-400 text-amber-950 animate-pulse'
+                        ? (logisticsOverdueCount > 0 ? 'bg-rose-500 text-white animate-pulse' : 'bg-amber-400 text-amber-950')
                         : 'bg-[#EBF7D4] text-[#48780E]'
                   }`}>
-                    {item.badge}
+                    {item.href === '/logistica' && logisticsOverdueCount > 0 ? `⚠️ ${item.badge}` : item.badge}
                   </span>
                 )}
 
                 {/* Badge dot when collapsed */}
                 {!isExpanded && item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-amber-400 border-2 border-white" />
+                  <span className={`absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
+                    item.href === '/logistica' && logisticsOverdueCount > 0 ? 'bg-rose-500 animate-ping' : 'bg-amber-400'
+                  }`} />
                 )}
               </Link>
             );

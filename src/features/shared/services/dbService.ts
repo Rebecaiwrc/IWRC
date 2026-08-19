@@ -458,6 +458,9 @@ export const dbService = {
       if (supplierData.current_status !== undefined) updatePayload.current_status = supplierData.current_status;
       if (supplierData.backlog_reason !== undefined) updatePayload.backlog_reason = supplierData.backlog_reason;
       
+      if (supplierData.sent_to_logistics_at !== undefined) updatePayload.sent_to_logistics_at = supplierData.sent_to_logistics_at;
+      if (supplierData.logistics_deadline !== undefined) updatePayload.logistics_deadline = supplierData.logistics_deadline;
+
       if (supplierData.internal_responsible_id !== undefined) {
         updatePayload.internal_responsible_id = supplierData.internal_responsible_id ? supplierData.internal_responsible_id : null;
       }
@@ -467,6 +470,10 @@ export const dbService = {
           updatePayload.current_stage = 'LOGISTICS';
           updatePayload.current_status = 'PENDING';
           updatePayload.backlog_reason = null;
+          if (!supplierData.sent_to_logistics_at) {
+            updatePayload.sent_to_logistics_at = now;
+            updatePayload.logistics_deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+          }
         } else if (supplierData.prospecting_status === 'QUALIFIED') {
           updatePayload.current_stage = 'QUALIFICATION';
           updatePayload.current_status = 'APPROVED';
@@ -482,6 +489,12 @@ export const dbService = {
         }
       }
 
+      // Auto-set logistics SLA if stage is updated to LOGISTICS directly
+      if (supplierData.current_stage === 'LOGISTICS' && !supplierData.sent_to_logistics_at && !updatePayload.sent_to_logistics_at) {
+        updatePayload.sent_to_logistics_at = now;
+        updatePayload.logistics_deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+      }
+
       const { error } = await supabase
         .from('suppliers')
         .update(updatePayload)
@@ -495,9 +508,19 @@ export const dbService = {
     const index = suppliers.findIndex(s => s.id === id);
     if (index === -1) throw new Error('Supplier not found');
 
+    let sentLogAt = supplierData.sent_to_logistics_at !== undefined ? supplierData.sent_to_logistics_at : suppliers[index].sent_to_logistics_at;
+    let logDeadline = supplierData.logistics_deadline !== undefined ? supplierData.logistics_deadline : suppliers[index].logistics_deadline;
+
+    if ((supplierData.prospecting_status === 'WAITING_LOGISTICS' || supplierData.current_stage === 'LOGISTICS') && !sentLogAt) {
+      sentLogAt = now;
+      logDeadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
     const updated = {
       ...suppliers[index],
       ...supplierData,
+      sent_to_logistics_at: sentLogAt,
+      logistics_deadline: logDeadline,
       updated_at: now
     };
     suppliers[index] = updated;
