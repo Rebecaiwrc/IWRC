@@ -239,6 +239,77 @@ export const translateSupplierType = (type?: string | null, lang?: 'pt' | 'en'):
   return mapping[type] || type;
 };
 
+// Material name translator
+export const translateMaterialName = (name?: string | null, lang?: 'pt' | 'en'): string => {
+  if (!name) return '-';
+  const currentLang = getActiveLang(lang);
+  if (currentLang === 'pt') return name;
+
+  const exact: Record<string, string> = {
+    'Recicláveis em geral': 'General Recyclables',
+    'Recicláveis': 'Recyclables',
+    'Reciclável': 'Recyclable',
+    'Papelão': 'Cardboard',
+    'Papelão Ondulado': 'Corrugated Cardboard',
+    'Papel Branco Sigiloso': 'Confidential White Paper',
+    'Papel Misto': 'Mixed Paper',
+    'Papel': 'Paper',
+    'Plástico Filme': 'Plastic Film',
+    'Plástico Rígido': 'Rigid Plastic',
+    'Plástico': 'Plastic',
+    'Plastico': 'Plastic',
+    'PET': 'PET',
+    'Alumínio': 'Aluminum',
+    'Aluminio': 'Aluminum',
+    'Latinha': 'Cans',
+    'Latinhas': 'Cans',
+    'Metais': 'Metals',
+    'Metal': 'Metal',
+    'Ferro/Aço': 'Iron/Steel',
+    'Ferro': 'Iron',
+    'Aço': 'Steel',
+    'Cobre': 'Copper',
+    'Vidro': 'Glass',
+    'Eletrônicos (REEE)': 'Electronics (WEEE)',
+    'Eletrônicos': 'Electronics',
+    'Orgânicos': 'Organics',
+    'Outro': 'Other',
+    'Outros': 'Others'
+  };
+
+  if (exact[name]) return exact[name];
+
+  let translated = name;
+  translated = translated.replace(/recicláveis em geral/gi, 'General Recyclables');
+  translated = translated.replace(/papel branco sigiloso/gi, 'Confidential White Paper');
+  translated = translated.replace(/papel misto/gi, 'Mixed Paper');
+  translated = translated.replace(/papelão ondulado/gi, 'Corrugated Cardboard');
+  translated = translated.replace(/papelão/gi, 'Cardboard');
+  translated = translated.replace(/papel/gi, 'Paper');
+  translated = translated.replace(/plástico filme|plastico filme/gi, 'Plastic Film');
+  translated = translated.replace(/plástico rígido|plastico rigido/gi, 'Rigid Plastic');
+  translated = translated.replace(/plásticos|plasticos/gi, 'Plastics');
+  translated = translated.replace(/plástico|plastico/gi, 'Plastic');
+  translated = translated.replace(/\bpet\b/gi, 'PET');
+  translated = translated.replace(/latinhas|latinha/gi, 'Cans');
+  translated = translated.replace(/alumínio|aluminio/gi, 'Aluminum');
+  translated = translated.replace(/metais/gi, 'Metals');
+  translated = translated.replace(/metal\./gi, 'Metal.');
+  translated = translated.replace(/metal/gi, 'Metal');
+  translated = translated.replace(/ferro\/aço/gi, 'Iron/Steel');
+  translated = translated.replace(/ferro/gi, 'Iron');
+  translated = translated.replace(/aço/gi, 'Steel');
+  translated = translated.replace(/cobre/gi, 'Copper');
+  translated = translated.replace(/vidro/gi, 'Glass');
+  translated = translated.replace(/eletrônicos \(reee\)|eletronicos \(reee\)/gi, 'Electronics (WEEE)');
+  translated = translated.replace(/eletrônicos|eletronicos/gi, 'Electronics');
+  translated = translated.replace(/orgânicos|organicos/gi, 'Organics');
+  translated = translated.replace(/\s+e\s+/gi, ' and ');
+  translated = translated.replace(/\boutro\b|\boutros\b/gi, 'Other');
+
+  return translated.charAt(0).toUpperCase() + translated.slice(1);
+};
+
 // Storage form translator
 export const translateStorageForm = (storage?: string | null, lang?: 'pt' | 'en'): string => {
   if (!storage) return '-';

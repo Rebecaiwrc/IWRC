@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
-import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, fetchAddressByCep, getLogisticsSlaInfo } from '@/lib/utils';
+import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, fetchAddressByCep, getLogisticsSlaInfo, translateMaterialName } from '@/lib/utils';
 import { 
   Plus, 
   MapPin, 
@@ -1215,7 +1215,7 @@ export default function ProspectingPage() {
                               </div>
                               {supplier.materials.slice(0, 2).map((m, i) => (
                                 <div key={i} className="flex items-center justify-between gap-1">
-                                  <span className="truncate font-medium">• {m.material_name}</span>
+                                  <span className="truncate font-medium">• {translateMaterialName(m.material_name, language)}</span>
                                   <span className={`text-[9px] font-bold px-1 rounded shrink-0 ${
                                     m.transaction_type === 'donation' ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'
                                   }`}>
@@ -1387,7 +1387,7 @@ export default function ProspectingPage() {
                               {supplier.materials && supplier.materials.length > 0 ? (
                                 supplier.materials.map((m, i) => (
                                   <span key={i} className="text-[10px] font-semibold px-2 py-0.5 rounded-md border bg-slate-50 text-slate-700">
-                                    {m.material_name}
+                                    {translateMaterialName(m.material_name, language)}
                                   </span>
                                 ))
                               ) : (

@@ -34,7 +34,8 @@ import {
   translateInteractionType,
   translateFeasibility,
   getFeasibilityColor,
-  getLogisticsSlaInfo
+  getLogisticsSlaInfo,
+  translateMaterialName
 } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -1205,7 +1206,7 @@ export default function SupplierDetailPage() {
                     <tbody className="divide-y divide-slate-100">
                       {supplier.materials.map(mat => (
                         <tr key={mat.id}>
-                          <td className="px-3 py-2.5 font-bold text-slate-800">{mat.material_name}</td>
+                          <td className="px-3 py-2.5 font-bold text-slate-800">{translateMaterialName(mat.material_name, language)}</td>
                           <td className="px-3 py-2.5 text-slate-600">
                             {formatVolume(mat.estimated_volume, mat.unit)} • {translateFrequency(mat.frequency, language)}
                           </td>
@@ -1818,9 +1819,9 @@ export default function SupplierDetailPage() {
                       <tbody className="divide-y divide-slate-100 text-sm">
                         {supplier.materials.map(mat => (
                           <tr key={mat.id} className="hover:bg-slate-50/50">
-                            <td className="px-4 py-3 font-semibold text-slate-800">{mat.material_name}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-800">{translateMaterialName(mat.material_name, language)}</td>
                             <td className="px-4 py-3 font-medium text-slate-700">
-                              {formatVolume(mat.estimated_volume, mat.unit)} / {mat.frequency}
+                              {formatVolume(mat.estimated_volume, mat.unit)} / {translateFrequency(mat.frequency, language)}
                             </td>
                             <td className="px-4 py-3">
                               {mat.transaction_type === 'purchase' ? (
@@ -2439,7 +2440,7 @@ export default function SupplierDetailPage() {
               <div className="grid grid-cols-2 gap-1 mt-1">
                 {supplier.materials.map((m, i) => (
                   <span key={i} className="font-semibold text-slate-700 dark:text-slate-300">
-                    • {m.material_name}: {formatVolume(m.estimated_volume, m.unit)} ({m.transaction_type === 'purchase' ? (language === 'pt' ? 'Compra' : 'Purchase') : (language === 'pt' ? 'Doação' : 'Donation')})
+                    • {translateMaterialName(m.material_name, language)}: {formatVolume(m.estimated_volume, m.unit)} ({m.transaction_type === 'purchase' ? (language === 'pt' ? 'Compra' : 'Purchase') : (language === 'pt' ? 'Doação' : 'Donation')})
                   </span>
                 ))}
               </div>

@@ -18,7 +18,8 @@ import {
   formatDate,
   formatCurrency,
   translateDestinationType,
-  getLogisticsSlaInfo
+  getLogisticsSlaInfo,
+  translateMaterialName
 } from '@/lib/utils';
 import {
   Truck,
@@ -912,14 +913,14 @@ export default function LogisticsPage() {
                                 <span className="font-medium text-slate-700">{supplier.address.city} - {supplier.address.state}</span>
                                 {supplier.address.street && <span className="text-slate-400 text-[11px]">{supplier.address.street}, {supplier.address.number}</span>}
                               </div>
-                            ) : <span className="text-slate-400 text-xs">Não informado</span>}
+                            ) : <span className="text-slate-400 text-xs">{language === 'pt' ? 'Não informado' : 'Not provided'}</span>}
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-0.5">
                               {supplier.materials && supplier.materials.length > 0 ? (
                                 supplier.materials.map((m, i) => (
                                   <span key={i} className="text-xs font-semibold text-slate-700">
-                                    • {m.material_name} ({formatVolume(m.estimated_volume, m.unit)} • {m.transaction_type === 'purchase' ? (language === 'pt' ? 'Compra' : 'Purchase') : (language === 'pt' ? 'Doação' : 'Donation')})
+                                    • {translateMaterialName(m.material_name, language)} ({formatVolume(m.estimated_volume, m.unit)} • {m.transaction_type === 'purchase' ? (language === 'pt' ? 'Compra' : 'Purchase') : (language === 'pt' ? 'Doação' : 'Donation')})
                                   </span>
                                 ))
                               ) : (
@@ -1060,7 +1061,7 @@ export default function LogisticsPage() {
                           <div className="flex flex-col gap-0.5">
                             {supplier.materials && supplier.materials.length > 0 ? supplier.materials.map((m, i) => (
                               <span key={i} className="text-xs font-semibold text-slate-700">
-                                • {m.material_name} ({formatVolume(m.estimated_volume, m.unit)})
+                                • {translateMaterialName(m.material_name, language)} ({formatVolume(m.estimated_volume, m.unit)})
                               </span>
                             )) : <span className="text-xs text-slate-400">{language === 'pt' ? 'Nenhum' : 'None'}</span>}
                           </div>
@@ -1427,11 +1428,11 @@ export default function LogisticsPage() {
             {/* Materials recap */}
             {selectedSupplier.materials && selectedSupplier.materials.length > 0 && (
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
-                <span className="font-bold text-slate-600">Materiais Declarados:</span>
+                <span className="font-bold text-slate-600">{language === 'pt' ? 'Materiais Declarados:' : 'Declared Materials:'}</span>
                 <div className="grid grid-cols-2 gap-1 mt-1">
                   {selectedSupplier.materials.map((m, i) => (
                     <span key={i} className="font-semibold text-slate-700">
-                      • {m.material_name}: {formatVolume(m.estimated_volume, m.unit)} ({m.transaction_type === 'purchase' ? 'Compra' : 'Doação'})
+                      • {translateMaterialName(m.material_name, language)}: {formatVolume(m.estimated_volume, m.unit)} ({m.transaction_type === 'purchase' ? (language === 'pt' ? 'Compra' : 'Purchase') : (language === 'pt' ? 'Doação' : 'Donation')})
                     </span>
                   ))}
                 </div>
@@ -1441,7 +1442,7 @@ export default function LogisticsPage() {
             {/* Documents attached */}
             {selectedSupplier.attached_documents && selectedSupplier.attached_documents.length > 0 && (
               <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-lg text-xs space-y-1">
-                <span className="font-bold text-indigo-700">Documentos Anexados pelo Comercial:</span>
+                <span className="font-bold text-indigo-700">{language === 'pt' ? 'Documentos Anexados pelo Comercial:' : 'Documents Attached by Commercial:'}</span>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {selectedSupplier.attached_documents.map(d => (
                     <span key={d.id} className="inline-flex items-center gap-1 font-bold text-indigo-800 bg-white px-2 py-0.5 rounded border border-indigo-200">

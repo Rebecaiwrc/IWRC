@@ -19,7 +19,8 @@ import {
   formatVolume, 
   formatCurrency, 
   translateLogText, 
-  getLogisticsSlaInfo 
+  getLogisticsSlaInfo,
+  translateMaterialName
 } from '@/lib/utils';
 import Link from 'next/link';
 import { 
@@ -557,8 +558,8 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className={`h-2.5 w-2.5 rounded-full ${dotColor} shrink-0`} />
-                            <span className="text-xs font-bold text-[#0D2439] truncate" title={mat.name}>
-                              {mat.name}
+                            <span className="text-xs font-bold text-[#0D2439] truncate" title={translateMaterialName(mat.name, language)}>
+                              {translateMaterialName(mat.name, language)}
                             </span>
                           </div>
                           <span className="text-[10px] font-black text-slate-400 shrink-0">
@@ -875,9 +876,9 @@ export default function DashboardPage() {
                   <span className="text-[10px] text-slate-400">{language === 'pt' ? 'processos analisados' : 'analyzed processes'}</span>
                 </div>
                 <div className="flex items-center gap-2 pt-1 text-[10px] text-slate-500 flex-wrap">
-                  <span className="font-bold text-emerald-600">✓ {logisticsPerformance.feasibleCount} viáveis</span>
+                  <span className="font-bold text-emerald-600">✓ {logisticsPerformance.feasibleCount} {language === 'pt' ? 'viáveis' : 'feasible'}</span>
                   <span>•</span>
-                  <span className="font-bold text-rose-600">✗ {logisticsPerformance.infeasibleCount} inviáveis</span>
+                  <span className="font-bold text-rose-600">✗ {logisticsPerformance.infeasibleCount} {language === 'pt' ? 'inviáveis' : 'infeasible'}</span>
                 </div>
               </Card>
 
@@ -929,13 +930,15 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-baseline gap-2 pt-1">
                   <h4 className={`text-2xl font-black ${logisticsPerformance.overdueLeads > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
-                    {logisticsPerformance.overdueLeads > 0 ? `${logisticsPerformance.overdueLeads} Atrasado(s)` : '100% no Prazo'}
+                    {logisticsPerformance.overdueLeads > 0 
+                      ? (language === 'pt' ? `${logisticsPerformance.overdueLeads} Atrasado(s)` : `${logisticsPerformance.overdueLeads} Overdue`) 
+                      : (language === 'pt' ? '100% no Prazo' : '100% On-Time')}
                   </h4>
                 </div>
                 <p className={`text-[10px] font-bold pt-1 ${logisticsPerformance.overdueLeads > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                   {logisticsPerformance.overdueLeads > 0 
-                    ? `🚨 ${logisticsPerformance.overdueLeads} processo(s) ultrapassaram 5 dias` 
-                    : `✓ Todos os processos respondidos em até 5 dias`}
+                    ? (language === 'pt' ? `🚨 ${logisticsPerformance.overdueLeads} processo(s) ultrapassaram 5 dias` : `🚨 ${logisticsPerformance.overdueLeads} process(es) exceeded 5 days`) 
+                    : (language === 'pt' ? `✓ Todos os processos respondidos em até 5 dias` : `✓ All processes answered within 5 days`)}
                 </p>
               </Card>
             </div>
