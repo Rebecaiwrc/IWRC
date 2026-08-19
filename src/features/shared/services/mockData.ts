@@ -11,7 +11,8 @@ import {
   Collection, 
   CollectionItem, 
   Receipt, 
-  ReceiptItem 
+  ReceiptItem,
+  MaterialDispatch
 } from '@/types';
 
 export const mockProfiles: Profile[] = [
@@ -79,3 +80,4 @@ export const mockCollections: Collection[] = [];
 export const mockCollectionItems: CollectionItem[] = [];
 export const mockReceipts: Receipt[] = [];
 export const mockReceiptItems: ReceiptItem[] = [];
+export const mockDispatches: MaterialDispatch[] = [];

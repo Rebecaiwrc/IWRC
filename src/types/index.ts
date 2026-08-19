@@ -282,3 +282,28 @@ export interface ReceiptItem {
   weight_kg: number;
   notes: string | null;
 }
+
+export type DispatchDestinationType = 'sale' | 'recycler' | 'coprocessing' | 'donation' | 'other';
+
+export interface MaterialDispatch {
+  id: string;
+  buyer_name: string;
+  buyer_document: string | null;
+  material_name: string;
+  quantity_kg: number;
+  unit_price: number | null;
+  total_value: number | null;
+  dispatch_date: string;
+  invoice_number: string | null;
+  mtr_number: string | null;
+  carrier_name: string | null;
+  vehicle_plate: string | null;
+  driver_name: string | null;
+  destination_type: DispatchDestinationType;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  
+  // Joins
+  creator?: Profile | null;
+}

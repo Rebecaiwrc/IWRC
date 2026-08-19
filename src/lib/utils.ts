@@ -156,14 +156,23 @@ export const getFeasibilityColor = (feasibility: FeasibilityStatus): 'warning' |
 };
 
 // Collection status translator
-export const translateCollectionStatus = (status: CollectionStatus): string => {
-  const mapping: Record<CollectionStatus, string> = {
-    SCHEDULED: 'Agendada',
-    IN_TRANSIT: 'Em Trânsito',
-    COMPLETED: 'Realizada',
-    CANCELLED: 'Cancelada'
+export const translateCollectionStatus = (status: CollectionStatus, lang?: 'pt' | 'en'): string => {
+  const currentLang = getActiveLang(lang);
+  const mapping: Record<'pt' | 'en', Record<CollectionStatus, string>> = {
+    pt: {
+      SCHEDULED: 'Agendada',
+      IN_TRANSIT: 'Em Trânsito',
+      COMPLETED: 'Realizada',
+      CANCELLED: 'Cancelada'
+    },
+    en: {
+      SCHEDULED: 'Scheduled',
+      IN_TRANSIT: 'In Transit',
+      COMPLETED: 'Completed',
+      CANCELLED: 'Cancelled'
+    }
   };
-  return mapping[status] || status;
+  return mapping[currentLang]?.[status] || status;
 };
 
 export const getCollectionColor = (status: CollectionStatus): 'warning' | 'info' | 'success' | 'danger' | 'emerald' => {
@@ -263,6 +272,29 @@ export const translateFrequency = (freq?: string | null, lang?: 'pt' | 'en'): st
     'Única Vez': 'One-time'
   };
   return mapping[freq] || freq;
+};
+
+// Destination type translator
+export const translateDestinationType = (dest?: string | null, lang?: 'pt' | 'en'): string => {
+  if (!dest) return '-';
+  const currentLang = getActiveLang(lang);
+  const mapping: Record<'pt' | 'en', Record<string, string>> = {
+    pt: {
+      sale: 'Venda Comercial',
+      recycler: 'Reciclador Homologado',
+      coprocessing: 'Coprocessamento',
+      donation: 'Doação',
+      other: 'Outro'
+    },
+    en: {
+      sale: 'Commercial Sale',
+      recycler: 'Certified Recycler',
+      coprocessing: 'Coprocessing',
+      donation: 'Donation',
+      other: 'Other'
+    }
+  };
+  return mapping[currentLang]?.[dest] || dest;
 };
 
 // Log text dynamic translator

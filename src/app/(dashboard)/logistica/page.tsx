@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { dbService } from '@/features/shared/services/dbService';
-import { Supplier, AttachedDocument } from '@/types';
+import { Supplier, AttachedDocument, MaterialDispatch, DispatchDestinationType } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -16,7 +16,8 @@ import {
   getFeasibilityColor,
   formatVolume,
   formatDate,
-  formatCurrency
+  formatCurrency,
+  translateDestinationType
 } from '@/lib/utils';
 import {
   Truck,
@@ -34,7 +35,15 @@ import {
   CalendarCheck,
   Plus,
   Trash2,
-  Download
+  Download,
+  TrendingUp,
+  DollarSign,
+  PackageCheck,
+  Search,
+  Filter,
+  UserCheck,
+  ShieldCheck,
+  Layers
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -82,18 +91,81 @@ export const feasibilityOptions = [
   { value: 'PENDING', label: '⏳ Em Análise' }
 ];
 
+export const DISPATCH_DESTINATION_OPTIONS: { value: DispatchDestinationType; label: string }[] = [
+  { value: 'sale', label: 'Venda Comercial' },
+  { value: 'recycler', label: 'Reciclador Homologado' },
+  { value: 'coprocessing', label: 'Coprocessamento' },
+  { value: 'donation', label: 'Doação' },
+  { value: 'other', label: 'Outra Destinação' }
+];
+
+export const DISPATCH_MATERIAL_OPTIONS = [
+  'Papelão',
+  'Papel Branco Sigiloso',
+  'Papel Misto',
+  'Plástico Filme PEBD',
+  'Plástico Rígido PEAD',
+  'PET',
+  'PP (Polipropileno)',
+  'Sucata de Alumínio',
+  'Sucata de Ferro/Aço',
+  'Cobre',
+  'Vidro Moído / Cacos',
+  'Eletrônicos (REEE)',
+  'Outros'
+];
+
 export default function LogisticsPage() {
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
 
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
+  const [dispatches, setDispatches] = useState<MaterialDispatch[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'queue' | 'scheduling' | 'history'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'scheduling' | 'history' | 'dispatches'>('queue');
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingDocs, setPendingDocs] = useState<string[]>([]);
   const [customPendingDoc, setCustomPendingDoc] = useState('');
+
+  // Dispatches Form & Filtering
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
+  const [dispatchSearch, setDispatchSearch] = useState('');
+  const [dispatchDestinationFilter, setDispatchDestinationFilter] = useState('ALL');
+  const [dispatchForm, setDispatchForm] = useState<{
+    buyer_name: string;
+    buyer_document: string;
+    material_name: string;
+    custom_material_name: string;
+    quantity_kg: string;
+    unit_price: string;
+    total_value: string;
+    dispatch_date: string;
+    invoice_number: string;
+    mtr_number: string;
+    carrier_name: string;
+    vehicle_plate: string;
+    driver_name: string;
+    destination_type: DispatchDestinationType;
+    notes: string;
+  }>({
+    buyer_name: '',
+    buyer_document: '',
+    material_name: 'Papelão',
+    custom_material_name: '',
+    quantity_kg: '',
+    unit_price: '',
+    total_value: '',
+    dispatch_date: new Date().toISOString().split('T')[0],
+    invoice_number: '',
+    mtr_number: '',
+    carrier_name: '',
+    vehicle_plate: '',
+    driver_name: '',
+    destination_type: 'sale',
+    notes: ''
+  });
 
   // Analysis Form
   const [analysisForm, setAnalysisForm] = useState({
@@ -158,8 +230,12 @@ export default function LogisticsPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const s = await dbService.getSuppliers();
+      const [s, d] = await Promise.all([
+        dbService.getSuppliers(),
+        dbService.getMaterialDispatches()
+      ]);
       setAllSuppliers(s);
+      setDispatches(d);
     } catch (err) { 
       console.error(err); 
     } finally { 
@@ -171,72 +247,182 @@ export default function LogisticsPage() {
     fetchData(); 
   }, [fetchData]);
 
-  // 1. Queue: Leads in LOGISTICS stage that are pending or in progress (stays in queue when IN_PROGRESS)
-  const queue = allSuppliers.filter(s => {
-    const act = s.logistics_analyses?.[0];
-    const isCompleted = Boolean(
-      act && 
-      act.feasibility && 
-      (act.feasibility === 'FEASIBLE' || act.feasibility === 'NEED_INFO' || act.feasibility === 'INFEASIBLE')
+  // Buyer vs Admin Visibility Filtering
+  const isBuyer = currentUser?.role === 'BUYER';
+
+  const isResponsibleForSupplier = (s?: Supplier | null) => {
+    if (!s || !currentUser) return false;
+    if (!isBuyer) return true; // Admins and Logistics see everything
+    return (
+      s.internal_responsible_id === currentUser.id ||
+      s.responsible?.id === currentUser.id ||
+      (s.responsible?.email && currentUser.email && s.responsible.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+      (s.responsible?.name && currentUser.name && s.responsible.name.toLowerCase() === currentUser.name.toLowerCase()) ||
+      (s.lead_source && currentUser.name && s.lead_source.toLowerCase().includes(currentUser.name.toLowerCase()))
     );
-    return s.current_stage === 'LOGISTICS' && !isCompleted;
-  });
+  };
+
+  // 1. Queue: Leads in LOGISTICS stage that are pending or in progress (stays in queue when IN_PROGRESS)
+  const queue = allSuppliers
+    .filter(s => isResponsibleForSupplier(s))
+    .filter(s => {
+      const act = s.logistics_analyses?.[0];
+      const isCompleted = Boolean(
+        act && 
+        act.feasibility && 
+        (act.feasibility === 'FEASIBLE' || act.feasibility === 'NEED_INFO' || act.feasibility === 'INFEASIBLE')
+      );
+      return s.current_stage === 'LOGISTICS' && !isCompleted;
+    });
   
   // 2. Scheduling: Suppliers awaiting 1st collection OR active suppliers within 3 days of their next recurring collection date
-  const schedulingQueue = allSuppliers.filter(s => {
-    // 1. Initial 1st collection pending
-    const isInitialPending = s.current_stage === 'COLLECTION' || 
-      (s.backlog_reason?.toLowerCase().includes('agendamento')) ||
-      (s.logistics_analyses?.[0]?.feasibility === 'FEASIBLE' && (!s.collections || s.collections.length === 0));
-    
-    if (isInitialPending) return true;
+  const schedulingQueue = allSuppliers
+    .filter(s => isResponsibleForSupplier(s))
+    .filter(s => {
+      // 1. Initial 1st collection pending
+      const isInitialPending = s.current_stage === 'COLLECTION' || 
+        (s.backlog_reason?.toLowerCase().includes('agendamento')) ||
+        (s.logistics_analyses?.[0]?.feasibility === 'FEASIBLE' && (!s.collections || s.collections.length === 0));
+      
+      if (isInitialPending) return true;
 
-    // 2. Active operation: check if within 3 days of next collection cycle
-    if (s.current_stage === 'OPERATION') {
-      const activeLog = s.logistics_analyses?.[0];
-      const freq = activeLog?.recommended_frequency || 'Mensal';
-      if (freq.toLowerCase().includes('demanda')) return false;
+      // 2. Active operation: check if within 3 days of next collection cycle
+      if (s.current_stage === 'OPERATION') {
+        const activeLog = s.logistics_analyses?.[0];
+        const freq = activeLog?.recommended_frequency || 'Mensal';
+        if (freq.toLowerCase().includes('demanda')) return false;
 
-      // Find the latest scheduled collection date
-      const allColDates = (s.collections || [])
-        .map(c => c.scheduled_date)
-        .concat(s.last_collection_date ? [s.last_collection_date] : [])
-        .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+        // Find the latest scheduled collection date
+        const allColDates = (s.collections || [])
+          .map(c => c.scheduled_date)
+          .concat(s.last_collection_date ? [s.last_collection_date] : [])
+          .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
-      const latestDateStr = allColDates[0];
-      if (!latestDateStr) return true;
+        const latestDateStr = allColDates[0];
+        if (!latestDateStr) return true;
 
-      const latestColDate = new Date(latestDateStr + 'T00:00:00');
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const latestColDate = new Date(latestDateStr + 'T00:00:00');
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-      // If already scheduled for a future date, it has already been scheduled and must NOT appear now
-      if (latestColDate.getTime() > today.getTime()) {
-        return false;
+        // If already scheduled for a future date, it has already been scheduled and must NOT appear now
+        if (latestColDate.getTime() > today.getTime()) {
+          return false;
+        }
+
+        // Calculate next due date
+        const nextDue = getNextCollectionDate(latestDateStr, freq);
+        
+        // Appears 3 days before the next due date
+        const threeDaysBeforeNextDue = new Date(nextDue.getTime() - 3 * 24 * 60 * 60 * 1000);
+        
+        return today.getTime() >= threeDaysBeforeNextDue.getTime();
       }
 
-      // Calculate next due date
-      const nextDue = getNextCollectionDate(latestDateStr, freq);
-      
-      // Appears 3 days before the next due date
-      const threeDaysBeforeNextDue = new Date(nextDue.getTime() - 3 * 24 * 60 * 60 * 1000);
-      
-      return today.getTime() >= threeDaysBeforeNextDue.getTime();
-    }
-
-    return false;
-  });
+      return false;
+    });
 
   // 3. History: Any supplier with a logistics evaluation completed
-  const history = allSuppliers.filter(s => {
-    const act = s.logistics_analyses?.[0];
-    const isCompleted = Boolean(
-      act && 
-      act.feasibility && 
-      (act.feasibility === 'FEASIBLE' || act.feasibility === 'NEED_INFO' || act.feasibility === 'INFEASIBLE')
-    );
-    return isCompleted || (['DOCUMENTATION', 'COLLECTION', 'OPERATION'] as string[]).includes(s.current_stage);
+  const history = allSuppliers
+    .filter(s => isResponsibleForSupplier(s))
+    .filter(s => {
+      const act = s.logistics_analyses?.[0];
+      const isCompleted = Boolean(
+        act && 
+        act.feasibility && 
+        (act.feasibility === 'FEASIBLE' || act.feasibility === 'NEED_INFO' || act.feasibility === 'INFEASIBLE')
+      );
+      return isCompleted || (['DOCUMENTATION', 'COLLECTION', 'OPERATION'] as string[]).includes(s.current_stage);
+    });
+
+  // 4. Outbound Material Dispatches & Sales Filtering
+  const filteredDispatches = dispatches.filter(d => {
+    const matchesSearch = !dispatchSearch || 
+      d.buyer_name.toLowerCase().includes(dispatchSearch.toLowerCase()) ||
+      (d.buyer_document && d.buyer_document.toLowerCase().includes(dispatchSearch.toLowerCase())) ||
+      d.material_name.toLowerCase().includes(dispatchSearch.toLowerCase()) ||
+      (d.invoice_number && d.invoice_number.toLowerCase().includes(dispatchSearch.toLowerCase())) ||
+      (d.mtr_number && d.mtr_number.toLowerCase().includes(dispatchSearch.toLowerCase())) ||
+      (d.carrier_name && d.carrier_name.toLowerCase().includes(dispatchSearch.toLowerCase()));
+
+    const matchesDest = dispatchDestinationFilter === 'ALL' || d.destination_type === dispatchDestinationFilter;
+
+    return matchesSearch && matchesDest;
   });
+
+  const totalDispatchedKg = dispatches.reduce((acc, d) => acc + (Number(d.quantity_kg) || 0), 0);
+  const totalDispatchedRevenue = dispatches.reduce((acc, d) => acc + (Number(d.total_value) || 0), 0);
+  const totalDispatchedLoads = dispatches.length;
+  const avgPricePerKg = totalDispatchedKg > 0 ? (totalDispatchedRevenue / totalDispatchedKg) : 0;
+
+  const handleSaveDispatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dispatchForm.buyer_name || !dispatchForm.quantity_kg) {
+      alert(language === 'pt' ? 'Preencha o nome do comprador e a quantidade expedida.' : 'Please fill in buyer name and quantity.');
+      return;
+    }
+    const finalMaterial = (dispatchForm.material_name === 'Outros' && dispatchForm.custom_material_name.trim())
+      ? dispatchForm.custom_material_name.trim()
+      : dispatchForm.material_name;
+
+    try {
+      setIsSubmitting(true);
+      await dbService.createMaterialDispatch({
+        buyer_name: dispatchForm.buyer_name,
+        buyer_document: dispatchForm.buyer_document || null,
+        material_name: finalMaterial || 'Material Geral',
+        quantity_kg: Number(dispatchForm.quantity_kg) || 0,
+        unit_price: Number(dispatchForm.unit_price) || 0,
+        total_value: Number(dispatchForm.total_value) || (Number(dispatchForm.quantity_kg) * Number(dispatchForm.unit_price)),
+        dispatch_date: dispatchForm.dispatch_date,
+        invoice_number: dispatchForm.invoice_number || null,
+        mtr_number: dispatchForm.mtr_number || null,
+        carrier_name: dispatchForm.carrier_name || null,
+        vehicle_plate: dispatchForm.vehicle_plate || null,
+        driver_name: dispatchForm.driver_name || null,
+        destination_type: dispatchForm.destination_type,
+        notes: dispatchForm.notes || null,
+        created_by: currentUser?.id || null
+      });
+
+      setIsDispatchModalOpen(false);
+      setDispatchForm({
+        buyer_name: '',
+        buyer_document: '',
+        material_name: 'Papelão',
+        custom_material_name: '',
+        quantity_kg: '',
+        unit_price: '',
+        total_value: '',
+        dispatch_date: new Date().toISOString().split('T')[0],
+        invoice_number: '',
+        mtr_number: '',
+        carrier_name: '',
+        vehicle_plate: '',
+        driver_name: '',
+        destination_type: 'sale',
+        notes: ''
+      });
+      await fetchData();
+      alert(language === 'pt' ? 'Saída de material registrada com sucesso!' : 'Material dispatch recorded successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert(`Erro ao registrar saída: ${err.message || 'Falha ao salvar'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteDispatch = async (dispatchId: string, buyerName: string) => {
+    if (!confirm(language === 'pt' ? `Excluir o registro de saída para "${buyerName}"?` : `Delete dispatch record for "${buyerName}"?`)) return;
+    try {
+      await dbService.deleteMaterialDispatch(dispatchId);
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert(language === 'pt' ? 'Erro ao excluir saída.' : 'Error deleting dispatch.');
+    }
+  };
 
   const handleOpenAnalysis = async (supplier: Supplier) => {
     setSelectedSupplier(supplier);
@@ -528,13 +714,30 @@ export default function LogisticsPage() {
     <div className="space-y-6 font-sans">
 
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 leading-tight">
-          {t('logistics.title', 'Logística & Coletas')}
-        </h1>
-        <p className="text-slate-500 text-sm mt-1">
-          {t('logistics.subtitle', 'Analise a viabilidade dos leads enviados pelo Comercial e realize os agendamentos operacionais de coleta.')}
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+            {t('logistics.title', 'Logística & Coletas')}
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">
+            {t('logistics.subtitle', 'Analise a viabilidade dos leads enviados pelo Comercial, realize os agendamentos de coleta e gerencie as saídas de materiais.')}
+          </p>
+        </div>
+
+        {/* User Scope Badge */}
+        <div className="flex items-center gap-2">
+          {isBuyer ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
+              <UserCheck size={14} />
+              {language === 'pt' ? 'Visão: Meus Processos de Compras' : 'View: My Buying Leads'}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+              <ShieldCheck size={14} />
+              {language === 'pt' ? 'Visão: Geral do Hub (Todos)' : 'View: Hub Global (All)'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Flow banner */}
@@ -546,29 +749,38 @@ export default function LogisticsPage() {
         <span className="flex items-center gap-1 text-purple-700 font-bold whitespace-nowrap"><Building2 size={12} /> {language === 'pt' ? 'Exibição em Geradores' : 'Generator Registry'}</span>
         <ArrowRight size={12} className="text-indigo-300 shrink-0" />
         <span className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap"><CalendarCheck size={12} /> {language === 'pt' ? 'Agendamento de Coleta' : 'Collection Scheduled'}</span>
+        <ArrowRight size={12} className="text-indigo-300 shrink-0" />
+        <span className="flex items-center gap-1 text-purple-600 font-bold whitespace-nowrap"><TrendingUp size={12} /> {language === 'pt' ? 'Saídas e Vendas do Hub' : 'Outbound Dispatches'}</span>
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex gap-1.5 bg-slate-100 border border-slate-200 rounded-xl p-1 w-fit overflow-x-auto">
+      <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 w-fit overflow-x-auto">
         <button onClick={() => setActiveTab('queue')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'queue' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'queue' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
           <Clock size={14} />
           {language === 'pt' ? 'Aguardando Análise' : 'Awaiting Analysis'}
           {queue.length > 0 && <span className="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">{queue.length}</span>}
         </button>
 
         <button onClick={() => setActiveTab('scheduling')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'scheduling' ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'scheduling' ? 'bg-white dark:bg-slate-800 text-emerald-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
           <Calendar size={14} />
           {language === 'pt' ? 'Agendamento de Coletas' : 'Collection Scheduling'}
           {schedulingQueue.length > 0 && <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">{schedulingQueue.length}</span>}
         </button>
 
         <button onClick={() => setActiveTab('history')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'history' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'history' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
           <CheckCircle size={14} />
           {language === 'pt' ? 'Histórico de Pareceres' : 'Opinion History'}
-          <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full font-black">{history.length}</span>
+          <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] px-1.5 py-0.5 rounded-full font-black">{history.length}</span>
+        </button>
+
+        <button onClick={() => setActiveTab('dispatches')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'dispatches' ? 'bg-white dark:bg-slate-800 text-purple-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}>
+          <TrendingUp size={14} />
+          {language === 'pt' ? 'Saídas & Vendas do Hub' : 'Hub Dispatches & Sales'}
+          {dispatches.length > 0 && <span className="bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">{dispatches.length}</span>}
         </button>
       </div>
 
@@ -870,6 +1082,225 @@ export default function LogisticsPage() {
             </div>
           )}
         </Card>
+      )}
+
+      {/* TAB 4: SAÍDAS & VENDAS DE MATERIAIS DO HUB */}
+      {activeTab === 'dispatches' && (
+        <div className="space-y-6">
+
+          {/* Metrics Overview */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div className="h-12 w-12 bg-purple-50 dark:bg-purple-900/30 text-purple-600 rounded-2xl flex items-center justify-center shrink-0">
+                <TrendingUp size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  {language === 'pt' ? 'Total Expedido' : 'Total Dispatched'}
+                </p>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">
+                  {formatVolume(totalDispatchedKg, 'kg')}
+                </h3>
+              </div>
+            </Card>
+
+            <Card className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div className="h-12 w-12 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
+                <DollarSign size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  {language === 'pt' ? 'Faturamento de Saídas' : 'Dispatches Revenue'}
+                </p>
+                <h3 className="text-xl font-black text-emerald-600 mt-0.5">
+                  {formatCurrency(totalDispatchedRevenue)}
+                </h3>
+              </div>
+            </Card>
+
+            <Card className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div className="h-12 w-12 bg-blue-50 dark:bg-blue-900/30 text-[#2098D1] rounded-2xl flex items-center justify-center shrink-0">
+                <PackageCheck size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  {language === 'pt' ? 'Cargas Expedidas' : 'Dispatched Loads'}
+                </p>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">
+                  {totalDispatchedLoads}
+                </h3>
+              </div>
+            </Card>
+
+            <Card className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div className="h-12 w-12 bg-amber-50 dark:bg-amber-900/30 text-amber-600 rounded-2xl flex items-center justify-center shrink-0">
+                <Layers size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  {language === 'pt' ? 'Preço Médio / kg' : 'Avg Price / kg'}
+                </p>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">
+                  {formatCurrency(avgPricePerKg)}
+                </h3>
+              </div>
+            </Card>
+          </div>
+
+          {/* Search & Actions Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-72">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={language === 'pt' ? 'Buscar comprador, material, NF-e, MTR...' : 'Search buyer, material, invoice, MTR...'}
+                  value={dispatchSearch}
+                  onChange={e => setDispatchSearch(e.target.value)}
+                  className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                />
+              </div>
+
+              <select
+                value={dispatchDestinationFilter}
+                onChange={e => setDispatchDestinationFilter(e.target.value)}
+                className="w-full sm:w-auto px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium cursor-pointer"
+              >
+                <option value="ALL">{language === 'pt' ? 'Todas as Destinações' : 'All Destinations'}</option>
+                {DISPATCH_DESTINATION_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <Button
+              onClick={() => setIsDispatchModalOpen(true)}
+              className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold gap-1.5 shadow-md shadow-purple-600/20"
+            >
+              <Plus size={15} />
+              {language === 'pt' ? 'Registrar Saída de Material' : 'Register Material Dispatch'}
+            </Button>
+          </div>
+
+          {/* Table of Dispatches */}
+          <Card className="overflow-hidden !p-0 border border-slate-200 dark:border-slate-800 shadow-sm">
+            {filteredDispatches.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 space-y-2">
+                <TrendingUp size={36} className="mx-auto text-slate-300 opacity-60" />
+                <p className="font-semibold text-sm">
+                  {language === 'pt' ? 'Nenhuma saída de material registrada.' : 'No material dispatches recorded yet.'}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {language === 'pt' ? 'Clique em "Registrar Saída de Material" para lançar uma venda ou expedição do galpão.' : 'Click "Register Material Dispatch" to record a warehouse outbound sale or transfer.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto text-sm">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <th className="px-6 py-4">{language === 'pt' ? 'Data da Saída' : 'Dispatch Date'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Comprador / Destinatário' : 'Buyer / Destination'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Material' : 'Material'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Quantidade (kg)' : 'Quantity (kg)'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Preço e Valor Total' : 'Price & Total Value'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'NF-e & MTR' : 'Invoice & MTR'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Frete / Motorista' : 'Carrier / Driver'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Destinação' : 'Destination'}</th>
+                      <th className="px-6 py-4 text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredDispatches.map(disp => (
+                      <tr key={disp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar size={14} className="text-slate-400" />
+                            <span className="font-bold text-slate-900 dark:text-white">{formatDate(disp.dispatch_date)}</span>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-900 dark:text-white leading-snug">{disp.buyer_name}</span>
+                            {disp.buyer_document && (
+                              <span className="text-[11px] font-mono text-slate-400">{disp.buyer_document}</span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4 font-semibold text-slate-800 dark:text-slate-200">
+                          <span className="inline-block bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs px-2.5 py-1 rounded-lg border border-purple-200 dark:border-purple-800">
+                            {disp.material_name}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap font-black text-slate-900 dark:text-white">
+                          {formatVolume(disp.quantity_kg, 'kg')}
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="font-black text-emerald-600 block">
+                            {formatCurrency(disp.total_value)}
+                          </span>
+                          {disp.unit_price ? (
+                            <span className="text-[11px] text-slate-400">
+                              {formatCurrency(disp.unit_price)} / kg
+                            </span>
+                          ) : null}
+                        </td>
+
+                        <td className="px-6 py-4 text-xs space-y-0.5">
+                          {disp.invoice_number ? (
+                            <p className="font-semibold text-slate-700 dark:text-slate-300">
+                              NF: <span className="font-mono">{disp.invoice_number}</span>
+                            </p>
+                          ) : (
+                            <span className="text-slate-400 italic">Sem NF</span>
+                          )}
+                          {disp.mtr_number && (
+                            <p className="text-[11px] text-slate-400 font-mono">
+                              MTR: {disp.mtr_number}
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4 text-xs text-slate-500 space-y-0.5">
+                          <p className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                            <Truck size={13} className="text-slate-400" />
+                            {disp.carrier_name || (language === 'pt' ? 'Frota do Comprador' : 'Buyer Fleet')}
+                          </p>
+                          {(disp.driver_name || disp.vehicle_plate) && (
+                            <p className="text-[11px] text-slate-400">
+                              {[disp.driver_name, disp.vehicle_plate].filter(Boolean).join(' • ')}
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant={disp.destination_type === 'sale' ? 'emerald' : disp.destination_type === 'recycler' ? 'info' : 'purple'}>
+                            {translateDestinationType(disp.destination_type, language)}
+                          </Badge>
+                        </td>
+
+                        <td className="px-6 py-4 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => handleDeleteDispatch(disp.id, disp.buyer_name)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors cursor-pointer"
+                            title={language === 'pt' ? 'Excluir Saída' : 'Delete Dispatch'}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+        </div>
       )}
 
       {/* Analysis Modal (Idêntico em todas as telas) */}
@@ -1185,6 +1616,192 @@ export default function LogisticsPage() {
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
               <Button type="button" variant="outline" onClick={() => setIsScheduleModalOpen(false)}>Cancelar</Button>
               <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">Confirmar Agendamento</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Outbound Material Dispatch Modal */}
+      {isDispatchModalOpen && (
+        <Modal
+          isOpen={isDispatchModalOpen}
+          onClose={() => setIsDispatchModalOpen(false)}
+          title={language === 'pt' ? 'Registrar Saída de Material (Expedição / Venda do Hub)' : 'Register Outbound Material Dispatch'}
+          size="lg"
+        >
+          <form onSubmit={handleSaveDispatch} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label={language === 'pt' ? 'Comprador / Destinatário (Razão Social ou Nome) *' : 'Buyer / Destination Name *'}
+                value={dispatchForm.buyer_name}
+                onChange={e => setDispatchForm(p => ({ ...p, buyer_name: e.target.value }))}
+                placeholder={language === 'pt' ? 'Ex: Recicladora Paulistana Ltda' : 'E.g. Paulistana Recycling Ltd'}
+                required
+              />
+
+              <Input
+                label={language === 'pt' ? 'CNPJ / CPF do Comprador' : 'Buyer CNPJ / Tax ID'}
+                value={dispatchForm.buyer_document}
+                onChange={e => setDispatchForm(p => ({ ...p, buyer_document: e.target.value }))}
+                placeholder="00.000.000/0000-00"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'pt' ? 'Tipo de Destinação *' : 'Destination Type *'}
+                </label>
+                <select
+                  value={dispatchForm.destination_type}
+                  onChange={e => setDispatchForm(p => ({ ...p, destination_type: e.target.value as DispatchDestinationType }))}
+                  className="px-3 py-2 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 font-medium cursor-pointer"
+                >
+                  {DISPATCH_DESTINATION_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'pt' ? 'Material Expedido *' : 'Dispatched Material *'}
+                </label>
+                <select
+                  value={dispatchForm.material_name}
+                  onChange={e => setDispatchForm(p => ({ ...p, material_name: e.target.value }))}
+                  className="px-3 py-2 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 font-medium cursor-pointer"
+                >
+                  {DISPATCH_MATERIAL_OPTIONS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                {dispatchForm.material_name === 'Outros' && (
+                  <input
+                    type="text"
+                    placeholder={language === 'pt' ? 'Digite o nome do material...' : 'Type material name...'}
+                    value={dispatchForm.custom_material_name}
+                    onChange={e => setDispatchForm(p => ({ ...p, custom_material_name: e.target.value }))}
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-purple-400 rounded-lg outline-none focus:ring-1 focus:ring-purple-500"
+                    required
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label={language === 'pt' ? 'Quantidade / Peso Líquido (kg) *' : 'Quantity / Net Weight (kg) *'}
+                type="number"
+                value={dispatchForm.quantity_kg}
+                onChange={e => {
+                  const qty = e.target.value;
+                  const price = dispatchForm.unit_price;
+                  const autoTotal = (Number(qty) || 0) * (Number(price) || 0);
+                  setDispatchForm(p => ({ 
+                    ...p, 
+                    quantity_kg: qty, 
+                    total_value: autoTotal > 0 ? autoTotal.toFixed(2) : p.total_value 
+                  }));
+                }}
+                placeholder="Ex: 5000"
+                required
+              />
+
+              <Input
+                label={language === 'pt' ? 'Preço Unitário (R$/kg)' : 'Unit Price (R$/kg)'}
+                type="number"
+                step="0.01"
+                value={dispatchForm.unit_price}
+                onChange={e => {
+                  const price = e.target.value;
+                  const qty = dispatchForm.quantity_kg;
+                  const autoTotal = (Number(qty) || 0) * (Number(price) || 0);
+                  setDispatchForm(p => ({ 
+                    ...p, 
+                    unit_price: price, 
+                    total_value: autoTotal > 0 ? autoTotal.toFixed(2) : p.total_value 
+                  }));
+                }}
+                placeholder="Ex: 0.85"
+              />
+
+              <Input
+                label={language === 'pt' ? 'Valor Total da Saída (R$)' : 'Total Dispatch Value (R$)'}
+                type="number"
+                step="0.01"
+                value={dispatchForm.total_value}
+                onChange={e => setDispatchForm(p => ({ ...p, total_value: e.target.value }))}
+                placeholder="Ex: 4250.00"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label={language === 'pt' ? 'Data da Saída *' : 'Dispatch Date *'}
+                type="date"
+                value={dispatchForm.dispatch_date}
+                onChange={e => setDispatchForm(p => ({ ...p, dispatch_date: e.target.value }))}
+                required
+              />
+
+              <Input
+                label={language === 'pt' ? 'Número da NF-e' : 'Invoice Number (NF-e)'}
+                value={dispatchForm.invoice_number}
+                onChange={e => setDispatchForm(p => ({ ...p, invoice_number: e.target.value }))}
+                placeholder="Ex: 001.234"
+              />
+
+              <Input
+                label={language === 'pt' ? 'Número do MTR' : 'MTR Number'}
+                value={dispatchForm.mtr_number}
+                onChange={e => setDispatchForm(p => ({ ...p, mtr_number: e.target.value }))}
+                placeholder="Ex: MTR-2026-889"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label={language === 'pt' ? 'Transportadora / Veículo' : 'Carrier'}
+                value={dispatchForm.carrier_name}
+                onChange={e => setDispatchForm(p => ({ ...p, carrier_name: e.target.value }))}
+                placeholder={language === 'pt' ? 'Ex: TransLog Sorocaba' : 'E.g. TransLog'}
+              />
+
+              <Input
+                label={language === 'pt' ? 'Placa do Veículo' : 'Vehicle Plate'}
+                value={dispatchForm.vehicle_plate}
+                onChange={e => setDispatchForm(p => ({ ...p, vehicle_plate: e.target.value }))}
+                placeholder="ABC-1D23"
+              />
+
+              <Input
+                label={language === 'pt' ? 'Nome do Motorista' : 'Driver Name'}
+                value={dispatchForm.driver_name}
+                onChange={e => setDispatchForm(p => ({ ...p, driver_name: e.target.value }))}
+                placeholder="Ex: João da Silva"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Observações Gerais da Expedição' : 'Dispatch Notes'}
+              </label>
+              <textarea
+                value={dispatchForm.notes}
+                onChange={e => setDispatchForm(p => ({ ...p, notes: e.target.value }))}
+                placeholder={language === 'pt' ? 'Ex: Carga enfardada, carregamento realizado pela doca 2...' : 'E.g. Baled load, loaded at dock 2...'}
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-purple-500 min-h-[60px]"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button type="button" variant="outline" onClick={() => setIsDispatchModalOpen(false)}>
+                {language === 'pt' ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button type="submit" isLoading={isSubmitting} className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20">
+                {language === 'pt' ? 'Confirmar Saída do Hub' : 'Confirm Hub Dispatch'}
+              </Button>
             </div>
           </form>
         </Modal>

@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { dbService } from '@/features/shared/services/dbService';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
-import { Collection } from '@/types';
+import { useAuth } from '@/features/auth/context/AuthContext';
+import { Collection, Supplier } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -20,19 +21,27 @@ import {
   ClipboardCheck, 
   Building2,
   FileCheck,
-  Scale
+  Scale,
+  UserCheck,
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CollectionsPage() {
+  const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      const c = await dbService.getCollections();
+      const [c, s] = await Promise.all([
+        dbService.getCollections(),
+        dbService.getSuppliers()
+      ]);
       setCollections(c);
+      setSuppliers(s);
     } catch (err) {
       console.error(err);
     } finally {
@@ -43,6 +52,25 @@ export default function CollectionsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const isBuyer = currentUser?.role === 'BUYER';
+
+  const isResponsibleForSupplier = (s?: Supplier | null) => {
+    if (!s || !currentUser) return false;
+    if (!isBuyer) return true; // Admins and Logistics see everything
+    return (
+      s.internal_responsible_id === currentUser.id ||
+      s.responsible?.id === currentUser.id ||
+      (s.responsible?.email && currentUser.email && s.responsible.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+      (s.responsible?.name && currentUser.name && s.responsible.name.toLowerCase() === currentUser.name.toLowerCase()) ||
+      (s.lead_source && currentUser.name && s.lead_source.toLowerCase().includes(currentUser.name.toLowerCase()))
+    );
+  };
+
+  const visibleCollections = collections.filter(c => {
+    const sup = c.supplier || suppliers.find(s => s.id === c.supplier_id);
+    return isResponsibleForSupplier(sup);
+  });
 
   if (loading) {
     return (
@@ -59,20 +87,37 @@ export default function CollectionsPage() {
     <div className="space-y-6 font-sans">
       
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 leading-tight">
-          {t('collections.title', 'Programação de Coletas')}
-        </h1>
-        <p className="text-slate-500 text-sm mt-1">
-          {t('collections.subtitle', 'Acompanhe as coletas programadas e realize o recebimento dos materiais.')}
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+            {t('collections.title', 'Programação de Coletas')}
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">
+            {t('collections.subtitle', 'Acompanhe as coletas programadas e realize o recebimento dos materiais.')}
+          </p>
+        </div>
+
+        {/* User Scope Badge */}
+        <div className="flex items-center gap-2">
+          {isBuyer ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
+              <UserCheck size={14} />
+              {language === 'pt' ? 'Visão: Meus Processos de Compras' : 'View: My Buying Leads'}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+              <ShieldCheck size={14} />
+              {language === 'pt' ? 'Visão: Geral do Hub (Todos)' : 'View: Hub Global (All)'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Collections list */}
-      <Card className="overflow-hidden !p-0 border border-slate-200 dark:border-slate-800">
-        {collections.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            {language === 'pt' ? 'Nenhuma coleta cadastrada.' : 'No collections registered yet.'}
+      <Card className="overflow-hidden !p-0 border border-slate-200 dark:border-slate-800 shadow-sm">
+        {visibleCollections.length === 0 ? (
+          <div className="p-12 text-center text-slate-400 text-sm">
+            {language === 'pt' ? 'Nenhuma coleta cadastrada para o seu usuário.' : 'No collections registered for your account.'}
           </div>
         ) : (
           <div className="overflow-x-auto text-sm">
@@ -88,64 +133,70 @@ export default function CollectionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {collections.map((col) => (
+                {visibleCollections.map((col) => (
                   <tr key={col.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Calendar size={14} className="text-slate-400" />
-                        <span className="font-bold text-slate-900">{formatDate(col.scheduled_date)}</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{formatDate(col.scheduled_date)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                        <Building2 size={12} className="text-slate-400" />
-                        <Link href={`/fornecedores/${col.supplier_id}`} className="hover:text-emerald-600 hover:underline">
-                          {col.supplier?.name}
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
+                        <Building2 size={15} className="text-[#2098D1]" />
+                        <Link 
+                          href={`/fornecedores/${col.supplier_id}`}
+                          className="hover:text-[#2098D1] transition-colors"
+                        >
+                          {col.supplier?.name || 'Fornecedor'}
                         </Link>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-0.5">
-                        {col.items?.map((item, idx) => (
-                          <span key={idx} className="text-xs text-slate-650">
-                            {item.material_name} ({formatVolume(item.estimated_volume, item.unit)})
+                      <div className="space-y-1">
+                        {col.items && col.items.length > 0 ? (
+                          col.items.map((item, idx) => (
+                            <span key={idx} className="inline-block bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs px-2 py-0.5 rounded-md mr-1 font-medium">
+                              {item.material_name} ({item.estimated_volume} {item.unit})
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-slate-400 italic text-xs">
+                            {language === 'pt' ? 'Resíduos gerais' : 'General waste'}
                           </span>
-                        ))}
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant={getCollectionColor(col.status)}>
-                        {translateCollectionStatus(col.status)}
+                      <Badge variant={getCollectionColor(col.status) as any}>
+                        {translateCollectionStatus(col.status, language)}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-500 space-y-0.5">
+                      <p className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                        <Truck size={13} className="text-slate-400" />
+                        {col.carrier_name || (language === 'pt' ? 'Frota iWrc' : 'iWrc Fleet')}
+                      </p>
                       {col.driver_name && (
-                        <div className="flex items-center gap-1">
-                          <User size={10} />
-                          <span>Motorista: {col.driver_name}</span>
-                        </div>
+                        <p className="flex items-center gap-1.5 text-slate-400">
+                          <User size={13} />
+                          {col.driver_name}
+                        </p>
                       )}
-                      {col.carrier_name && (
-                        <div className="flex items-center gap-1">
-                          <Truck size={10} />
-                          <span>Frete: {col.carrier_name}</span>
-                        </div>
-                      )}
-                      {!col.driver_name && !col.carrier_name && <span>Não informado</span>}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {col.status !== 'COMPLETED' && col.status !== 'CANCELLED' ? (
+                      {col.status === 'SCHEDULED' || col.status === 'IN_TRANSIT' ? (
                         <Link href={`/recebimentos?collectionId=${col.id}`}>
-                          <button className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-white hover:bg-emerald-650 border border-emerald-250 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer">
-                            <Scale size={12} />
-                            Registrar Recebimento
-                          </button>
+                          <Button size="sm" className="gap-1.5 text-xs font-bold bg-[#2098D1] hover:bg-[#1b82b3] text-white">
+                            <Scale size={14} />
+                            {language === 'pt' ? 'Receber na Balança' : 'Weigh & Receive'}
+                          </Button>
                         </Link>
                       ) : (
-                        <div className="flex items-center justify-end gap-1 text-slate-400 text-xs font-semibold">
-                          <FileCheck size={14} className="text-emerald-500" />
-                          <span>Pesado em Balança</span>
-                        </div>
+                        <span className="text-xs text-emerald-600 font-bold flex items-center justify-end gap-1">
+                          <FileCheck size={14} />
+                          {language === 'pt' ? 'Concluída' : 'Completed'}
+                        </span>
                       )}
                     </td>
                   </tr>

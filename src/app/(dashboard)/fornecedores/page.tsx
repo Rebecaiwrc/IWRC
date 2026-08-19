@@ -199,7 +199,23 @@ export default function SuppliersPage() {
   };
 
   // Show confirmed geradores OR any supplier where Logistics has responded FEASIBLE or NEED_INFO
+  const isBuyer = currentUser?.role === 'BUYER';
+
+  const isResponsibleForSupplier = (s?: Supplier | null) => {
+    if (!s || !currentUser) return false;
+    if (!isBuyer) return true; // Admins and Logistics see everything
+    return (
+      s.internal_responsible_id === currentUser.id ||
+      s.responsible?.id === currentUser.id ||
+      (s.responsible?.email && currentUser.email && s.responsible.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+      (s.responsible?.name && currentUser.name && s.responsible.name.toLowerCase() === currentUser.name.toLowerCase()) ||
+      (s.lead_source && currentUser.name && s.lead_source.toLowerCase().includes(currentUser.name.toLowerCase()))
+    );
+  };
+
   const filteredSuppliers = suppliers.filter(s => {
+    if (!isResponsibleForSupplier(s)) return false;
+
     const activeLogistics = s.logistics_analyses?.[0];
     const isLogisticsEligible = Boolean(
       activeLogistics && 
@@ -231,7 +247,9 @@ export default function SuppliersPage() {
     return matchesSearch && matchesStage && matchesResponsible;
   });
 
-  const needInfoSuppliers = suppliers.filter(s => s.logistics_analyses?.[0]?.feasibility === 'NEED_INFO');
+  const needInfoSuppliers = suppliers
+    .filter(s => isResponsibleForSupplier(s))
+    .filter(s => s.logistics_analyses?.[0]?.feasibility === 'NEED_INFO');
 
   const getNextCollectionDate = (baseDateStr: string, frequency?: string | null): Date => {
     const date = new Date(baseDateStr + 'T00:00:00');

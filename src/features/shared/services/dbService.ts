@@ -13,6 +13,7 @@ import {
   CollectionItem, 
   Receipt, 
   ReceiptItem,
+  MaterialDispatch,
   SupplierStage,
   SupplierStatus,
   FeasibilityStatus,
@@ -35,7 +36,8 @@ import {
   mockCollections,
   mockCollectionItems,
   mockReceipts,
-  mockReceiptItems
+  mockReceiptItems,
+  mockDispatches
 } from './mockData';
 
 export const isValidUuid = (str?: string | null): boolean => {
@@ -58,6 +60,7 @@ let memoryDb: {
   collectionItems: CollectionItem[];
   receipts: Receipt[];
   receiptItems: ReceiptItem[];
+  dispatches: MaterialDispatch[];
 } = {
   profiles: [...mockProfiles],
   suppliers: [...mockSuppliers],
@@ -71,7 +74,8 @@ let memoryDb: {
   collections: [...mockCollections],
   collectionItems: [...mockCollectionItems],
   receipts: [...mockReceipts],
-  receiptItems: [...mockReceiptItems]
+  receiptItems: [...mockReceiptItems],
+  dispatches: [...mockDispatches]
 };
 
 // Helper for local storage
@@ -1234,6 +1238,105 @@ export const dbService = {
 
     const allRec = await this.getReceipts();
     return allRec.find(r => r.id === receiptId)!;
+  },
+
+  // Material Dispatches (Saídas & Vendas de Materiais do Hub)
+  async getMaterialDispatches(): Promise<MaterialDispatch[]> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('material_dispatches')
+        .select('*, creator:profiles(id, name, email, role)')
+        .order('dispatch_date', { ascending: false });
+      if (!error && data) return data;
+    }
+
+    const dispatches = getLocalData<MaterialDispatch>('dispatches', mockDispatches);
+    const profiles = getLocalData<Profile>('profiles', mockProfiles);
+
+    return dispatches.map(d => ({
+      ...d,
+      creator: profiles.find(p => p.id === d.created_by) || null
+    })).sort((a, b) => new Date(b.dispatch_date).getTime() - new Date(a.dispatch_date).getTime());
+  },
+
+  async createMaterialDispatch(dispatchData: Partial<MaterialDispatch>): Promise<MaterialDispatch> {
+    const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+    const now = new Date().toISOString();
+    const qty = Number(dispatchData.quantity_kg) || 0;
+    const price = Number(dispatchData.unit_price) || 0;
+    const totalVal = dispatchData.total_value !== undefined ? Number(dispatchData.total_value) : (qty * price);
+
+    const payload: Record<string, any> = {
+      id,
+      buyer_name: dispatchData.buyer_name || 'Comprador não informado',
+      buyer_document: dispatchData.buyer_document || null,
+      material_name: dispatchData.material_name || 'Material em geral',
+      quantity_kg: qty,
+      unit_price: price,
+      total_value: totalVal,
+      dispatch_date: dispatchData.dispatch_date || now.split('T')[0],
+      invoice_number: dispatchData.invoice_number || null,
+      mtr_number: dispatchData.mtr_number || null,
+      carrier_name: dispatchData.carrier_name || null,
+      vehicle_plate: dispatchData.vehicle_plate || null,
+      driver_name: dispatchData.driver_name || null,
+      destination_type: dispatchData.destination_type || 'sale',
+      notes: dispatchData.notes || null,
+      created_at: now
+    };
+
+    if (isValidUuid(dispatchData.created_by)) {
+      payload.created_by = dispatchData.created_by;
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('material_dispatches')
+        .insert([payload])
+        .select()
+        .single();
+      if (!error && data) return data;
+      if (error) console.warn('Supabase material_dispatches insert error, falling back to local:', error.message);
+    }
+
+    const dispatches = getLocalData<MaterialDispatch>('dispatches', mockDispatches);
+    const newDispatch: MaterialDispatch = {
+      id,
+      buyer_name: payload.buyer_name,
+      buyer_document: payload.buyer_document,
+      material_name: payload.material_name,
+      quantity_kg: payload.quantity_kg,
+      unit_price: payload.unit_price,
+      total_value: payload.total_value,
+      dispatch_date: payload.dispatch_date,
+      invoice_number: payload.invoice_number,
+      mtr_number: payload.mtr_number,
+      carrier_name: payload.carrier_name,
+      vehicle_plate: payload.vehicle_plate,
+      driver_name: payload.driver_name,
+      destination_type: payload.destination_type,
+      notes: payload.notes,
+      created_by: payload.created_by || null,
+      created_at: now
+    };
+    dispatches.push(newDispatch);
+    saveLocalData('dispatches', dispatches);
+    return newDispatch;
+  },
+
+  async deleteMaterialDispatch(id: string): Promise<boolean> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('material_dispatches')
+        .delete()
+        .eq('id', id);
+      if (error) console.warn('Error deleting material dispatch from Supabase:', error.message);
+    }
+
+    const dispatches = getLocalData<MaterialDispatch>('dispatches', mockDispatches);
+    const filtered = dispatches.filter(d => d.id !== id);
+    saveLocalData('dispatches', filtered);
+    return true;
   },
 
   // -------------------------------------------------------------
