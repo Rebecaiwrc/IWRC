@@ -12,6 +12,7 @@ import {
   Truck, 
   Calendar, 
   Scale, 
+  TrendingUp,
   LogOut, 
   Layers, 
   RotateCcw,
@@ -101,6 +102,7 @@ export const Sidebar: React.FC = () => {
         { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
         { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
+        { name: t('nav.dispatches', 'Saídas do Hub'), href: '/saidas', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS', 'BUYER'] },
         { name: t('nav.dashboard', 'Dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.settings', 'Configurações'), href: '/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ]
@@ -111,6 +113,7 @@ export const Sidebar: React.FC = () => {
         { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
         { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
+        { name: t('nav.dispatches', 'Saídas do Hub'), href: '/saidas', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS', 'BUYER'] },
         { name: t('nav.dashboard', 'Dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.settings', 'Configurações'), href: '/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
       ];
