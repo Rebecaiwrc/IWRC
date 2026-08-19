@@ -87,8 +87,7 @@ export default function SuperAdminPanelPage() {
   const generateEmailData = (name: string, email: string, password?: string, role?: UserRole) => {
     const roleName = getRoleLabel(role);
     const loginUrl = 'https://iwrc.vercel.app/login';
-    const logoUrl = 'https://iwrc.vercel.app/logo.png';
-    const pwd = password ? password : '[Senha Pessoal Já Cadastrada / Padrão]';
+    const pwd = password ? password : 'Iwrc@' + new Date().getFullYear();
 
     const subject = `Seu acesso ao sistema iWRC foi criado com sucesso - ${name}`;
 
@@ -98,17 +97,13 @@ Seu acesso ao sistema iWRC foi criado com sucesso.
 Abaixo estão suas credenciais para acesso:
 
 E-mail de acesso: ${email}
-Senha temporária: ${pwd}
+Senha de acesso: ${pwd}
 (Recomendamos alterar sua senha após o primeiro acesso)
 Perfil / Cargo: ${roleName}
 
 Acessar o sistema: ${loginUrl}
 
-Em caso de dúvidas ou dificuldades de acesso, entre em contato com o suporte:
-support@iwrc.world | +55 (11) 96467-1234
-
-Advancing Material Recovery and Recycling through Collaboration with the Informal Waste Sector
-© 2026 iWRC. Todos os direitos reservados.`;
+© 2026 iWRC • Sistema de Gerenciamento de Geradores. Todos os direitos reservados.`;
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -139,25 +134,25 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
             <td style="padding: 32px 32px 16px 32px; background: #ffffff;">
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td valign="top" style="width: 55%;">
+                  <td valign="top" style="width: 65%;">
                     <table border="0" cellspacing="0" cellpadding="0">
                       <tr>
                         <td>
                           <!-- iWRC Logo Presentation -->
                           <div style="display: inline-block;">
                             <span style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 34px; font-weight: 900; color: #0284C7; letter-spacing: -0.5px;">iW</span><span style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 34px; font-weight: 900; color: #0369A1; letter-spacing: -0.5px;">rc</span>
-                            <div style="font-size: 11px; font-weight: 700; color: #64748B; letter-spacing: 0.8px; margin-top: -2px;">
-                              The Human Side of Recycling
+                            <div style="font-size: 11px; font-weight: 700; color: #64748B; letter-spacing: 0.5px; margin-top: -2px;">
+                              Sistema de Gerenciamento de Geradores
                             </div>
                           </div>
                         </td>
                       </tr>
                     </table>
                   </td>
-                  <td valign="top" align="right" style="width: 45%;">
+                  <td valign="top" align="right" style="width: 35%;">
                     <!-- Wave Graphical Accents -->
-                    <div style="width: 140px; height: 75px; background: linear-gradient(135deg, #38bdf8 0%, #0284c7 60%, #0369a1 100%); border-radius: 40px 10px 40px 10px; opacity: 0.85; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                      <div style="color: rgba(255,255,255,0.25); font-size: 40px; font-weight: 900;">♻</div>
+                    <div style="width: 120px; height: 70px; background: linear-gradient(135deg, #38bdf8 0%, #0284c7 60%, #0369a1 100%); border-radius: 35px 10px 35px 10px; opacity: 0.85; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                      <div style="color: rgba(255,255,255,0.25); font-size: 36px; font-weight: 900;">♻</div>
                     </div>
                   </td>
                 </tr>
@@ -228,7 +223,7 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
                           </td>
                           <td valign="middle" style="padding-left: 8px;">
                             <div style="font-size: 11px; font-weight: 700; color: #0284c7;">
-                              Senha temporária
+                              Senha de acesso
                             </div>
                             <div style="font-size: 14px; font-weight: 800; color: #0f172a; font-family: Consolas, monospace; background: #e2e8f0; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 2px;">
                               ${pwd}
@@ -256,7 +251,7 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
 
           <!-- Call to Action Button -->
           <tr>
-            <td align="center" style="padding: 6px 32px 28px 32px;">
+            <td align="center" style="padding: 6px 32px 32px 32px;">
               <table border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td align="center" style="border-radius: 28px; background-color: #0d9488;">
@@ -269,71 +264,13 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
             </td>
           </tr>
 
-          <!-- Subtle Divider with Logo Mark -->
-          <tr>
-            <td align="center" style="padding: 0 32px 20px 32px;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td style="border-top: 1px solid #f1f5f9;"></td>
-                  <td align="center" style="width: 40px; padding: 0 10px; font-size: 18px; color: #0284c7; font-weight: 900;">
-                    <span style="display: inline-block; width: 24px; height: 24px; border-radius: 12px; background: #e0f2fe; line-height: 24px; font-size: 12px; font-weight: 900; color: #0369a1;">W</span>
-                  </td>
-                  <td style="border-top: 1px solid #f1f5f9;"></td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Support Contact Section -->
-          <tr>
-            <td align="center" style="padding: 0 32px 30px 32px;">
-              <p style="margin: 0 0 10px 0; font-size: 11px; color: #64748b; font-weight: 500;">
-                Em caso de dúvidas ou dificuldades de acesso, entre em contato com o suporte:
-              </p>
-              <table border="0" cellspacing="0" cellpadding="0" style="font-size: 12px; font-weight: 700; color: #0284c7;">
-                <tr>
-                  <td style="padding-right: 14px;">
-                    ✉️ <a href="mailto:support@iwrc.world" style="color: #0284c7; text-decoration: none;">support@iwrc.world</a>
-                  </td>
-                  <td style="border-left: 1px solid #cbd5e1; padding-left: 14px; color: #475569;">
-                    📞 <span style="color: #0f172a;">+55 (11) 96467-1234</span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
         </table>
 
-        <!-- Bottom Informational Bar & Social Links -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; margin-top: 16px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 24px;">
+        <!-- Copyright Footer -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; margin-top: 16px;">
           <tr>
-            <td valign="middle" style="width: 55%; font-size: 11px; color: #475569; line-height: 1.4;">
-              <table border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td valign="middle" style="width: 32px; font-size: 22px; color: #0d9488;">
-                    ♻️
-                  </td>
-                  <td valign="middle" style="padding-left: 8px; font-weight: 600; color: #334155; font-size: 11px;">
-                    Advancing Material Recovery and Recycling through Collaboration with the Informal Waste Sector
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <td valign="middle" align="right" style="width: 45%; border-left: 1px solid #f1f5f9; padding-left: 16px;">
-              <span style="font-size: 11px; font-weight: 700; color: #0284c7; margin-right: 8px;">Siga o iWRC</span>
-              <span style="font-size: 15px; letter-spacing: 4px;">
-                📸 💼 🎥 🌐
-              </span>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Copyright -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; margin-top: 14px;">
-          <tr>
-            <td align="center" style="font-size: 10px; color: #94a3b8;">
-              © 2026 <strong>iWRC</strong>. Todos os direitos reservados.
+            <td align="center" style="font-size: 11px; color: #94a3b8;">
+              © 2026 <strong>iWRC</strong> • Sistema de Gerenciamento de Geradores. Todos os direitos reservados.
             </td>
           </tr>
         </table>
@@ -887,7 +824,7 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
                             isOpen: true,
                             name: u.name,
                             email: u.email,
-                            password: '',
+                            password: 'Iwrc@' + new Date().getFullYear(),
                             role: u.role,
                             isNewUser: false
                           });
@@ -944,7 +881,7 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
         </div>
       </Card>
 
-      {/* Modal: Create User */}
+      {/* Modal: Criar Usuário */}
       <Modal
         isOpen={isCreateUserOpen}
         onClose={() => setIsCreateUserOpen(false)}
@@ -953,7 +890,7 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
         <form onSubmit={handleCreateUser} className="space-y-4">
           <Input
             label="Nome Completo"
-            placeholder="Ex: Roberto Silva"
+            placeholder="Roberto Oliveira"
             value={newUserForm.name}
             onChange={e => setNewUserForm(prev => ({ ...prev, name: e.target.value }))}
             required
@@ -1016,7 +953,7 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
         <Modal
           isOpen={emailModalData.isOpen}
           onClose={() => setEmailModalData(null)}
-          title="📧 Enviar Acesso por E-mail (Outlook)"
+          title="📧 Enviar Acesso por E-mail (iWRC)"
           size="lg"
         >
           {(() => {
@@ -1043,14 +980,14 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
                         {emailModalData.isNewUser ? `Usuário "${emailModalData.name}" criado com sucesso!` : `Dados de acesso de "${emailModalData.name}"`}
                       </span>
                       <span className="text-[11px] opacity-80 block">
-                        Clique em "Abrir no Outlook" para abrir o e-mail preenchido no seu aplicativo, revisar e enviar manualmente.
+                        Você pode ajustar a senha abaixo antes de clicar em "Copiar Visual & Abrir Outlook".
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Credentials Recap Card */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                {/* Credentials Recap Card with Editable Password */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs">
                   <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
                     <span className="font-bold text-slate-500 uppercase text-[10px]">Destinatário / E-mail:</span>
                     <span className="font-mono font-bold text-slate-900 dark:text-white">{emailModalData.email}</span>
@@ -1061,14 +998,16 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
                       https://iwrc.vercel.app/login <ExternalLink size={11} />
                     </a>
                   </div>
-                  {emailModalData.password && (
-                    <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
-                      <span className="font-bold text-slate-500 uppercase text-[10px]">Senha Provisória:</span>
-                      <span className="font-mono font-black text-slate-900 bg-slate-200 dark:bg-slate-800 dark:text-white px-2 py-0.5 rounded">
-                        {emailModalData.password}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
+                    <span className="font-bold text-slate-500 uppercase text-[10px]">Senha a ser enviada no e-mail:</span>
+                    <input
+                      type="text"
+                      value={emailModalData.password}
+                      onChange={e => setEmailModalData(prev => prev ? ({ ...prev, password: e.target.value }) : null)}
+                      placeholder="Digite a senha..."
+                      className="font-mono font-black text-slate-900 dark:text-white bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-3 py-1 rounded-lg text-xs outline-none focus:border-[#0284C7] text-right w-48 shadow-xs"
+                    />
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-slate-500 uppercase text-[10px]">Função:</span>
                     <Badge variant="info">{getRoleLabel(emailModalData.role)}</Badge>
@@ -1103,12 +1042,12 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
                           <div className="text-2xl font-black text-[#0284C7] tracking-tight">
                             iW<span className="text-[#0369A1]">rc</span>
                           </div>
-                          <div className="text-[10px] font-bold text-slate-400 tracking-wider">
-                            The Human Side of Recycling
+                          <div className="text-[10px] font-bold text-slate-500 tracking-wider">
+                            Sistema de Gerenciamento de Geradores
                           </div>
                         </div>
 
-                        <div className="w-24 h-12 rounded-2xl bg-gradient-to-r from-sky-400 to-cyan-600 flex items-center justify-center text-white/30 text-2xl font-black">
+                        <div className="w-20 h-11 rounded-2xl bg-gradient-to-r from-sky-400 to-cyan-600 flex items-center justify-center text-white/30 text-xl font-black">
                           ♻
                         </div>
                       </div>
@@ -1147,9 +1086,9 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
                               🔒
                             </div>
                             <div>
-                              <div className="text-[10px] font-bold text-[#0284c7] uppercase">Senha temporária</div>
+                              <div className="text-[10px] font-bold text-[#0284c7] uppercase">Senha de acesso</div>
                               <div className="text-xs font-black text-slate-900 dark:text-white font-mono bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded inline-block mt-0.5">
-                                {emailModalData.password || '[Senha Pessoal Já Cadastrada]'}
+                                {emailModalData.password || 'Iwrc@' + new Date().getFullYear()}
                               </div>
                               <div className="text-[9px] text-slate-400 mt-1">
                                 (Recomendamos alterar sua senha após o primeiro acesso)
@@ -1172,39 +1111,11 @@ Advancing Material Recovery and Recycling through Collaboration with the Informa
                         </span>
                       </div>
 
-                      {/* Divider with W */}
-                      <div className="flex items-center gap-3 pt-2">
-                        <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800"></div>
-                        <div className="w-6 h-6 rounded-full bg-sky-50 dark:bg-sky-950 text-[#0284c7] font-black text-[11px] flex items-center justify-center">
-                          W
-                        </div>
-                        <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800"></div>
-                      </div>
-
-                      {/* Support Section */}
-                      <div className="text-center space-y-1">
-                        <p className="text-[10px] text-slate-400">
-                          Em caso de dúvidas ou dificuldades de acesso, entre em contato com o suporte:
-                        </p>
-                        <div className="text-[11px] font-bold text-[#0284c7] flex items-center justify-center gap-3">
-                          <span>✉️ support@iwrc.world</span>
-                          <span className="text-slate-300">|</span>
-                          <span className="text-slate-700 dark:text-slate-300">📞 +55 (11) 96467-1234</span>
-                        </div>
-                      </div>
-
                     </div>
 
-                    {/* Bottom Card Mockup */}
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 p-3 flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-400">
-                      <div className="flex items-center gap-2 max-w-xs">
-                        <span className="text-lg">♻️</span>
-                        <span className="font-medium text-[9px] leading-tight">Advancing Material Recovery and Recycling through Collaboration with the Informal Waste Sector</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold text-[#0284c7] block">Siga o iWRC</span>
-                        <span className="text-xs tracking-widest opacity-80">📸 💼 🎥 🌐</span>
-                      </div>
+                    {/* Clean Footer Mockup */}
+                    <div className="text-center text-[10px] text-slate-400">
+                      © 2026 <strong>iWRC</strong> • Sistema de Gerenciamento de Geradores. Todos os direitos reservados.
                     </div>
 
                   </div>
