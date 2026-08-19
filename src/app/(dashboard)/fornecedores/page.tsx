@@ -199,6 +199,17 @@ export default function SuppliersPage() {
   };
 
   // Show confirmed geradores OR any supplier where Logistics has responded FEASIBLE or NEED_INFO
+  const canUserModifySupplier = (s: Supplier) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') return true;
+    if (s.internal_responsible_id && s.internal_responsible_id === currentUser.id) return true;
+    if (s.responsible?.id && s.responsible.id === currentUser.id) return true;
+    if (s.responsible?.email && currentUser.email && s.responsible.email.toLowerCase() === currentUser.email.toLowerCase()) return true;
+    if (s.responsible?.name && currentUser.name && s.responsible.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
+    if (s.lead_source && currentUser.name && s.lead_source.toLowerCase().includes(currentUser.name.toLowerCase())) return true;
+    return false;
+  };
+
   const filteredSuppliers = suppliers.filter(s => {
     const activeLogistics = s.logistics_analyses?.[0];
     const isLogisticsEligible = Boolean(
@@ -529,35 +540,37 @@ export default function SuppliersPage() {
                       {/* Actions */}
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' && (currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
+                          {supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' && canUserModifySupplier(supplier) && (
                             <Link href={`/fornecedores/${supplier.id}`}>
                               <button className="inline-flex items-center gap-1.5 text-xs text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3.5 py-1.5 rounded-full font-bold transition-all border border-amber-300 cursor-pointer shadow-xs">
-                                💬 Responder Info
+                                💬 {language === 'pt' ? 'Responder Info' : 'Respond Info'}
                               </button>
                             </Link>
                           )}
                           <Link href={`/fornecedores/${supplier.id}`}>
                             <button className="inline-flex items-center gap-1.5 text-xs text-[#2098D1] hover:text-[#1883B5] bg-[#E5F5F8] hover:bg-[#DDF4F9] px-3.5 py-1.5 rounded-full font-bold transition-all border border-[#CCEAF1] cursor-pointer">
                               <Eye size={12} />
-                              Ficha 360º
+                              {language === 'pt' ? 'Ficha 360º' : '360º Details'}
                             </button>
                           </Link>
-                          <button
-                            onClick={async () => {
-                              if (!confirm(`Tem certeza que deseja apagar o gerador "${supplier.name}" permanentemente?`)) return;
-                              try {
-                                await dbService.deleteSupplier(supplier.id);
-                                await fetchData();
-                              } catch (err) {
-                                console.error(err);
-                                alert('Erro ao excluir gerador.');
-                              }
-                            }}
-                            className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
-                            title="Apagar Gerador"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          {canUserModifySupplier(supplier) && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm(language === 'pt' ? `Tem certeza que deseja apagar o gerador "${supplier.name}" permanentemente?` : `Are you sure you want to permanently delete generator "${supplier.name}"?`)) return;
+                                try {
+                                  await dbService.deleteSupplier(supplier.id);
+                                  await fetchData();
+                                } catch (err) {
+                                  console.error(err);
+                                  alert(language === 'pt' ? 'Erro ao excluir gerador.' : 'Error deleting generator.');
+                                }
+                              }}
+                              className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
+                              title={language === 'pt' ? 'Apagar Gerador' : 'Delete Generator'}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

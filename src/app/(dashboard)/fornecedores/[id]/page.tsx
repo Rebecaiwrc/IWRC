@@ -296,7 +296,7 @@ export default function SupplierDetailPage() {
     }
   };
 
-  const canUserDeleteSupplier = () => {
+  const canUserModifySupplier = () => {
     if (!currentUser || !supplier) return false;
     if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') return true;
     if (supplier.internal_responsible_id && supplier.internal_responsible_id === currentUser.id) return true;
@@ -306,6 +306,7 @@ export default function SupplierDetailPage() {
     if (supplier.lead_source && currentUser.name && supplier.lead_source.toLowerCase().includes(currentUser.name.toLowerCase())) return true;
     return false;
   };
+  const canUserDeleteSupplier = canUserModifySupplier;
 
   const handleDeleteSupplier = async () => {
     if (!canUserDeleteSupplier()) {
@@ -884,6 +885,22 @@ export default function SupplierDetailPage() {
             </span>
           </div>
 
+          {!canUserModifySupplier() && (
+            <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex items-center gap-2">
+                <Eye size={16} className="text-[#2098D1] shrink-0" />
+                <span>
+                  {language === 'pt'
+                    ? 'Modo Somente Leitura (Ficha 360º): Você não é o responsável que cadastrou este gerador. Alterações e exclusões estão bloqueadas.'
+                    : 'Read-Only Mode (360º View): You are not the responsible creator of this generator. Edits and deletions are disabled.'}
+                </span>
+              </div>
+              <span className="font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shrink-0">
+                {supplier.responsible?.name || 'Comercial'}
+              </span>
+            </div>
+          )}
+
           {/* Lead Header Card */}
           <Card className="border-t-4 border-t-indigo-600">
             <div className="space-y-5">
@@ -924,9 +941,11 @@ export default function SupplierDetailPage() {
                       )}
                     </>
                   )}
-                  <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
-                    {language === 'pt' ? 'Editar Lead' : 'Edit Lead'}
-                  </Button>
+                  {canUserModifySupplier() && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                      {language === 'pt' ? 'Editar Lead' : 'Edit Lead'}
+                    </Button>
+                  )}
                   {canUserDeleteSupplier() && (
                     <Button 
                       variant="outline" 
@@ -1415,9 +1434,25 @@ export default function SupplierDetailPage() {
               ← Voltar para Geradores
             </Link>
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase">
-              Código: {supplier.code || 'GER-001'}
+              {language === 'pt' ? 'Código' : 'Code'}: {supplier.code || 'GER-001'}
             </span>
           </div>
+
+          {!canUserModifySupplier() && (
+            <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex items-center gap-2">
+                <Eye size={16} className="text-[#2098D1] shrink-0" />
+                <span>
+                  {language === 'pt'
+                    ? 'Modo Somente Leitura (Ficha 360º): Você não é o responsável que cadastrou este gerador. Alterações e exclusões estão bloqueadas.'
+                    : 'Read-Only Mode (360º View): You are not the responsible creator of this generator. Edits and deletions are disabled.'}
+                </span>
+              </div>
+              <span className="font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shrink-0">
+                {supplier.responsible?.name || 'Comercial'}
+              </span>
+            </div>
+          )}
 
           {/* Main Header Panel */}
           <Card className="border-t-4 border-t-emerald-600">
@@ -1439,35 +1474,39 @@ export default function SupplierDetailPage() {
 
                 {/* Quick Actions Panel */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
-                    Editar Ficha
-                  </Button>
+                  {canUserModifySupplier() && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                      {language === 'pt' ? 'Editar Ficha' : 'Edit Details'}
+                    </Button>
+                  )}
                   
-                  {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
+                  {canUserModifySupplier() && (
                     <>
                       <Button variant="outline" size="sm" onClick={() => setIsInteractionModalOpen(true)}>
-                        Registrar Contato
+                        {language === 'pt' ? 'Registrar Contato' : 'Log Interaction'}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => setIsTaskModalOpen(true)}>
-                        Criar Tarefa
+                        {language === 'pt' ? 'Criar Tarefa' : 'Create Task'}
                       </Button>
                     </>
                   )}
 
                   {/* Realizar Agendamento */}
-                  <Button 
-                    size="sm" 
-                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-bold" 
-                    onClick={handleReleaseForScheduling}
-                  >
-                    <CalendarCheck size={14} />
-                    Realizar Agendamento
-                  </Button>
+                  {canUserModifySupplier() && (
+                    <Button 
+                      size="sm" 
+                      className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-bold" 
+                      onClick={handleReleaseForScheduling}
+                    >
+                      <CalendarCheck size={14} />
+                      {language === 'pt' ? 'Realizar Agendamento' : 'Schedule Collection'}
+                    </Button>
+                  )}
 
-                  {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER' || currentUser?.role === 'LOGISTICS') && (
+                  {(currentUser?.role === 'ADMIN' || (currentUser?.role === 'BUYER' && canUserModifySupplier()) || currentUser?.role === 'LOGISTICS') && (
                     <Button size="sm" className="gap-1.5 bg-[#2098D1] hover:bg-[#1883B5]" onClick={() => setIsCollectionModalOpen(true)}>
                       <Calendar size={14} />
-                      Agendar Coleta
+                      {language === 'pt' ? 'Agendar Coleta' : 'Book Collection'}
                     </Button>
                   )}
 
@@ -1743,10 +1782,10 @@ export default function SupplierDetailPage() {
                     <Scale size={16} className="text-emerald-600" />
                     Materiais Declarados
                   </h3>
-                  {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
+                  {canUserModifySupplier() && (
                     <Button size="sm" className="gap-1.5" onClick={() => setIsMaterialModalOpen(true)}>
                       <Plus size={14} />
-                      Adicionar Material
+                      {language === 'pt' ? 'Adicionar Material' : 'Add Material'}
                     </Button>
                   )}
                 </div>
@@ -1756,12 +1795,12 @@ export default function SupplierDetailPage() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          <th className="px-4 py-3">Material</th>
-                          <th className="px-4 py-3">Est. Volume / Frequência</th>
-                          <th className="px-4 py-3">Modalidade</th>
-                          <th className="px-4 py-3">Acondicionamento</th>
-                          {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
-                            <th className="px-4 py-3 text-right">Ações</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Material' : 'Material'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Est. Volume / Frequência' : 'Est. Volume / Frequency'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Modalidade' : 'Modality'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Acondicionamento' : 'Conditioning'}</th>
+                          {canUserModifySupplier() && (
+                            <th className="px-4 py-3 text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
                           )}
                         </tr>
                       </thead>
@@ -1775,19 +1814,20 @@ export default function SupplierDetailPage() {
                             <td className="px-4 py-3">
                               {mat.transaction_type === 'purchase' ? (
                                 <div className="flex flex-col text-xs text-amber-700">
-                                  <span className="font-bold">Compra</span>
+                                  <span className="font-bold">{language === 'pt' ? 'Compra' : 'Purchase'}</span>
                                   <span className="text-[10px] text-slate-400">{formatCurrency(mat.price_per_kg)}/kg</span>
                                 </div>
                               ) : (
-                                <Badge variant="success">Doação</Badge>
+                                <Badge variant="success">{language === 'pt' ? 'Doação' : 'Donation'}</Badge>
                               )}
                             </td>
                             <td className="px-4 py-3 text-slate-500">{mat.storage_form || '-'}</td>
-                            {(currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
+                            {canUserModifySupplier() && (
                               <td className="px-4 py-3 text-right">
                                 <button
                                   onClick={() => handleDeleteMaterial(mat.id)}
                                   className="text-slate-400 hover:text-rose-500 p-1.5 rounded transition-colors cursor-pointer"
+                                  title={language === 'pt' ? 'Excluir Material' : 'Delete Material'}
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -1800,7 +1840,7 @@ export default function SupplierDetailPage() {
                   </div>
                 ) : (
                   <div className="py-12 text-center text-slate-400 text-sm">
-                    Nenhum material declarado para este gerador.
+                    {language === 'pt' ? 'Nenhum material declarado para este gerador.' : 'No materials declared for this generator.'}
                   </div>
                 )}
               </Card>
@@ -1813,14 +1853,18 @@ export default function SupplierDetailPage() {
                   <div>
                     <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
                       <FileText size={16} className="text-emerald-600" />
-                      Documentos & Termos Homologados
+                      {language === 'pt' ? 'Documentos & Termos Homologados' : 'Approved Documents & Terms'}
                     </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">Termo de Parceria, MTRs, Cartas de Doação e Licenças Ambientais.</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {language === 'pt' ? 'Termo de Parceria, MTRs, Cartas de Doação e Licenças Ambientais.' : 'Partnership Agreement, MTRs, Donation Letters and Environmental Licenses.'}
+                    </p>
                   </div>
-                  <Button size="sm" className="gap-1.5" onClick={() => setIsDocModalOpen(true)}>
-                    <Upload size={14} />
-                    Anexar Documento
-                  </Button>
+                  {canUserModifySupplier() && (
+                    <Button size="sm" className="gap-1.5" onClick={() => setIsDocModalOpen(true)}>
+                      <Upload size={14} />
+                      {language === 'pt' ? 'Anexar Documento' : 'Attach Document'}
+                    </Button>
+                  )}
                 </div>
 
                 {supplier.attached_documents && supplier.attached_documents.length > 0 ? (
@@ -1835,7 +1879,7 @@ export default function SupplierDetailPage() {
                             <div className="min-w-0">
                               <p className="font-bold text-xs text-[#0D2439] leading-tight truncate max-w-[160px]">{doc.name}</p>
                               <span className="text-[10px] uppercase font-bold text-[#146A88] tracking-wider block mt-0.5">
-                                {doc.type === 'mtr' ? 'MTR' : doc.type === 'donation_letter' ? 'Carta de Doação' : doc.type === 'partnership_agreement' ? 'Termo de Parceria' : 'Documento'}
+                                {doc.type === 'mtr' ? 'MTR' : doc.type === 'donation_letter' ? (language === 'pt' ? 'Carta de Doação' : 'Donation Letter') : doc.type === 'partnership_agreement' ? (language === 'pt' ? 'Termo de Parceria' : 'Partnership Agreement') : (language === 'pt' ? 'Documento' : 'Document')}
                               </span>
                             </div>
                           </div>
@@ -1843,17 +1887,19 @@ export default function SupplierDetailPage() {
                             <button
                               onClick={() => handleDownloadDoc(doc)}
                               className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] p-1.5 rounded-full transition-colors"
-                              title="Baixar / Visualizar documento"
+                              title={language === 'pt' ? 'Baixar / Visualizar documento' : 'Download / View document'}
                             >
                               <Download size={14} />
                             </button>
-                            <button
-                              onClick={() => handleDeleteDocument(doc.id)}
-                              className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
-                              title="Remover documento"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            {canUserModifySupplier() && (
+                              <button
+                                onClick={() => handleDeleteDocument(doc.id)}
+                                className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
+                                title={language === 'pt' ? 'Remover documento' : 'Delete document'}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </div>
                         </div>
                         {doc.notes && <p className="text-[11px] text-slate-500 bg-white p-2 rounded-xl border border-[#CCEAF1]">{doc.notes}</p>}
