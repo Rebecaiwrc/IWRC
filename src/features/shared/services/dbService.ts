@@ -1272,6 +1272,31 @@ export const dbService = {
     return allRec.find(r => r.id === receiptId)!;
   },
 
+  async deleteReceipt(id: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('receipt_items').delete().eq('receipt_id', id);
+      const { error } = await supabase.from('receipts').delete().eq('id', id);
+      if (error) throw error;
+      return;
+    }
+    const receipts = getLocalData<Receipt>('receipts', mockReceipts).filter(r => r.id !== id);
+    saveLocalData('receipts', receipts);
+    const receiptItems = getLocalData<ReceiptItem>('receiptItems', mockReceiptItems).filter(ri => ri.receipt_id !== id);
+    saveLocalData('receiptItems', receiptItems);
+  },
+
+  async clearAllHubReceipts(): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('receipt_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('receipts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('material_dispatches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      return;
+    }
+    saveLocalData('receipts', []);
+    saveLocalData('receiptItems', []);
+    saveLocalData('dispatches', []);
+  },
+
   // Material Dispatches (Saídas & Vendas de Materiais do Hub)
   async getMaterialDispatches(): Promise<MaterialDispatch[]> {
     if (isSupabaseConfigured && supabase) {

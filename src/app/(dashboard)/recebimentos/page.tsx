@@ -318,6 +318,29 @@ export default function ReceiptsPage() {
     }
   };
 
+  const handleDeleteReceipt = async (receiptId: string, supplierName?: string) => {
+    if (!confirm(language === 'pt' ? `Deseja realmente apagar esta pesagem de "${supplierName || 'recebimento'}"?` : `Do you really want to delete this weighing receipt?`)) return;
+    try {
+      await dbService.deleteReceipt(receiptId);
+      await fetchData();
+    } catch (err: any) {
+      console.error(err);
+      alert(language === 'pt' ? 'Erro ao excluir pesagem.' : 'Error deleting receipt.');
+    }
+  };
+
+  const handleClearAllReceipts = async () => {
+    if (!confirm(language === 'pt' ? 'Deseja realmente zerar todas as pesagens registradas na balança do Hub (resetar peso do galpão para 0 kg)?' : 'Do you want to reset all scale receipts to 0 kg?')) return;
+    try {
+      await dbService.clearAllHubReceipts();
+      await fetchData();
+      alert(language === 'pt' ? 'Pesagens e saldo zerados com sucesso!' : 'Receipts reset successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(language === 'pt' ? 'Erro ao zerar pesagens.' : 'Error resetting receipts.');
+    }
+  };
+
   // Filter collections for selected supplier that are not completed
   const supplierCollections = visibleCollections.filter(
     c => c.supplier_id === selectedSupplierId && c.status !== 'COMPLETED'
@@ -593,10 +616,22 @@ export default function ReceiptsPage() {
         {/* Right Column: Historical logs of recent weighings */}
         <div>
           <Card className="h-full flex flex-col">
-            <h3 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-              <ClipboardCheck size={16} className="text-emerald-600" />
-              {language === 'pt' ? 'Últimas Pesagens (Balança)' : 'Recent Weighings (Hub Scale)'}
-            </h3>
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+              <h3 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wider flex items-center gap-2">
+                <ClipboardCheck size={16} className="text-emerald-600" />
+                {language === 'pt' ? 'Últimas Pesagens (Balança)' : 'Recent Weighings (Hub Scale)'}
+              </h3>
+              {!isBuyer && visibleReceipts.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllReceipts}
+                  className="text-[10px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                  title={language === 'pt' ? 'Zerar todas as pesagens de testes' : 'Reset all test receipts'}
+                >
+                  {language === 'pt' ? 'Zerar Balança' : 'Reset All'}
+                </button>
+              )}
+            </div>
 
             {visibleReceipts.length === 0 ? (
               <div className="flex-1 flex items-center justify-center text-slate-400 text-sm text-center py-12">
@@ -610,8 +645,20 @@ export default function ReceiptsPage() {
                     className="p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2 text-xs"
                   >
                     <div className="flex items-center justify-between font-bold">
-                      <span className="text-slate-900 dark:text-white truncate max-w-[170px]">{rec.supplier?.name || 'Fornecedor'}</span>
-                      <span className="text-slate-400">{formatDate(rec.received_date)}</span>
+                      <span className="text-slate-900 dark:text-white truncate max-w-[150px]">{rec.supplier?.name || 'Fornecedor'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400">{formatDate(rec.received_date)}</span>
+                        {!isBuyer && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReceipt(rec.id, rec.supplier?.name)}
+                            className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-colors cursor-pointer"
+                            title={language === 'pt' ? 'Apagar Pesagem' : 'Delete Receipt'}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="space-y-1 text-slate-600 dark:text-slate-300 font-medium">

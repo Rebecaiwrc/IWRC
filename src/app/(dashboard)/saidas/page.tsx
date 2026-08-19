@@ -283,6 +283,18 @@ export default function SaidasPage() {
     }, 200);
   };
 
+  const handleClearHubData = async () => {
+    if (!confirm(language === 'pt' ? 'Deseja realmente zerar todas as pesagens de recebimento e saídas de testes do Hub (resetar saldo para 0 kg)?' : 'Do you want to reset all test receipts and dispatches to 0 kg?')) return;
+    try {
+      await dbService.clearAllHubReceipts();
+      await fetchData();
+      alert(language === 'pt' ? 'Saldo do Hub e pesagens zerados com sucesso!' : 'Hub balance and receipts reset to 0!');
+    } catch (err) {
+      console.error(err);
+      alert(language === 'pt' ? 'Erro ao zerar dados do Hub.' : 'Error resetting Hub data.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -326,13 +338,26 @@ export default function SaidasPage() {
           )}
 
           {canManageDispatches && (
-            <Button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold gap-2 shadow-lg shadow-purple-600/20 rounded-xl cursor-pointer"
-            >
-              <Plus size={16} />
-              {language === 'pt' ? 'Registrar Saída de Material' : 'Register Outbound Dispatch'}
-            </Button>
+            <>
+              {totalReceivedKg > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={handleClearHubData}
+                  className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  <Trash2 size={14} />
+                  {language === 'pt' ? 'Zerar Saldo do Galpão' : 'Reset Hub Stock'}
+                </Button>
+              )}
+
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold gap-2 shadow-lg shadow-purple-600/20 rounded-xl cursor-pointer"
+              >
+                <Plus size={16} />
+                {language === 'pt' ? 'Registrar Saída de Material' : 'Register Outbound Dispatch'}
+              </Button>
+            </>
           )}
         </div>
       </div>
