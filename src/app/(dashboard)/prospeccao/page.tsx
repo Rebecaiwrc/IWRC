@@ -556,21 +556,8 @@ export default function ProspectingPage() {
   };
 
   // Filtered & Sorted Suppliers
-  const isBuyer = currentUser?.role === 'BUYER';
-
   const filtered = useMemo(() => {
     return suppliers.filter(s => {
-      if (isBuyer && currentUser) {
-        const isOwner = (
-          s.internal_responsible_id === currentUser.id ||
-          s.responsible?.id === currentUser.id ||
-          (s.responsible?.email && currentUser.email && s.responsible.email.toLowerCase() === currentUser.email.toLowerCase()) ||
-          (s.responsible?.name && currentUser.name && s.responsible.name.toLowerCase() === currentUser.name.toLowerCase()) ||
-          (s.lead_source && currentUser.name && s.lead_source.toLowerCase().includes(currentUser.name.toLowerCase()))
-        );
-        if (!isOwner) return false;
-      }
-
       const pStatus = getLeadStatus(s);
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery = !q || (
@@ -599,7 +586,7 @@ export default function ProspectingPage() {
       if (sortBy === 'city') return (a.address?.city || '').localeCompare(b.address?.city || '');
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [suppliers, searchQuery, responsibleFilter, statusFilter, materialFilter, modalityFilter, sortBy, isBuyer, currentUser]);
+  }, [suppliers, searchQuery, responsibleFilter, statusFilter, materialFilter, modalityFilter, sortBy]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
