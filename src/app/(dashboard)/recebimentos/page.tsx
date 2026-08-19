@@ -132,7 +132,22 @@ export default function ReceiptsPage() {
     );
   };
 
-  const visibleSuppliers = suppliers.filter(s => isResponsibleForSupplier(s));
+  const isGeradorConfirmed = (s: Supplier) => {
+    const activeLogistics = s.logistics_analyses?.[0];
+    const isLogisticsEligible = Boolean(
+      activeLogistics && 
+      activeLogistics.feasibility && 
+      (activeLogistics.feasibility === 'FEASIBLE' || activeLogistics.feasibility === 'NEED_INFO')
+    );
+    const isStageConfirmed = ['DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage);
+    const hasCollections = Boolean(s.collections && s.collections.length > 0);
+
+    return isLogisticsEligible || isStageConfirmed || hasCollections;
+  };
+
+  const visibleSuppliers = suppliers
+    .filter(s => isResponsibleForSupplier(s))
+    .filter(s => isGeradorConfirmed(s));
 
   const visibleCollections = collections.filter(c => {
     const sup = c.supplier || suppliers.find(s => s.id === c.supplier_id);
@@ -352,8 +367,8 @@ export default function ReceiptsPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SearchableSelect
-                  label={language === 'pt' ? 'Selecionar Fornecedor *' : 'Select Supplier *'}
-                  placeholder={language === 'pt' ? 'Pesquise ou selecione a empresa...' : 'Search or select company...'}
+                  label={language === 'pt' ? 'Selecionar Gerador *' : 'Select Waste Generator *'}
+                  placeholder={language === 'pt' ? 'Pesquise ou selecione o gerador...' : 'Search or select generator...'}
                   searchPlaceholder={language === 'pt' ? 'Digite Razão Social, CNPJ ou Cidade...' : 'Type company name, CNPJ or city...'}
                   value={selectedSupplierId}
                   onChange={(val) => handleSupplierChange(val)}
@@ -364,7 +379,7 @@ export default function ReceiptsPage() {
                     badge: s.supplier_type || undefined
                   }))}
                   disabled={!!targetCollectionId}
-                  emptyText={language === 'pt' ? 'Nenhuma empresa encontrada' : 'No companies found'}
+                  emptyText={language === 'pt' ? 'Nenhum gerador homologado encontrado' : 'No approved generators found'}
                 />
 
                 <Select
