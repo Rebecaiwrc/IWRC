@@ -593,6 +593,32 @@ export default function SupplierDetailPage() {
     }
   };
 
+  const handleWithdrawFromLogistics = async () => {
+    if (!supplier || !currentUser) return;
+    if (!confirm(language === 'pt' ? 'Deseja retirar este lead da Logística e retornar para a etapa de Qualificação?' : 'Withdraw this lead from Logistics back to Qualification?')) return;
+    try {
+      await dbService.updateSupplier(supplier.id, {
+        current_stage: 'QUALIFICATION',
+        prospecting_status: 'QUALIFIED',
+        current_status: 'IN_PROGRESS'
+      });
+      await dbService.addSupplierStatusHistory({
+        supplier_id: supplier.id,
+        old_stage: 'LOGISTICS',
+        new_stage: 'QUALIFICATION',
+        old_status: supplier.current_status,
+        new_status: 'IN_PROGRESS',
+        user_id: currentUser.id,
+        notes: language === 'pt' ? 'Lead retirado da Logística pelo responsável' : 'Lead withdrawn from Logistics by owner'
+      });
+      await fetchSupplierData();
+      alert(language === 'pt' ? 'Lead retornado para a etapa de Qualificação com sucesso!' : 'Lead returned to Qualification successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(language === 'pt' ? 'Erro ao retirar lead da Logística.' : 'Error withdrawing lead.');
+    }
+  };
+
   const handleRespondInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplier || !currentUser || !respondInfoText.trim()) return;
@@ -851,14 +877,27 @@ export default function SupplierDetailPage() {
                 {/* Quick Actions */}
                 <div className="flex flex-wrap items-center gap-2">
                   {supplier.current_stage === 'LOGISTICS' && (
-                    <Button 
-                      size="sm" 
-                      className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs" 
-                      onClick={handleOpenLogisticsModal}
-                    >
-                      <Truck size={14} />
-                      {language === 'pt' ? 'Responder Análise Logística' : 'Respond to Logistics Analysis'}
-                    </Button>
+                    <>
+                      <Button 
+                        size="sm" 
+                        className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs" 
+                        onClick={handleOpenLogisticsModal}
+                      >
+                        <Truck size={14} />
+                        {language === 'pt' ? 'Responder Análise Logística' : 'Respond to Logistics Analysis'}
+                      </Button>
+                      
+                      {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || supplier.internal_responsible_id === currentUser?.id || (currentUser?.name && supplier.responsible?.name?.toLowerCase() === currentUser?.name?.toLowerCase())) && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-1.5 !border-indigo-200 !text-indigo-700 hover:!bg-indigo-50"
+                          onClick={handleWithdrawFromLogistics}
+                        >
+                          ↩️ {language === 'pt' ? 'Retirar da Logística' : 'Withdraw from Logistics'}
+                        </Button>
+                      )}
+                    </>
                   )}
                   <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
                     {language === 'pt' ? 'Editar Lead' : 'Edit Lead'}

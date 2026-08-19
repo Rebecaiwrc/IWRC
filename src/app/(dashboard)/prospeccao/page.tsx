@@ -37,7 +37,8 @@ import {
   Layers,
   Upload,
   FileCheck,
-  Loader2
+  Loader2,
+  Lock
 } from 'lucide-react';
 
 const PROSPECTING_COLUMNS: { key: ProspectingStatus; label: string; color: string; badgeVariant: 'default' | 'warning' | 'info' | 'emerald' | 'purple' }[] = [
@@ -341,9 +342,28 @@ export default function ProspectingPage() {
     }
   };
 
+  const canUserModifyLeadInLogistics = (s: Supplier) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') return true;
+    if (s.internal_responsible_id && s.internal_responsible_id === currentUser.id) return true;
+    if (s.responsible?.name && currentUser.name && s.responsible.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
+    return false;
+  };
+
   const updateStatus = async (supplierId: string, newStatus: ProspectingStatus) => {
     const s = suppliers.find(x => x.id === supplierId);
     if (!s || getLeadStatus(s) === newStatus) return;
+
+    // Security Rule: If lead is currently in WAITING_LOGISTICS, only the responsible user or Admin can move it
+    if (s.prospecting_status === 'WAITING_LOGISTICS' && !canUserModifyLeadInLogistics(s)) {
+      alert(
+        language === 'pt'
+          ? `Apenas o responsável (${s.responsible?.name || 'quem enviou'}) ou Administrador pode alterar ou retirar este lead da Logística.`
+          : `Only the responsible owner (${s.responsible?.name || 'sender'}) or Administrator can move or withdraw this lead from Logistics.`
+      );
+      return;
+    }
+
     const stage = newStatus === 'WAITING_LOGISTICS' ? 'LOGISTICS'
                 : newStatus === 'QUALIFIED'         ? 'QUALIFICATION' : 'PROSPECTING';
     const oldSuppliers = [...suppliers];
@@ -896,15 +916,27 @@ export default function ProspectingPage() {
                   {cards.map(supplier => {
                     const pc = supplier.contacts?.find(c => c.is_primary) || supplier.contacts?.[0];
                     const isQ = supplier.prospecting_status === 'QUALIFIED';
+                    const canModifyLogistics = canUserModifyLeadInLogistics(supplier);
+                    const isDraggable = !isLogCol || canModifyLogistics;
 
                     if (cardDensity === 'compact') {
                       return (
                         <div 
                           key={supplier.id}
-                          draggable={!isLogCol}
-                          onDragStart={e => e.dataTransfer.setData('text/plain', supplier.id)}
-                          className={`bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl shadow-xs hover:shadow-md transition-all duration-150 space-y-2 ${
-                            isLogCol ? 'opacity-75 cursor-default' : 'cursor-grab active:cursor-grabbing hover:border-emerald-300'
+                          draggable={isDraggable}
+                          onDragStart={e => {
+                            if (!isDraggable) {
+                              e.preventDefault();
+                              return;
+                            }
+                            e.dataTransfer.setData('text/plain', supplier.id);
+                          }}
+                          className={`bg-white dark:bg-slate-950 border p-2.5 rounded-xl shadow-xs hover:shadow-md transition-all duration-150 space-y-2 ${
+                            isLogCol && !canModifyLogistics 
+                              ? 'opacity-75 cursor-not-allowed border-indigo-100 dark:border-indigo-900/30' 
+                              : isLogCol && canModifyLogistics
+                                ? 'cursor-grab active:cursor-grabbing border-indigo-300 dark:border-indigo-700 bg-indigo-50/20'
+                                : 'border-slate-200 dark:border-slate-800 cursor-grab active:cursor-grabbing hover:border-emerald-300'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-1.5">
@@ -968,6 +1000,15 @@ export default function ProspectingPage() {
                                 <Send size={10}/> {language === 'pt' ? 'Logística' : 'Logistics'}
                               </button>
                             )}
+                            {isLogCol && canModifyLogistics && (
+                              <button 
+                                onClick={() => updateStatus(supplier.id, 'QUALIFIED')}
+                                className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-full border border-indigo-200 cursor-pointer flex items-center gap-0.5"
+                                title={language === 'pt' ? 'Retirar da Logística e voltar para Qualificado' : 'Return to Qualified'}
+                              >
+                                ↩️ {language === 'pt' ? 'Voltar' : 'Return'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -976,10 +1017,20 @@ export default function ProspectingPage() {
                     return (
                       <div 
                         key={supplier.id}
-                        draggable={!isLogCol}
-                        onDragStart={e => e.dataTransfer.setData('text/plain', supplier.id)}
-                        className={`bg-white border border-[#D6EFF5] p-3 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 space-y-2.5 ${
-                          isLogCol ? 'opacity-80 cursor-default' : 'cursor-grab active:cursor-grabbing hover:border-[#2098D1]'
+                        draggable={isDraggable}
+                        onDragStart={e => {
+                          if (!isDraggable) {
+                            e.preventDefault();
+                            return;
+                          }
+                          e.dataTransfer.setData('text/plain', supplier.id);
+                        }}
+                        className={`bg-white border p-3 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 space-y-2.5 ${
+                          isLogCol && !canModifyLogistics 
+                            ? 'opacity-80 cursor-not-allowed bg-slate-50/50 border-[#D6EFF5]' 
+                            : isLogCol && canModifyLogistics
+                              ? 'cursor-grab active:cursor-grabbing border-indigo-300 bg-indigo-50/10 hover:border-indigo-500'
+                              : 'border-[#D6EFF5] cursor-grab active:cursor-grabbing hover:border-[#2098D1]'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -1063,7 +1114,39 @@ export default function ProspectingPage() {
                           </button>
                         )}
 
-                        {!isLogCol && (
+                        {/* Status change dropdown & Logistics controls */}
+                        {isLogCol ? (
+                          canModifyLogistics ? (
+                            <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                                  <Clock size={10}/> {language === 'pt' ? 'Na Logística (Seu Lead)' : 'In Logistics (Yours)'}
+                                </span>
+                                <button 
+                                  onClick={() => updateStatus(supplier.id, 'QUALIFIED')}
+                                  className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-full border border-indigo-200 cursor-pointer flex items-center gap-0.5"
+                                  title={language === 'pt' ? 'Retirar da Logística e voltar para Qualificado' : 'Return to Qualified'}
+                                >
+                                  ↩️ {language === 'pt' ? 'Voltar p/ Qualificado' : 'Back to Qualified'}
+                                </button>
+                              </div>
+                              <select 
+                                value={supplier.prospecting_status}
+                                onChange={e => updateStatus(supplier.id, e.target.value as ProspectingStatus)}
+                                className="w-full text-[10px] font-medium bg-indigo-50/50 border border-indigo-200 rounded-lg px-2 py-1 text-indigo-900 outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                              >
+                                {STATUS_OPTIONS.map(o => (
+                                  <option key={o.value} value={o.value}>{translateProspectingStatus(o.value, language)}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50 dark:bg-indigo-950/40 px-2 py-1.5 rounded-lg border border-indigo-100">
+                              <Lock size={10} className="shrink-0 text-indigo-500" />
+                              <span>{language === 'pt' ? 'Em análise (bloqueado p/ outros)' : 'In review (locked for others)'}</span>
+                            </div>
+                          )
+                        ) : (
                           <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800">
                             <select 
                               value={supplier.prospecting_status}
@@ -1084,12 +1167,6 @@ export default function ProspectingPage() {
                           >
                             <Send size={11}/> {language === 'pt' ? 'Enviar para Logística' : 'Send to Logistics'}
                           </button>
-                        )}
-
-                        {isLogCol && (
-                          <div className="flex items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50 dark:bg-indigo-950/40 px-2 py-1 rounded-lg">
-                            <Clock size={10}/> {language === 'pt' ? 'Em validação pela Logística' : 'Under Logistics Review'}
-                          </div>
                         )}
 
                         <div className="flex items-center justify-between text-[9px] text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
@@ -1187,14 +1264,35 @@ export default function ProspectingPage() {
 
                           <td className="px-4 py-3.5">
                             {isLog ? (
-                              <Badge variant="purple" className="gap-1">
-                                <Clock size={11} /> {translateProspectingStatus('WAITING_LOGISTICS', language)}
-                              </Badge>
+                              canUserModifyLeadInLogistics(supplier) ? (
+                                <div className="flex items-center gap-1.5">
+                                  <select
+                                    value={supplier.prospecting_status}
+                                    onChange={e => updateStatus(supplier.id, e.target.value as ProspectingStatus)}
+                                    className="text-[11px] font-semibold bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg px-2 py-1 outline-none cursor-pointer"
+                                  >
+                                    {STATUS_OPTIONS.map(o => (
+                                      <option key={o.value} value={o.value}>{translateProspectingStatus(o.value, language)}</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => updateStatus(supplier.id, 'QUALIFIED')}
+                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-100/70 hover:bg-indigo-200 px-2 py-1 rounded-md cursor-pointer transition-colors"
+                                    title={language === 'pt' ? 'Voltar p/ Qualificado' : 'Back to Qualified'}
+                                  >
+                                    ↩️
+                                  </button>
+                                </div>
+                              ) : (
+                                <Badge variant="purple" className="gap-1">
+                                  <Lock size={11} /> {translateProspectingStatus('WAITING_LOGISTICS', language)}
+                                </Badge>
+                              )
                             ) : (
                               <select
                                 value={supplier.prospecting_status}
                                 onChange={e => updateStatus(supplier.id, e.target.value as ProspectingStatus)}
-                                className="text-[11px] font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none"
+                                className="text-[11px] font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none cursor-pointer"
                               >
                                 {STATUS_OPTIONS.filter(o => o.value !== 'WAITING_LOGISTICS').map(o => (
                                   <option key={o.value} value={o.value}>{translateProspectingStatus(o.value, language)}</option>
