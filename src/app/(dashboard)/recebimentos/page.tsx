@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { formatDate, formatVolume } from '@/lib/utils';
@@ -350,15 +351,20 @@ export default function ReceiptsPage() {
             <form onSubmit={handleSaveReceipt} className="space-y-6">
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
+                <SearchableSelect
                   label={language === 'pt' ? 'Selecionar Fornecedor *' : 'Select Supplier *'}
+                  placeholder={language === 'pt' ? 'Pesquise ou selecione a empresa...' : 'Search or select company...'}
+                  searchPlaceholder={language === 'pt' ? 'Digite Razão Social, CNPJ ou Cidade...' : 'Type company name, CNPJ or city...'}
                   value={selectedSupplierId}
-                  onChange={(e) => handleSupplierChange(e.target.value)}
-                  options={[
-                    { value: '', label: language === 'pt' ? 'Selecione...' : 'Select...' },
-                    ...visibleSuppliers.map(s => ({ value: s.id, label: s.name }))
-                  ]}
+                  onChange={(val) => handleSupplierChange(val)}
+                  options={visibleSuppliers.map(s => ({
+                    value: s.id,
+                    label: s.name,
+                    sublabel: [s.trade_name, s.document, s.address ? `${s.address.city}/${s.address.state}` : ''].filter(Boolean).join(' • '),
+                    badge: s.supplier_type || undefined
+                  }))}
                   disabled={!!targetCollectionId}
+                  emptyText={language === 'pt' ? 'Nenhuma empresa encontrada' : 'No companies found'}
                 />
 
                 <Select
