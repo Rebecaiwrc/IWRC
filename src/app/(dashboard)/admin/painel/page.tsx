@@ -303,16 +303,51 @@ Por favor, não responda a este e-mail.`;
         });
         await navigator.clipboard.write([item]);
       } else {
-        await navigator.clipboard.writeText(plainText);
+        const container = document.getElementById('rendered-email-copy-target');
+        if (container) {
+          const range = document.createRange();
+          range.selectNode(container);
+          const selection = window.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          document.execCommand('copy');
+          selection?.removeAllRanges();
+        } else {
+          await navigator.clipboard.writeText(plainText);
+        }
       }
       setCopyStatus('copied_rich');
-      setTimeout(() => setCopyStatus('idle'), 3500);
+      setTimeout(() => setCopyStatus('idle'), 4000);
     } catch (err) {
-      console.warn('Fallback to text clipboard:', err);
-      await navigator.clipboard.writeText(plainText);
-      setCopyStatus('copied_text');
-      setTimeout(() => setCopyStatus('idle'), 3500);
+      console.warn('Clipboard write failed, trying fallback selection:', err);
+      try {
+        const container = document.getElementById('rendered-email-copy-target');
+        if (container) {
+          const range = document.createRange();
+          range.selectNode(container);
+          const selection = window.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          document.execCommand('copy');
+          selection?.removeAllRanges();
+          setCopyStatus('copied_rich');
+        } else {
+          await navigator.clipboard.writeText(plainText);
+          setCopyStatus('copied_text');
+        }
+      } catch {
+        await navigator.clipboard.writeText(plainText);
+        setCopyStatus('copied_text');
+      }
+      setTimeout(() => setCopyStatus('idle'), 4000);
     }
+  };
+
+  // Launch Outlook Desktop with BLANK body and copied HTML so Ctrl+V pastes full rich HTML
+  const handleOpenOutlookWithCopiedHtml = async (to: string, subject: string, html: string, plainText: string) => {
+    await handleCopyRichEmail(html, plainText);
+    const mailtoUri = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}`;
+    window.location.href = mailtoUri;
   };
 
   const loadData = useCallback(async () => {
@@ -1024,11 +1059,40 @@ Por favor, não responda a este e-mail.`;
                   </div>
                 </div>
 
+                {/* Hidden DOM Target for Native Rich Text Clipboard Selection */}
+                <div 
+                  id="rendered-email-copy-target" 
+                  dangerouslySetInnerHTML={{ __html: emailData.htmlContent }} 
+                  style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, pointerEvents: 'none' }} 
+                />
+
+                {/* Clear Instruction Box */}
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-900 dark:text-blue-200 space-y-1">
+                  <span className="font-bold flex items-center gap-1.5 text-blue-950 dark:text-blue-100">
+                    <Sparkles size={14} className="text-[#2098D1]" />
+                    Como colar o layout visual no Outlook:
+                  </span>
+                  <p className="text-[11px] leading-relaxed text-blue-800 dark:text-blue-300">
+                    Os navegadores abrem o Outlook via link padrão em modo texto. Para ter o <strong>layout gráfico completo com cores, cartões e botões</strong>, clique em <strong>"Copiar Visual Gráfico & Abrir Outlook"</strong> e, na janela do Outlook, clique no corpo do e-mail e aperte <strong>CTRL + V</strong>!
+                  </p>
+                </div>
+
                 {/* Action Buttons */}
-                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     
-                    {/* 1. Open with .EML (Native Styled HTML in Outlook) */}
+                    {/* 1. Copy Rich HTML & Open Outlook */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenOutlookWithCopiedHtml(emailModalData.email, emailData.subject, emailData.htmlContent, emailData.plainText)}
+                      className="flex items-center justify-center gap-2 bg-[#2098D1] hover:bg-[#1984B8] text-white px-4 py-3 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                      title="Copia o layout gráfico completo e abre a janela do Outlook pronta para Ctrl + V"
+                    >
+                      <Send size={15} />
+                      <span>Copiar Visual & Abrir Outlook</span>
+                    </button>
+
+                    {/* 2. Open with .EML (Native Styled HTML in Outlook) */}
                     <button
                       type="button"
                       onClick={() => handleDownloadEml(emailModalData.email, emailModalData.name, emailData.subject, emailData.htmlContent)}
@@ -1036,21 +1100,7 @@ Por favor, não responda a este e-mail.`;
                       title="Baixa e abre o rascunho com 100% do HTML estilizado nativo no Outlook"
                     >
                       <Mail size={16} />
-                      <span>Abrir no Outlook (HTML Estilizado)</span>
-                    </button>
-
-                    {/* 2. Copy Rich HTML & Open Outlook */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await handleCopyRichEmail(emailData.htmlContent, emailData.plainText);
-                        handleOpenOutlook(emailModalData.email, emailData.subject, emailData.plainText);
-                      }}
-                      className="flex items-center justify-center gap-2 bg-[#2098D1] hover:bg-[#1984B8] text-white px-4 py-3 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
-                      title="Copia o layout HTML e abre a janela de novo e-mail no Outlook"
-                    >
-                      <Send size={15} />
-                      <span>Copiar HTML & Abrir Outlook</span>
+                      <span>Abrir Arquivo Outlook (.eml)</span>
                     </button>
 
                   </div>
@@ -1060,7 +1110,7 @@ Por favor, não responda a este e-mail.`;
                     <button
                       type="button"
                       onClick={() => handleOpenOutlookWeb(emailModalData.email, emailData.subject, emailData.plainText)}
-                      className="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                      className="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer"
                       title="Abrir no navegador via Office 365"
                     >
                       <Globe size={14} />
@@ -1071,7 +1121,7 @@ Por favor, não responda a este e-mail.`;
                     <button
                       type="button"
                       onClick={() => handleCopyRichEmail(emailData.htmlContent, emailData.plainText)}
-                      className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                      className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
                         copyStatus === 'copied_rich' || copyStatus === 'copied_text'
                           ? 'bg-emerald-500 border-emerald-500 text-white'
                           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50'
@@ -1080,12 +1130,12 @@ Por favor, não responda a este e-mail.`;
                       {copyStatus === 'copied_rich' || copyStatus === 'copied_text' ? (
                         <>
                           <Check size={14} />
-                          Layout HTML Copiado!
+                          Visual Gráfico Copiado!
                         </>
                       ) : (
                         <>
                           <Copy size={14} />
-                          Copiar Código / Layout HTML
+                          Copiar Visual Gráfico (HTML)
                         </>
                       )}
                     </button>
@@ -1093,7 +1143,7 @@ Por favor, não responda a este e-mail.`;
                 </div>
 
                 <p className="text-[10px] text-center text-slate-400">
-                  💡 <strong>Revisão Segura:</strong> O sistema não envia o e-mail sozinho. Ele abre o rascunho com visual de notificação automática para você revisar antes de clicar em Enviar.
+                  💡 <strong>Revisão Segura:</strong> O sistema não envia o e-mail sozinho. Ele permite que você revise tudo antes do envio manual.
                 </p>
 
               </div>
