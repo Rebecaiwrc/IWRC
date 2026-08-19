@@ -239,9 +239,9 @@ export default function DashboardPage() {
 
   // --- 2. GESTÃO, PERFORMANCE & RH METRICS (EXCLUSIVO ADMIN / GESTÃO) ---
   
-  // 2.1 Desempenho por Comprador (Área Comercial)
+  // 2.1 Desempenho por Comprador (Área Comercial - apenas perfil BUYER)
   const buyerPerformance = useMemo(() => {
-    const buyers = profiles.filter(p => p.role === 'BUYER' || p.role === 'ADMIN' || p.role === 'SUPER_ADMIN');
+    const buyers = profiles.filter(p => p.role === 'BUYER');
     
     return buyers.map(buyer => {
       // Leads assigned or created by this buyer
@@ -392,15 +392,6 @@ export default function DashboardPage() {
                 )}
               </button>
             </div>
-          )}
-
-          {(user?.role === 'ADMIN' || user?.role === 'BUYER') && (
-            <Link href="/fornecedores?new=true">
-              <Button size="md" className="gap-2 shrink-0">
-                <Plus size={16} />
-                {t('action.newSupplier', 'Novo Gerador')}
-              </Button>
-            </Link>
           )}
         </div>
       </div>
@@ -744,7 +735,7 @@ export default function DashboardPage() {
             
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold bg-indigo-800/60 border border-indigo-700 px-3 py-1.5 rounded-xl">
-                👥 {profiles.length} {language === 'pt' ? 'Colaboradores Ativos' : 'Active Members'}
+                👥 {profiles.filter(p => p.role === 'BUYER' || p.role === 'LOGISTICS').length} {language === 'pt' ? 'Colaboradores Operacionais (Compras & Logística)' : 'Operational Staff (Buying & Logistics)'}
               </span>
             </div>
           </div>
@@ -759,7 +750,7 @@ export default function DashboardPage() {
                 </h3>
               </div>
               <span className="text-xs font-bold text-slate-500">
-                {language === 'pt' ? 'Origem dos Leads & Conversão' : 'Lead Sources & Conversion'}
+                {language === 'pt' ? 'Origem dos Leads & Conversão (apenas Compradores)' : 'Lead Sources & Conversion (Buyers only)'}
               </span>
             </div>
 
@@ -948,6 +939,77 @@ export default function DashboardPage() {
                 </p>
               </Card>
             </div>
+
+            {/* Logistics Staff Table */}
+            <Card className="overflow-hidden !p-0 border border-slate-200">
+              <div className="overflow-x-auto text-sm">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <th className="px-6 py-4">{language === 'pt' ? 'Responsável Logística' : 'Logistics Member'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Fila de Análise' : 'Analysis Queue'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Pareceres Respondidos' : 'Answered Analyses'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Homologados p/ Coleta' : 'Released for Collection'}</th>
+                      <th className="px-6 py-4">{language === 'pt' ? 'Atrasos (> 5 dias)' : 'Overdue (> 5d)'}</th>
+                      <th className="px-6 py-4 text-right">{language === 'pt' ? 'Pontualidade no SLA' : 'SLA Compliance'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {profiles.filter(p => p.role === 'LOGISTICS').map(member => (
+                      <tr key={member.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-700 font-black flex items-center justify-center text-xs shrink-0">
+                              {member.name.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 leading-snug">{member.name}</p>
+                              <p className="text-[11px] text-slate-400">{member.email} • <span className="font-bold text-indigo-600">{member.role}</span></p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <span className="font-black text-slate-900 text-sm">
+                            {logisticsPerformance.queueCount} {language === 'pt' ? 'processos' : 'processes'}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <span className="font-bold text-indigo-700 text-sm">
+                            {logisticsPerformance.totalAnalysesAnswered}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <span className="font-bold text-emerald-700 text-sm">
+                            {logisticsPerformance.completedLogisticsProcesses}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {logisticsPerformance.overdueLeads > 0 ? (
+                            <span className="font-bold text-rose-600 text-sm flex items-center gap-1">
+                              🚨 {logisticsPerformance.overdueLeads} {language === 'pt' ? 'em atraso' : 'overdue'}
+                            </span>
+                          ) : (
+                            <span className="font-bold text-emerald-600 text-sm">
+                              ✓ {language === 'pt' ? '0 atrasos' : '0 overdue'}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4 text-right">
+                          <Badge variant={logisticsPerformance.slaComplianceRate >= 80 ? 'success' : 'danger'} className="font-black">
+                            {logisticsPerformance.slaComplianceRate}% {language === 'pt' ? 'no prazo' : 'on-time'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           </div>
 
           {/* RESUMO EXECUTIVO DE METAS & RH */}
