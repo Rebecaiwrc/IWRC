@@ -381,10 +381,11 @@ export default function ProspectingPage() {
       return item;
     }));
 
-    // Auto-open materials modal when qualified OR when sent to logistics
-    if (newStatus === 'QUALIFIED') {
+    // Auto-open materials modal ONLY if materials were not filled yet
+    const hasMaterials = s.materials && s.materials.length > 0;
+    if (newStatus === 'QUALIFIED' && !hasMaterials) {
       openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, false);
-    } else if (newStatus === 'WAITING_LOGISTICS') {
+    } else if (newStatus === 'WAITING_LOGISTICS' && !hasMaterials) {
       openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, true);
     }
 
@@ -996,7 +997,13 @@ export default function ProspectingPage() {
                             </button>
                             {isQ && !isLogCol && (
                               <button 
-                                onClick={() => openMaterialsModal(supplier, true)}
+                                onClick={() => {
+                                  if (supplier.materials && supplier.materials.length > 0) {
+                                    updateStatus(supplier.id, 'WAITING_LOGISTICS');
+                                  } else {
+                                    openMaterialsModal(supplier, true);
+                                  }
+                                }}
                                 className="flex items-center gap-1 text-[10px] font-bold text-white bg-[#2098D1] hover:bg-[#1883B5] px-2 py-0.5 rounded-full cursor-pointer shadow-xs"
                               >
                                 <Send size={10}/> {language === 'pt' ? 'Logística' : 'Logistics'}
@@ -1179,7 +1186,13 @@ export default function ProspectingPage() {
 
                         {isQ && !isLogCol && (
                           <button 
-                            onClick={() => openMaterialsModal(supplier, true)}
+                            onClick={() => {
+                              if (supplier.materials && supplier.materials.length > 0) {
+                                updateStatus(supplier.id, 'WAITING_LOGISTICS');
+                              } else {
+                                openMaterialsModal(supplier, true);
+                              }
+                            }}
                             className="w-full flex items-center justify-center gap-1.5 text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs"
                           >
                             <Send size={11}/> {language === 'pt' ? 'Enviar para Logística' : 'Send to Logistics'}
