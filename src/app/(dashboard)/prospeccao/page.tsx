@@ -1088,6 +1088,14 @@ export default function ProspectingPage() {
 
                         {supplier.materials && supplier.materials.length > 0 ? (
                           <div className="text-[10px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-100 dark:border-slate-800 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                {language === 'pt' ? 'Materiais Identificados' : 'Identified Materials'}
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-500">
+                                {supplier.materials.length} {language === 'pt' ? 'item(ns)' : 'item(s)'}
+                              </span>
+                            </div>
                             {supplier.materials.slice(0, 2).map((m, i) => (
                               <div key={i} className="flex items-center justify-between gap-1">
                                 <span className="truncate font-medium">• {m.material_name}</span>
@@ -1100,17 +1108,24 @@ export default function ProspectingPage() {
                             ))}
                             <button
                               onClick={() => openMaterialsModal(supplier, false)}
-                              className="text-[9px] font-bold text-emerald-600 hover:underline pt-0.5 block cursor-pointer"
+                              className="text-[9px] font-bold text-[#2098D1] hover:underline pt-0.5 block cursor-pointer"
                             >
-                              + {language === 'pt' ? 'Gerenciar Materiais' : 'Manage Materials'} ({supplier.materials.length})
+                              + {language === 'pt' ? 'Gerenciar / Editar Materiais' : 'Manage / Edit Materials'}
                             </button>
                           </div>
                         ) : (
                           <button
                             onClick={() => openMaterialsModal(supplier, false)}
-                            className="w-full py-1 text-[10px] font-bold text-slate-500 hover:text-emerald-600 border border-dashed border-slate-200 rounded-lg hover:border-emerald-300 flex items-center justify-center gap-1 cursor-pointer"
+                            className={`w-full py-2 text-[10px] font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs ${
+                              isLogCol 
+                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-2 border-dashed border-amber-300 hover:bg-amber-100'
+                                : 'text-slate-600 hover:text-[#2098D1] border border-dashed border-slate-300 hover:border-[#2098D1] bg-slate-50 hover:bg-[#E5F5F8]/50'
+                            }`}
                           >
-                            <PackagePlus size={11} /> {language === 'pt' ? 'Adicionar Materiais' : 'Add Materials'}
+                            <PackagePlus size={13} className={isLogCol ? 'text-amber-600' : 'text-slate-400'} />
+                            {isLogCol 
+                              ? (language === 'pt' ? '⚠️ Preencher Materiais Disponíveis' : '⚠️ Fill Available Materials')
+                              : (language === 'pt' ? 'Preencher Materiais Disponíveis' : 'Fill Available Materials')}
                           </button>
                         )}
 

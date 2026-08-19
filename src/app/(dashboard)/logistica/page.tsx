@@ -617,11 +617,17 @@ export default function LogisticsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-0.5">
-                          {supplier.materials && supplier.materials.length > 0 ? supplier.materials.map((m, i) => (
-                            <span key={i} className="text-xs font-semibold text-slate-700">
-                              • {m.material_name} ({formatVolume(m.estimated_volume, m.unit)} • {m.transaction_type === 'purchase' ? 'Compra' : 'Doação'})
+                          {supplier.materials && supplier.materials.length > 0 ? (
+                            supplier.materials.map((m, i) => (
+                              <span key={i} className="text-xs font-semibold text-slate-700">
+                                • {m.material_name} ({formatVolume(m.estimated_volume, m.unit)} • {m.transaction_type === 'purchase' ? (language === 'pt' ? 'Compra' : 'Purchase') : (language === 'pt' ? 'Doação' : 'Donation')})
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 w-fit">
+                              ⚠️ {language === 'pt' ? 'Materiais pendentes' : 'Pending materials'}
                             </span>
-                          )) : <span className="text-xs text-slate-400">Nenhum</span>}
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
