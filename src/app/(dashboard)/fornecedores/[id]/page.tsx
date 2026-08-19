@@ -296,14 +296,34 @@ export default function SupplierDetailPage() {
     }
   };
 
+  const canUserDeleteSupplier = () => {
+    if (!currentUser || !supplier) return false;
+    if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') return true;
+    if (supplier.internal_responsible_id && supplier.internal_responsible_id === currentUser.id) return true;
+    if (supplier.responsible?.id && supplier.responsible.id === currentUser.id) return true;
+    if (supplier.responsible?.email && currentUser.email && supplier.responsible.email.toLowerCase() === currentUser.email.toLowerCase()) return true;
+    if (supplier.responsible?.name && currentUser.name && supplier.responsible.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
+    if (supplier.lead_source && currentUser.name && supplier.lead_source.toLowerCase().includes(currentUser.name.toLowerCase())) return true;
+    return false;
+  };
+
   const handleDeleteSupplier = async () => {
-    if (!confirm(`Tem certeza que deseja apagar o gerador "${supplier.name}" e todo seu histórico permanentemente?`)) return;
+    if (!canUserDeleteSupplier()) {
+      alert(
+        language === 'pt'
+          ? `Você não tem permissão para excluir este gerador. Apenas o responsável (${supplier.responsible?.name || 'quem o cadastrou/enviou'}) ou um Administrador podem realizar a exclusão.`
+          : `You do not have permission to delete this generator. Only the responsible owner (${supplier.responsible?.name || 'sender'}) or an Administrator can delete it.`
+      );
+      return;
+    }
+
+    if (!confirm(language === 'pt' ? `Tem certeza que deseja apagar o gerador "${supplier.name}" e todo seu histórico permanentemente?` : `Are you sure you want to permanently delete generator "${supplier.name}"?`)) return;
     try {
       await dbService.deleteSupplier(supplier.id);
       router.push('/fornecedores');
     } catch (err) {
       console.error(err);
-      alert('Erro ao excluir gerador.');
+      alert(language === 'pt' ? 'Erro ao excluir gerador.' : 'Error deleting generator.');
     }
   };
 
@@ -907,15 +927,17 @@ export default function SupplierDetailPage() {
                   <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
                     {language === 'pt' ? 'Editar Lead' : 'Edit Lead'}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleDeleteSupplier} 
-                    className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 gap-1.5"
-                  >
-                    <Trash2 size={13} />
-                    {language === 'pt' ? 'Excluir Lead' : 'Delete Lead'}
-                  </Button>
+                  {canUserDeleteSupplier() && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleDeleteSupplier} 
+                      className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 gap-1.5"
+                    >
+                      <Trash2 size={13} />
+                      {language === 'pt' ? 'Excluir Lead' : 'Delete Lead'}
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -1449,15 +1471,17 @@ export default function SupplierDetailPage() {
                     </Button>
                   )}
 
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleDeleteSupplier} 
-                    className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 gap-1.5"
-                  >
-                    <Trash2 size={13} />
-                    Excluir Gerador
-                  </Button>
+                  {canUserDeleteSupplier() && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleDeleteSupplier} 
+                      className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 gap-1.5"
+                    >
+                      <Trash2 size={13} />
+                      {language === 'pt' ? 'Excluir Gerador' : 'Delete Generator'}
+                    </Button>
+                  )}
                 </div>
               </div>
               

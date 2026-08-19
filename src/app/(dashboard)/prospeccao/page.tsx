@@ -331,14 +331,35 @@ export default function ProspectingPage() {
     setAttachedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
+  const canUserDeleteLead = (s: Supplier) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') return true;
+    if (s.internal_responsible_id && s.internal_responsible_id === currentUser.id) return true;
+    if (s.responsible?.id && s.responsible.id === currentUser.id) return true;
+    if (s.responsible?.email && currentUser.email && s.responsible.email.toLowerCase() === currentUser.email.toLowerCase()) return true;
+    if (s.responsible?.name && currentUser.name && s.responsible.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
+    if (s.lead_source && currentUser.name && s.lead_source.toLowerCase().includes(currentUser.name.toLowerCase())) return true;
+    return false;
+  };
+
   const handleDeleteLead = async (supplierId: string, supplierName: string) => {
-    if (!confirm(`Tem certeza que deseja apagar o lead "${supplierName}" permanentemente do sistema?`)) return;
+    const s = suppliers.find(x => x.id === supplierId);
+    if (s && !canUserDeleteLead(s)) {
+      alert(
+        language === 'pt'
+          ? `Você não tem permissão para excluir este gerador. Apenas o responsável (${s.responsible?.name || 'quem enviou'}) ou um Administrador podem realizar a exclusão.`
+          : `You do not have permission to delete this lead. Only the responsible user (${s.responsible?.name || 'owner'}) or an Administrator can delete it.`
+      );
+      return;
+    }
+
+    if (!confirm(language === 'pt' ? `Tem certeza que deseja apagar o lead "${supplierName}" permanentemente do sistema?` : `Are you sure you want to permanently delete lead "${supplierName}"?`)) return;
     try {
       await dbService.deleteSupplier(supplierId);
       await fetchData();
     } catch (err) {
       console.error(err);
-      alert('Erro ao excluir lead.');
+      alert(language === 'pt' ? 'Erro ao excluir lead.' : 'Error deleting lead.');
     }
   };
 
@@ -346,7 +367,10 @@ export default function ProspectingPage() {
     if (!currentUser) return false;
     if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') return true;
     if (s.internal_responsible_id && s.internal_responsible_id === currentUser.id) return true;
+    if (s.responsible?.id && s.responsible.id === currentUser.id) return true;
+    if (s.responsible?.email && currentUser.email && s.responsible.email.toLowerCase() === currentUser.email.toLowerCase()) return true;
     if (s.responsible?.name && currentUser.name && s.responsible.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
+    if (s.lead_source && currentUser.name && s.lead_source.toLowerCase().includes(currentUser.name.toLowerCase())) return true;
     return false;
   };
 
@@ -986,13 +1010,15 @@ export default function ProspectingPage() {
                               <Link href={`/fornecedores/${supplier.id}`} className="text-slate-400 hover:text-[#2098D1] p-1 rounded" title="Ficha">
                                 <Eye size={12} />
                               </Link>
-                              <button
-                                onClick={() => handleDeleteLead(supplier.id, supplier.name)}
-                                className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors"
-                                title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
-                              >
-                                <Trash2 size={12} />
-                              </button>
+                              {canUserDeleteLead(supplier) && (
+                                <button
+                                  onClick={() => handleDeleteLead(supplier.id, supplier.name)}
+                                  className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors"
+                                  title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -1099,13 +1125,15 @@ export default function ProspectingPage() {
                             >
                               <Eye size={13} />
                             </Link>
-                            <button
-                              onClick={() => handleDeleteLead(supplier.id, supplier.name)}
-                              className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                              title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {canUserDeleteLead(supplier) && (
+                              <button
+                                onClick={() => handleDeleteLead(supplier.id, supplier.name)}
+                                className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                                title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -1391,13 +1419,15 @@ export default function ProspectingPage() {
                                   <Eye size={11} /> {language === 'pt' ? 'Ficha' : 'Details'}
                                 </button>
                               </Link>
-                              <button
-                                onClick={() => handleDeleteLead(supplier.id, supplier.name)}
-                                className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
-                                title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
-                              >
-                                <Trash2 size={13} />
-                              </button>
+                              {canUserDeleteLead(supplier) && (
+                                <button
+                                  onClick={() => handleDeleteLead(supplier.id, supplier.name)}
+                                  className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
+                                  title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
