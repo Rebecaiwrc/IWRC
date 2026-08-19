@@ -32,7 +32,12 @@ import {
   TrendingUp,
   Clock,
   Layers,
-  Sparkles
+  Sparkles,
+  Mail,
+  Copy,
+  Check,
+  Send,
+  Globe
 } from 'lucide-react';
 
 export default function SuperAdminPanelPage() {
@@ -54,6 +59,149 @@ export default function SuperAdminPanelPage() {
     role: 'BUYER' as UserRole
   });
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+
+  // Email / Outlook Dispatch Modal State
+  const [emailModalData, setEmailModalData] = useState<{
+    isOpen: boolean;
+    name: string;
+    email: string;
+    password?: string;
+    role: UserRole;
+    isNewUser?: boolean;
+  } | null>(null);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied_rich' | 'copied_text'>('idle');
+
+  // Role labels helper
+  const getRoleLabel = (role?: UserRole) => {
+    switch (role) {
+      case 'BUYER': return 'Compras (Comercial / Prospecção)';
+      case 'LOGISTICS': return 'Logística (Operações & Análises)';
+      case 'ADMIN': return 'Administrador Geral';
+      case 'SUPER_ADMIN': return 'Super Admin Master';
+      default: return 'Colaborador';
+    }
+  };
+
+  // Generate Email Content (Plain text for Outlook URI + Rich HTML for Preview & Clipboard)
+  const generateEmailData = (name: string, email: string, password?: string, role?: UserRole) => {
+    const roleName = getRoleLabel(role);
+    const loginUrl = 'https://iwrc.vercel.app/login';
+    const pwd = password ? password : '[Senha Pessoal Já Cadastrada / Padrão]';
+
+    const subject = `Bem-vindo(a) ao IWRC - Seus Dados de Acesso ao Sistema`;
+
+    const plainText = `Olá, ${name}!
+
+Seu acesso ao Sistema ERP IWRC (Gerenciamento de Fornecedores & Resíduos) foi configurado com sucesso.
+
+Abaixo estão as suas credenciais de acesso:
+
+--------------------------------------------------
+🌐 Link do Aplicativo: ${loginUrl}
+📧 E-mail de Login: ${email}
+🔑 Senha Provisória: ${pwd}
+💼 Perfil / Função: ${roleName}
+--------------------------------------------------
+
+⚠️ IMPORTANTE: No seu primeiro acesso, o sistema exigirá obrigatoriamente a troca da senha provisória por uma nova senha pessoal definitiva.
+
+Em caso de dúvidas ou dificuldades de acesso, responda a este e-mail ou contate a administração do IWRC.
+
+Atenciosamente,
+Administração & Gestão IWRC
+${loginUrl}`;
+
+    const htmlContent = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+  <div style="background: linear-gradient(135deg, #0D2439 0%, #163B5C 100%); padding: 32px 24px; text-align: center; border-bottom: 4px solid #2098D1;">
+    <h1 style="color: #ffffff; font-size: 26px; font-weight: 900; margin: 0; letter-spacing: 0.5px;">IWRC</h1>
+    <p style="color: #9ECE42; font-size: 12px; font-weight: 700; margin: 6px 0 0 0; text-transform: uppercase; letter-spacing: 1.5px;">Gestão de Fornecedores & Resíduos</p>
+  </div>
+  
+  <div style="padding: 32px 28px; color: #1e293b;">
+    <h2 style="font-size: 20px; font-weight: 800; color: #0D2439; margin-top: 0;">Olá, ${name}! 👋</h2>
+    <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 24px;">
+      Seu cadastro no <strong>ERP IWRC</strong> foi concluído com sucesso. Agora você tem acesso à nossa plataforma integrada de prospecção, homologação e logística de resíduos.
+    </p>
+    
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #2098D1; border-radius: 12px; padding: 20px; margin: 24px 0;">
+      <h3 style="margin: 0 0 14px 0; font-size: 13px; font-weight: 800; color: #0D2439; text-transform: uppercase; letter-spacing: 0.8px;">Suas Credenciais de Acesso</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 7px 0; color: #64748b; font-weight: 600; width: 140px;">Link do App:</td>
+          <td style="padding: 7px 0;"><a href="${loginUrl}" style="color: #2098D1; font-weight: 700; text-decoration: underline;">${loginUrl}</a></td>
+        </tr>
+        <tr>
+          <td style="padding: 7px 0; color: #64748b; font-weight: 600;">E-mail:</td>
+          <td style="padding: 7px 0; font-weight: 700; color: #0f172a;">${email}</td>
+        </tr>
+        <tr>
+          <td style="padding: 7px 0; color: #64748b; font-weight: 600;">Senha Provisória:</td>
+          <td style="padding: 7px 0;"><span style="font-family: Consolas, Monaco, monospace; font-size: 15px; font-weight: 800; color: #0D2439; background: #e2e8f0; padding: 3px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">${pwd}</span></td>
+        </tr>
+        <tr>
+          <td style="padding: 7px 0; color: #64748b; font-weight: 600;">Função / Cargo:</td>
+          <td style="padding: 7px 0; font-weight: 700; color: #0D2439;">${roleName}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${loginUrl}" style="display: inline-block; background-color: #2098D1; color: #ffffff; font-size: 15px; font-weight: 800; padding: 14px 36px; text-decoration: none; border-radius: 12px; box-shadow: 0 4px 10px rgba(32, 152, 209, 0.35);">
+        Acessar o Sistema IWRC →
+      </a>
+    </div>
+
+    <div style="background-color: #fefce8; border: 1px solid #fef08a; border-radius: 10px; padding: 14px 16px; margin-top: 24px;">
+      <p style="margin: 0; font-size: 12px; color: #854d0e; line-height: 1.5;">
+        🔒 <strong>Primeiro Acesso:</strong> Por medida de segurança, o sistema exigirá que você cadastre uma nova senha pessoal no seu primeiro login.
+      </p>
+    </div>
+  </div>
+  
+  <div style="background-color: #f8fafc; padding: 18px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; line-height: 1.5;">
+    <strong>IWRC</strong> • Gerenciamento Inteligente de Resíduos e Fornecedores<br/>
+    Dúvidas? Entre em contato com a equipe de administração do IWRC.
+  </div>
+</div>`;
+
+    return { subject, plainText, htmlContent };
+  };
+
+  // Launch Outlook Desktop/App
+  const handleOpenOutlook = (to: string, subject: string, plainText: string) => {
+    const mailtoUri = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainText)}`;
+    window.location.href = mailtoUri;
+  };
+
+  // Launch Outlook Web (Office 365)
+  const handleOpenOutlookWeb = (to: string, subject: string, plainText: string) => {
+    const webUri = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainText)}`;
+    window.open(webUri, '_blank', 'noopener,noreferrer');
+  };
+
+  // Copy formatted HTML or plain text to clipboard
+  const handleCopyRichEmail = async (html: string, plainText: string) => {
+    try {
+      if (typeof window !== 'undefined' && navigator.clipboard && window.ClipboardItem) {
+        const blobHtml = new Blob([html], { type: 'text/html' });
+        const blobText = new Blob([plainText], { type: 'text/plain' });
+        const item = new ClipboardItem({
+          'text/html': blobHtml,
+          'text/plain': blobText
+        });
+        await navigator.clipboard.write([item]);
+      } else {
+        await navigator.clipboard.writeText(plainText);
+      }
+      setCopyStatus('copied_rich');
+      setTimeout(() => setCopyStatus('idle'), 3500);
+    } catch (err) {
+      console.warn('Fallback to text clipboard:', err);
+      await navigator.clipboard.writeText(plainText);
+      setCopyStatus('copied_text');
+      setTimeout(() => setCopyStatus('idle'), 3500);
+    }
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -115,9 +263,18 @@ export default function SuperAdminPanelPage() {
         throw new Error(data.error || 'Erro ao cadastrar usuário');
       }
 
-      alert(`Usuário "${newUserForm.name}" cadastrado com sucesso!`);
-      setNewUserForm({ name: '', email: '', password: '', role: 'BUYER' });
+      // Close create modal and open email dispatch / outlook modal
       setIsCreateUserOpen(false);
+      setEmailModalData({
+        isOpen: true,
+        name: cleanName,
+        email: cleanEmail,
+        password: cleanPassword,
+        role: newUserForm.role,
+        isNewUser: true
+      });
+
+      setNewUserForm({ name: '', email: '', password: '', role: 'BUYER' });
       await loadData();
     } catch (err: any) {
       console.error(err);
@@ -480,13 +637,31 @@ export default function SuperAdminPanelPage() {
                     </select>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDeleteUser(u.id, u.name)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
-                      title="Desativar usuário"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => {
+                          setEmailModalData({
+                            isOpen: true,
+                            name: u.name,
+                            email: u.email,
+                            password: '',
+                            role: u.role,
+                            isNewUser: false
+                          });
+                        }}
+                        className="p-1.5 text-[#2098D1] hover:text-[#146A88] hover:bg-[#E5F5F8] dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                        title="Enviar / Abrir dados de acesso no Outlook"
+                      >
+                        <Mail size={15} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(u.id, u.name)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                        title="Desativar usuário"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -592,6 +767,165 @@ export default function SuperAdminPanelPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Modal: Enviar Acesso via Outlook */}
+      {emailModalData && (
+        <Modal
+          isOpen={emailModalData.isOpen}
+          onClose={() => setEmailModalData(null)}
+          title="📧 Enviar Acesso por E-mail (Outlook)"
+          size="lg"
+        >
+          {(() => {
+            const emailData = generateEmailData(
+              emailModalData.name,
+              emailModalData.email,
+              emailModalData.password,
+              emailModalData.role
+            );
+
+            return (
+              <div className="space-y-5">
+                
+                {/* Status Notice */}
+                <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
+                  emailModalData.isNewUser 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                    : 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 size={20} className={emailModalData.isNewUser ? 'text-emerald-600' : 'text-indigo-600'} />
+                    <div>
+                      <span className="font-bold text-xs block">
+                        {emailModalData.isNewUser ? `Usuário "${emailModalData.name}" criado com sucesso!` : `Dados de acesso de "${emailModalData.name}"`}
+                      </span>
+                      <span className="text-[11px] opacity-80 block">
+                        Clique em "Abrir no Outlook" para abrir o e-mail preenchido no seu aplicativo, revisar e enviar manualmente.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Credentials Recap Card */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                  <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
+                    <span className="font-bold text-slate-500 uppercase text-[10px]">Destinatário / E-mail:</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{emailModalData.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
+                    <span className="font-bold text-slate-500 uppercase text-[10px]">Link do App (Login):</span>
+                    <a href="https://iwrc.vercel.app/login" target="_blank" rel="noreferrer" className="text-[#2098D1] font-bold hover:underline flex items-center gap-1">
+                      https://iwrc.vercel.app/login <ExternalLink size={11} />
+                    </a>
+                  </div>
+                  {emailModalData.password && (
+                    <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
+                      <span className="font-bold text-slate-500 uppercase text-[10px]">Senha Provisória:</span>
+                      <span className="font-mono font-black text-slate-900 bg-slate-200 dark:bg-slate-800 dark:text-white px-2 py-0.5 rounded">
+                        {emailModalData.password}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-500 uppercase text-[10px]">Função:</span>
+                    <Badge variant="info">{getRoleLabel(emailModalData.role)}</Badge>
+                  </div>
+                </div>
+
+                {/* Email Visual Preview */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Pré-visualização do Corpo do E-mail:
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Assunto: {emailData.subject}
+                    </span>
+                  </div>
+
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-900 max-h-60 overflow-y-auto font-sans text-xs space-y-3 shadow-inner">
+                    <div className="bg-[#0D2439] text-white p-3 rounded-lg text-center">
+                      <h4 className="font-black text-sm tracking-wider text-white">IWRC</h4>
+                      <p className="text-[9px] text-[#9ECE42] font-bold uppercase tracking-widest">Gestão de Fornecedores & Resíduos</p>
+                    </div>
+
+                    <p className="text-slate-700 dark:text-slate-300 font-medium">
+                      Olá, <strong>{emailModalData.name}</strong>! 👋
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      Seu acesso ao sistema <strong>IWRC ERP</strong> foi configurado com sucesso.
+                    </p>
+
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1 font-mono text-[11px]">
+                      <p><strong>Link:</strong> https://iwrc.vercel.app/login</p>
+                      <p><strong>E-mail:</strong> {emailModalData.email}</p>
+                      <p><strong>Senha Provisória:</strong> {emailModalData.password || '[Senha pessoal do usuário]'}</p>
+                      <p><strong>Cargo:</strong> {getRoleLabel(emailModalData.role)}</p>
+                    </div>
+
+                    <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-900/50 text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+                      🔒 No primeiro acesso, você deverá cadastrar uma nova senha pessoal definitiva.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  
+                  {/* Open in Outlook Desktop */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenOutlook(emailModalData.email, emailData.subject, emailData.plainText)}
+                    className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 bg-[#0078D4] hover:bg-[#006cbd] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  >
+                    <Mail size={16} />
+                    Abrir no Outlook (Desktop / App)
+                  </button>
+
+                  {/* Open in Outlook Web */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenOutlookWeb(emailModalData.email, emailData.subject, emailData.plainText)}
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    title="Abrir no navegador via Office 365"
+                  >
+                    <Globe size={14} />
+                    Outlook Web
+                  </button>
+
+                  {/* Copy Formatted HTML */}
+                  <button
+                    type="button"
+                    onClick={() => handleCopyRichEmail(emailData.htmlContent, emailData.plainText)}
+                    className={`w-full sm:w-auto flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      copyStatus === 'copied_rich' || copyStatus === 'copied_text'
+                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {copyStatus === 'copied_rich' || copyStatus === 'copied_text' ? (
+                      <>
+                        <Check size={14} />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        Copiar E-mail
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-center text-slate-400">
+                  💡 O sistema não envia o e-mail sozinho. Ele abre o rascunho no seu Outlook para você revisar o texto antes de clicar em Enviar.
+                </p>
+
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
 
     </div>
   );
