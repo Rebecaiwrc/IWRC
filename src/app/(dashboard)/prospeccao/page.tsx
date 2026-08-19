@@ -381,9 +381,11 @@ export default function ProspectingPage() {
       return item;
     }));
 
-    // Auto-open materials modal when qualified
+    // Auto-open materials modal when qualified OR when sent to logistics
     if (newStatus === 'QUALIFIED') {
       openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, false);
+    } else if (newStatus === 'WAITING_LOGISTICS') {
+      openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, true);
     }
 
     // ⚡ 2. ASYNC BACKGROUND PERSISTENCE: Save to Supabase in parallel
@@ -454,7 +456,7 @@ export default function ProspectingPage() {
       }
 
       // 3. If sending to logistics
-      if (isSendingToLogistics) {
+      if (isSendingToLogistics && activeMaterialSupplier.prospecting_status !== 'WAITING_LOGISTICS') {
         await updateStatus(activeMaterialSupplier.id, 'WAITING_LOGISTICS');
       }
 
