@@ -181,10 +181,15 @@ export const dbService = {
           pStatus = 'NEW_LEAD';
         }
 
+        const sentLogAt = s.sent_to_logistics_at || (s.current_stage === 'LOGISTICS' ? (s.updated_at || s.created_at) : null);
+        const logDeadline = s.logistics_deadline || (sentLogAt ? new Date(new Date(sentLogAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null);
+
         return {
           ...s,
           code: s.code || ('GER-' + String((data?.length || 1) - idx).padStart(3, '0')),
           prospecting_status: pStatus,
+          sent_to_logistics_at: sentLogAt,
+          logistics_deadline: logDeadline,
           materials: s.materials || [],
           contacts: s.contacts || [],
           interactions: s.interactions || [],
@@ -262,10 +267,15 @@ export const dbService = {
         pStatus = 'NEW_LEAD';
       }
 
+      const sentLogAt = data.sent_to_logistics_at || (data.current_stage === 'LOGISTICS' ? (data.updated_at || data.created_at) : null);
+      const logDeadline = data.logistics_deadline || (sentLogAt ? new Date(new Date(sentLogAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null);
+
       return {
         ...data,
         code: data.code || 'GER-001',
         prospecting_status: pStatus,
+        sent_to_logistics_at: sentLogAt,
+        logistics_deadline: logDeadline,
         materials: data.materials || [],
         contacts: data.contacts || [],
         interactions: (data.interactions || []).map((i: any) => ({
@@ -457,9 +467,6 @@ export const dbService = {
       if (supplierData.current_stage !== undefined) updatePayload.current_stage = supplierData.current_stage;
       if (supplierData.current_status !== undefined) updatePayload.current_status = supplierData.current_status;
       if (supplierData.backlog_reason !== undefined) updatePayload.backlog_reason = supplierData.backlog_reason;
-      
-      if (supplierData.sent_to_logistics_at !== undefined) updatePayload.sent_to_logistics_at = supplierData.sent_to_logistics_at;
-      if (supplierData.logistics_deadline !== undefined) updatePayload.logistics_deadline = supplierData.logistics_deadline;
 
       if (supplierData.internal_responsible_id !== undefined) {
         updatePayload.internal_responsible_id = supplierData.internal_responsible_id ? supplierData.internal_responsible_id : null;
@@ -470,10 +477,6 @@ export const dbService = {
           updatePayload.current_stage = 'LOGISTICS';
           updatePayload.current_status = 'PENDING';
           updatePayload.backlog_reason = null;
-          if (!supplierData.sent_to_logistics_at) {
-            updatePayload.sent_to_logistics_at = now;
-            updatePayload.logistics_deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
-          }
         } else if (supplierData.prospecting_status === 'QUALIFIED') {
           updatePayload.current_stage = 'QUALIFICATION';
           updatePayload.current_status = 'APPROVED';
@@ -489,17 +492,14 @@ export const dbService = {
         }
       }
 
-      // Auto-set logistics SLA if stage is updated to LOGISTICS directly
-      if (supplierData.current_stage === 'LOGISTICS' && !supplierData.sent_to_logistics_at && !updatePayload.sent_to_logistics_at) {
-        updatePayload.sent_to_logistics_at = now;
-        updatePayload.logistics_deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
-      }
-
       const { error } = await supabase
         .from('suppliers')
         .update(updatePayload)
         .eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating supplier in Supabase:', error);
+        throw error;
+      }
       const fullSupplier = await this.getSupplier(id);
       return fullSupplier!;
     }

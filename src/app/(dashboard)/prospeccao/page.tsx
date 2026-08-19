@@ -53,10 +53,10 @@ const PROSPECTING_COLUMNS: { key: ProspectingStatus; label: string; color: strin
 const STATUS_OPTIONS = PROSPECTING_COLUMNS.map(c => ({ value: c.key, label: c.label }));
 
 export const getLeadStatus = (s: Partial<Supplier>): ProspectingStatus => {
+  if (s.current_stage === 'LOGISTICS' || s.prospecting_status === 'WAITING_LOGISTICS') return 'WAITING_LOGISTICS';
   if (s.prospecting_status && PROSPECTING_COLUMNS.some(c => c.key === s.prospecting_status)) {
     return s.prospecting_status;
   }
-  if (s.current_stage === 'LOGISTICS') return 'WAITING_LOGISTICS';
   if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage || '')) return 'QUALIFIED';
   if (s.backlog_reason === 'PRESENTATION_SENT') return 'PRESENTATION_SENT';
   if (s.backlog_reason === 'FIRST_CONTACT') return 'FIRST_CONTACT';
