@@ -2073,10 +2073,10 @@ export default function SupplierDetailPage() {
                       <div className="absolute left-2 -translate-x-1/2 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-600 shadow-sm" />
                       <div className="flex-1 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-slate-900">{item.title}</span>
+                          <span className="font-bold text-xs text-slate-900">{translateLogText(item.title, language)}</span>
                           <span className="text-[10px] text-slate-400">{formatDate(item.date)}</span>
                         </div>
-                        <p className="text-xs text-slate-600">{item.description}</p>
+                        <p className="text-xs text-slate-600">{translateLogText(item.description, language)}</p>
                         {item.user && <p className="text-[10px] text-emerald-600 font-semibold">{language === 'pt' ? 'Por:' : 'By:'} {item.user}</p>}
                       </div>
                     </div>

@@ -222,12 +222,23 @@ export const translateSupplierType = (type?: string | null, lang?: 'pt' | 'en'):
     'Indústria': 'Industry',
     'Comércio': 'Commerce',
     'Serviços': 'Services',
+    'Restaurante / Alimentação': 'Restaurant / Food Service',
+    'Restaurante': 'Restaurant',
+    'Alimentação': 'Food Service',
     'Logística': 'Logistics',
     'Agronegócio': 'Agribusiness',
     'Construção': 'Construction',
     'Tecnologia': 'Technology',
     'Educação': 'Education',
+    'Escola / Universidade': 'School / University',
     'Saúde': 'Healthcare',
+    'Hospital / Saúde': 'Hospital / Healthcare',
+    'Hospitalar': 'Healthcare / Hospital',
+    'Supermercado': 'Supermarket',
+    'Hotelaria': 'Hospitality',
+    'Eventos': 'Events',
+    'Condomínio': 'Condominium',
+    'Posto de Combustível': 'Gas Station',
     'Alimentos': 'Food & Beverage',
     'Automotivo': 'Automotive',
     'Metalúrgica': 'Metallurgy',
@@ -239,6 +250,36 @@ export const translateSupplierType = (type?: string | null, lang?: 'pt' | 'en'):
   return mapping[type] || type;
 };
 
+// Lead Source translator
+export const translateLeadSource = (source?: string | null, lang?: 'pt' | 'en'): string => {
+  if (!source) return '-';
+  const currentLang = getActiveLang(lang);
+  if (currentLang === 'pt') return source;
+
+  const mapping: Record<string, string> = {
+    'Prospecção HUB Sorocaba': 'HUB Sorocaba Prospecting',
+    'Prospecção HUB': 'HUB Prospecting',
+    'Prospecção Comercial': 'Commercial Prospecting',
+    'Prospecção': 'Prospecting',
+    'Busca': 'Outbound Search',
+    'Indicação': 'Referral',
+    'Site / Formulário': 'Website / Form',
+    'Inbound': 'Inbound',
+    'Outbound': 'Outbound',
+    'Evento / Feira': 'Event / Trade Show',
+    'Outro': 'Other'
+  };
+
+  if (mapping[source]) return mapping[source];
+
+  let translated = source;
+  translated = translated.replace(/Prospecção HUB/gi, 'HUB Prospecting');
+  translated = translated.replace(/Prospecção/gi, 'Prospecting');
+  translated = translated.replace(/Indicação/gi, 'Referral');
+  translated = translated.replace(/Site/gi, 'Website');
+  return translated;
+};
+
 // Material name translator
 export const translateMaterialName = (name?: string | null, lang?: 'pt' | 'en'): string => {
   if (!name) return '-';
@@ -246,6 +287,7 @@ export const translateMaterialName = (name?: string | null, lang?: 'pt' | 'en'):
   if (currentLang === 'pt') return name;
 
   const exact: Record<string, string> = {
+    'Recicláveis diversos': 'Mixed Recyclables',
     'Recicláveis em geral': 'General Recyclables',
     'Recicláveis': 'Recyclables',
     'Reciclável': 'Recyclable',
@@ -273,6 +315,9 @@ export const translateMaterialName = (name?: string | null, lang?: 'pt' | 'en'):
     'Eletrônicos (REEE)': 'Electronics (WEEE)',
     'Eletrônicos': 'Electronics',
     'Orgânicos': 'Organics',
+    'Sucata de Alumínio': 'Aluminum Scrap',
+    'Sucata': 'Scrap',
+    'Diversos': 'Mixed / Various',
     'Outro': 'Other',
     'Outros': 'Others'
   };
@@ -280,7 +325,9 @@ export const translateMaterialName = (name?: string | null, lang?: 'pt' | 'en'):
   if (exact[name]) return exact[name];
 
   let translated = name;
+  translated = translated.replace(/recicláveis diversos/gi, 'Mixed Recyclables');
   translated = translated.replace(/recicláveis em geral/gi, 'General Recyclables');
+  translated = translated.replace(/recicláveis|reciclaveis/gi, 'Recyclables');
   translated = translated.replace(/papel branco sigiloso/gi, 'Confidential White Paper');
   translated = translated.replace(/papel misto/gi, 'Mixed Paper');
   translated = translated.replace(/papelão ondulado/gi, 'Corrugated Cardboard');
@@ -399,10 +446,15 @@ export const translateLogText = (text: string | null | undefined, lang?: 'pt' | 
   translated = translated.replace(/Segmento:\s*Indústria/gi, 'Segment: Industry');
   translated = translated.replace(/Segmento:\s*Comércio/gi, 'Segment: Commerce');
   translated = translated.replace(/Segmento:\s*Serviços/gi, 'Segment: Services');
+  translated = translated.replace(/Segmento:\s*Restaurante\s*\/\s*Alimentação/gi, 'Segment: Restaurant / Food Service');
   translated = translated.replace(/Segmento:/gi, 'Segment:');
   translated = translated.replace(/Status prospecção:\s*(.*)/gi, (m, p) => `Prospecting Status: ${translateProspectingStatus(p.trim() as any, 'en')}`);
   translated = translated.replace(/Atualização de Status/gi, 'Status Update');
   translated = translated.replace(/Parecer logístico registrado/gi, 'Logistics analysis submitted');
+  translated = translated.replace(/Logística respondeu análise\.\s*Decisão:\s*Viável\.\s*Notas:\s*(.*)/gi, (m, notes) => `Logistics answered analysis. Decision: Feasible. Notes: ${notes}`);
+  translated = translated.replace(/Logística respondeu análise\.\s*Decisão:\s*Inviável\.\s*Notas:\s*(.*)/gi, (m, notes) => `Logistics answered analysis. Decision: Infeasible. Notes: ${notes}`);
+  translated = translated.replace(/Logística respondeu análise\.\s*Decisão:\s*Necessita Informações\.\s*Notas:\s*(.*)/gi, (m, notes) => `Logistics answered analysis. Decision: Needs Information. Notes: ${notes}`);
+  translated = translated.replace(/Logística respondeu análise\.\s*Decisão:\s*(.*?)\.\s*Notas:\s*(.*)/gi, (m, d, notes) => `Logistics answered analysis. Decision: ${d}. Notes: ${notes}`);
   translated = translated.replace(/Lead retirado da Logística pelo responsável/gi, 'Lead withdrawn from Logistics by owner');
   translated = translated.replace(/Informações esclarecidas por Compras/gi, 'Information clarified by Commercial');
 

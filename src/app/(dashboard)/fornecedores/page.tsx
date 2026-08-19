@@ -19,7 +19,9 @@ import {
   getStatusColor, 
   formatDate,
   formatCep,
-  fetchAddressByCep
+  fetchAddressByCep,
+  translateSupplierType,
+  translateFrequency
 } from '@/lib/utils';
 import { 
   Building2, 
@@ -426,7 +428,7 @@ export default function SuppliersPage() {
                             </span>
                           </div>
                           <span className="text-xs text-slate-400 mt-0.5">
-                            {supplier.trade_name || 'Sem fantasia'} • {supplier.document || 'Sem CNPJ'}
+                            {supplier.trade_name || (language === 'pt' ? 'Sem fantasia' : 'No trade name')} • {supplier.document || (language === 'pt' ? 'Sem CNPJ' : 'No Tax ID')}
                           </span>
                         </div>
                       </td>
@@ -434,7 +436,7 @@ export default function SuppliersPage() {
                       {/* Segment */}
                       <td className="px-6 py-4">
                         <span className="inline-block text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                          {supplier.supplier_type || 'Indústria'}
+                          {translateSupplierType(supplier.supplier_type, language)}
                         </span>
                       </td>
 
@@ -446,7 +448,7 @@ export default function SuppliersPage() {
                             {supplier.address.street && <span className="text-[11px] text-slate-400">{supplier.address.street}, {supplier.address.number}</span>}
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-xs">Sem endereço</span>
+                          <span className="text-slate-300 text-xs">{language === 'pt' ? 'Sem endereço' : 'No address'}</span>
                         )}
                       </td>
 
@@ -454,14 +456,14 @@ export default function SuppliersPage() {
                       <td className="px-6 py-4">
                         {primaryContact ? (
                           <div className="flex flex-col text-xs text-slate-500">
-                            <span className="font-semibold text-slate-800">{primaryContact.name}</span>
+                            <span className="font-semibold text-slate-800">{primaryContact.name} ({language === 'pt' ? 'Contato' : 'Contact'})</span>
                             <span className="flex items-center gap-1 mt-0.5 text-slate-400">
                               <Phone size={10} />
                               {primaryContact.whatsapp || primaryContact.phone || '-'}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-xs">Nenhum</span>
+                          <span className="text-slate-300 text-xs">{language === 'pt' ? 'Nenhum' : 'None'}</span>
                         )}
                       </td>
 
@@ -469,12 +471,12 @@ export default function SuppliersPage() {
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1 items-start">
                           {supplier.current_stage === 'OPERATION' && supplier.current_status === 'APPROVED' ? (
-                            <Badge variant="success">✓ Ativo</Badge>
+                            <Badge variant="success">✓ {language === 'pt' ? 'Ativo' : 'Active'}</Badge>
                           ) : supplier.current_stage === 'COLLECTION' || supplier.backlog_reason?.toLowerCase().includes('agendamento') ? (
-                            <Badge variant="warning">📅 Aguardando agendamento da coleta</Badge>
+                            <Badge variant="warning">📅 {language === 'pt' ? 'Aguardando agendamento da coleta' : 'Awaiting collection scheduling'}</Badge>
                           ) : supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' ? (
                             <>
-                              <Badge variant="purple">⚠️ Precisa de Informação</Badge>
+                              <Badge variant="purple">⚠️ {language === 'pt' ? 'Precisa de Informação' : 'Needs Information'}</Badge>
                               {supplier.backlog_reason && (
                                 <span className="text-[10px] text-amber-700 font-medium line-clamp-1 max-w-[200px]" title={supplier.backlog_reason}>
                                   {supplier.backlog_reason}
@@ -484,7 +486,7 @@ export default function SuppliersPage() {
                           ) : (
                             <>
                               <Badge variant={getStageColor(supplier.current_stage)}>
-                                {translateStage(supplier.current_stage)}
+                                {translateStage(supplier.current_stage, language)}
                               </Badge>
                               {supplier.backlog_reason && (
                                 <span className="text-[10px] text-slate-500 font-medium line-clamp-1 max-w-[180px]" title={supplier.backlog_reason}>
@@ -508,13 +510,13 @@ export default function SuppliersPage() {
                               const nextDate = getNextCollectionDate(supplier.last_collection_date, freq);
                               return (
                                 <span className="text-[10px] text-indigo-700 font-semibold mt-0.5" title={`Recorrência: ${freq}`}>
-                                  Próx: {formatDate(nextDate.toISOString())} ({freq})
+                                  {language === 'pt' ? 'Próx:' : 'Next:'} {formatDate(nextDate.toISOString())} ({translateFrequency(freq, language)})
                                 </span>
                               );
                             })()}
                           </div>
                         ) : (
-                          <span className="text-slate-400 text-xs italic">Aguardando 1ª coleta</span>
+                          <span className="text-slate-400 text-xs italic">{language === 'pt' ? 'Aguardando 1ª coleta' : 'Awaiting 1st collection'}</span>
                         )}
                       </td>
 
@@ -522,10 +524,10 @@ export default function SuppliersPage() {
                       <td className="px-6 py-4">
                         {supplier.mtr_login ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                            <Key size={11} /> MTR Configurado
+                            <Key size={11} /> {language === 'pt' ? 'MTR Configurado' : 'MTR Configured'}
                           </span>
                         ) : (
-                          <span className="text-[11px] text-slate-400">Pendente</span>
+                          <span className="text-[11px] text-slate-400">{language === 'pt' ? 'Pendente' : 'Pending'}</span>
                         )}
                       </td>
 
@@ -533,7 +535,7 @@ export default function SuppliersPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5 text-xs text-slate-600">
                           <UserCheck size={12} className="text-emerald-500" />
-                          <span>{supplier.responsible?.name || 'Não atribuído'}</span>
+                          <span>{supplier.responsible?.name || (language === 'pt' ? 'Não atribuído' : 'Unassigned')}</span>
                         </div>
                       </td>
 
