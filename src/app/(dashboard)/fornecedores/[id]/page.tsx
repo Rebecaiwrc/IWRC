@@ -1465,10 +1465,10 @@ export default function SupplierDetailPage() {
                   </span>
                   <h1 className="text-2xl font-black text-slate-900 leading-tight">{supplier.name}</h1>
                   <Badge variant={getStageColor(supplier.current_stage)}>
-                    {translateStage(supplier.current_stage)}
+                    {translateStage(supplier.current_stage, language)}
                   </Badge>
                   <Badge variant={getStatusColor(supplier.current_status)}>
-                    {translateStatus(supplier.current_status)}
+                    {translateStatus(supplier.current_status, language)}
                   </Badge>
                 </div>
 
@@ -1527,23 +1527,23 @@ export default function SupplierDetailPage() {
               {/* Row 2: Full-Width 360° Metadata Grid */}
               <div className="pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 text-xs">
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Segmento</p>
-                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.supplier_type || 'Indústria'}</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">{language === 'pt' ? 'Segmento' : 'Segment'}</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{translateSupplierType(supplier.supplier_type, language)}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Como encontramos</p>
-                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.lead_source || 'Busca própria'}</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">{language === 'pt' ? 'Como encontramos' : 'Lead Source'}</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.lead_source || (language === 'pt' ? 'Busca própria' : 'Direct Search')}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">CNPJ/CPF</p>
-                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.document || 'Não informado'}</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">{language === 'pt' ? 'CNPJ/CPF' : 'Tax ID / CNPJ'}</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.document || (language === 'pt' ? 'Não informado' : 'Not provided')}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Responsável iWrc</p>
-                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.responsible?.name || 'Não atribuído'}</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">{language === 'pt' ? 'Responsável iWrc' : 'iWrc Responsible'}</p>
+                  <p className="font-semibold text-slate-800 mt-1 truncate">{supplier.responsible?.name || (language === 'pt' ? 'Não atribuído' : 'Unassigned')}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Última Atualização</p>
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">{language === 'pt' ? 'Última Atualização' : 'Last Updated'}</p>
                   <p className="font-semibold text-slate-800 mt-1 truncate">{formatDate(supplier.updated_at)}</p>
                 </div>
               </div>
@@ -1557,10 +1557,10 @@ export default function SupplierDetailPage() {
                     <AlertTriangle className="shrink-0 text-amber-600 mt-0.5" size={20} />
                     <div>
                       <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded">
-                        Atenção Compras / Comercial: Informação Solicitada pela Logística
+                        {language === 'pt' ? 'Atenção Compras / Comercial: Informação Solicitada pela Logística' : 'Attention Commercial / Buying: Information Requested by Logistics'}
                       </span>
                       <p className="font-semibold text-sm text-slate-800 mt-1">
-                        {supplier.backlog_reason || activeLogistics.notes || 'A Logística precisa de esclarecimentos adicionais.'}
+                        {supplier.backlog_reason || activeLogistics.notes || (language === 'pt' ? 'A Logística precisa de esclarecimentos adicionais.' : 'Logistics needs additional clarification.')}
                       </p>
                     </div>
                   </div>
@@ -1570,7 +1570,7 @@ export default function SupplierDetailPage() {
                     onClick={() => setIsRespondInfoModalOpen(true)}
                   >
                     <MessageSquare size={14} />
-                    Responder Informações Solicitadas
+                    {language === 'pt' ? 'Responder Informações Solicitadas' : 'Respond to Requested Info'}
                   </Button>
                 </div>
               ) : (
@@ -1578,10 +1578,10 @@ export default function SupplierDetailPage() {
                   <Clock className="shrink-0 text-amber-600 mt-0.5" size={18} />
                   <div className="space-y-0.5">
                     <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800">
-                      Aguardando Retorno do Comercial / Compras
+                      {language === 'pt' ? 'Aguardando Retorno do Comercial / Compras' : 'Awaiting Commercial / Buying Response'}
                     </span>
                     <p className="font-semibold text-slate-700">
-                      {supplier.backlog_reason || activeLogistics.notes || 'Solicitação de informações enviada para Compras.'}
+                      {supplier.backlog_reason || activeLogistics.notes || (language === 'pt' ? 'Solicitação de informações enviada para Compras.' : 'Information request sent to Commercial.')}
                     </p>
                   </div>
                 </div>
@@ -1590,7 +1590,7 @@ export default function SupplierDetailPage() {
               <div className="mt-6 flex items-start gap-3 bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-amber-800">
                 <AlertTriangle className="shrink-0 text-amber-500 mt-0.5" size={16} />
                 <div className="space-y-1">
-                  <span className="font-bold">Pendência Operacional / Atenção da Etapa</span>
+                  <span className="font-bold">{language === 'pt' ? 'Pendência Operacional / Atenção da Etapa' : 'Operational Pending / Stage Attention'}</span>
                   <p className="font-semibold leading-relaxed">{supplier.backlog_reason}</p>
                 </div>
               </div>
@@ -1600,12 +1600,12 @@ export default function SupplierDetailPage() {
           {/* Tabs Navigation */}
           <div className="flex border-b border-slate-200 overflow-x-auto">
             {[
-              { key: 'overview', label: 'Visão Geral & MTR', icon: Building2 },
-              { key: 'materials', label: `Materiais (${supplier.materials?.length || 0})`, icon: Scale },
-              { key: 'documents', label: `Documentos (${supplier.attached_documents?.length || 0})`, icon: FileText },
-              { key: 'logistics', label: 'Logística', icon: Truck },
-              { key: 'collections', label: 'Coletas / Entregas', icon: Calendar },
-              { key: 'timeline', label: 'Histórico', icon: Clock }
+              { key: 'overview', label: language === 'pt' ? 'Visão Geral & MTR' : 'Overview & MTR', icon: Building2 },
+              { key: 'materials', label: `${language === 'pt' ? 'Materiais' : 'Materials'} (${supplier.materials?.length || 0})`, icon: Scale },
+              { key: 'documents', label: `${language === 'pt' ? 'Documentos' : 'Documents'} (${supplier.attached_documents?.length || 0})`, icon: FileText },
+              { key: 'logistics', label: language === 'pt' ? 'Logística' : 'Logistics', icon: Truck },
+              { key: 'collections', label: language === 'pt' ? 'Coletas / Entregas' : 'Collections / Deliveries', icon: Calendar },
+              { key: 'timeline', label: language === 'pt' ? 'Histórico' : 'History', icon: Clock }
             ].map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
@@ -1639,32 +1639,32 @@ export default function SupplierDetailPage() {
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                       <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
                         <Key size={16} className="text-indigo-600" />
-                        Acesso e Credenciais do MTR (SIGOR / SINIR)
+                        {language === 'pt' ? 'Acesso e Credenciais do MTR (SIGOR / SINIR)' : 'MTR Access & Credentials (SIGOR / SINIR)'}
                       </h3>
                       <button 
                         onClick={() => setIsEditModalOpen(true)}
                         className="text-xs text-indigo-600 hover:underline font-bold"
                       >
-                        Editar Acesso
+                        {language === 'pt' ? 'Editar Acesso' : 'Edit Access'}
                       </button>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Login / Usuário MTR</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{language === 'pt' ? 'Login / Usuário MTR' : 'MTR Login / Username'}</p>
                         <p className="font-bold text-slate-800 mt-1 font-mono text-sm">
-                          {supplier.mtr_login || <span className="text-slate-300 font-sans font-normal italic">Não cadastrado</span>}
+                          {supplier.mtr_login || <span className="text-slate-300 font-sans font-normal italic">{language === 'pt' ? 'Não cadastrado' : 'Not registered'}</span>}
                         </p>
                       </div>
 
                       <div className="p-3 bg-white border border-slate-200 rounded-xl">
                         <div className="flex items-center justify-between">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Senha do MTR</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{language === 'pt' ? 'Senha do MTR' : 'MTR Password'}</p>
                           {supplier.mtr_password && (
                             <button 
                               onClick={() => setShowMtrPassword(p => !p)}
                               className="text-slate-400 hover:text-slate-600"
-                              title={showMtrPassword ? 'Ocultar' : 'Exibir senha'}
+                              title={showMtrPassword ? (language === 'pt' ? 'Ocultar' : 'Hide') : (language === 'pt' ? 'Exibir senha' : 'Show password')}
                             >
                               {showMtrPassword ? <EyeOff size={13} /> : <Eye size={13} />}
                             </button>
@@ -1674,7 +1674,7 @@ export default function SupplierDetailPage() {
                           {supplier.mtr_password ? (
                             showMtrPassword ? supplier.mtr_password : '••••••••••••'
                           ) : (
-                            <span className="text-slate-300 font-sans font-normal italic">Não cadastrada</span>
+                            <span className="text-slate-300 font-sans font-normal italic">{language === 'pt' ? 'Não cadastrada' : 'Not registered'}</span>
                           )}
                         </p>
                       </div>
@@ -1686,22 +1686,22 @@ export default function SupplierDetailPage() {
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                       <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
                         <CalendarCheck size={16} className="text-emerald-600" />
-                        Histórico de Entregas e Coletas
+                        {language === 'pt' ? 'Histórico de Entregas e Coletas' : 'Delivery and Collection History'}
                       </h3>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="p-3 bg-slate-50 rounded-xl">
-                        <span className="font-bold text-slate-400 uppercase text-[10px]">Primeira Entrega / Coleta</span>
+                        <span className="font-bold text-slate-400 uppercase text-[10px]">{language === 'pt' ? 'Primeira Entrega / Coleta' : 'First Delivery / Collection'}</span>
                         <p className="font-bold text-slate-800 text-sm mt-1">
-                          {supplier.first_collection_date ? formatDate(supplier.first_collection_date) : <span className="text-slate-400 font-normal italic">Nenhuma registrada</span>}
+                          {supplier.first_collection_date ? formatDate(supplier.first_collection_date) : <span className="text-slate-400 font-normal italic">{language === 'pt' ? 'Nenhuma registrada' : 'None registered'}</span>}
                         </p>
                       </div>
 
                       <div className="p-3 bg-slate-50 rounded-xl">
-                        <span className="font-bold text-slate-400 uppercase text-[10px]">Última Entrega / Coleta</span>
+                        <span className="font-bold text-slate-400 uppercase text-[10px]">{language === 'pt' ? 'Última Entrega / Coleta' : 'Last Delivery / Collection'}</span>
                         <p className="font-bold text-slate-800 text-sm mt-1">
-                          {supplier.last_collection_date ? formatDate(supplier.last_collection_date) : <span className="text-slate-400 font-normal italic">Nenhuma registrada</span>}
+                          {supplier.last_collection_date ? formatDate(supplier.last_collection_date) : <span className="text-slate-400 font-normal italic">{language === 'pt' ? 'Nenhuma registrada' : 'None registered'}</span>}
                         </p>
                       </div>
                     </div>
@@ -1715,7 +1715,7 @@ export default function SupplierDetailPage() {
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                       <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
                         <Phone size={16} className="text-emerald-600" />
-                        Contatos
+                        {language === 'pt' ? 'Contatos' : 'Contacts'}
                       </h3>
                     </div>
                     {supplier.contacts && supplier.contacts.length > 0 ? (
@@ -1729,7 +1729,7 @@ export default function SupplierDetailPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="py-4 text-center text-slate-400 text-xs">Nenhum contato cadastrado.</div>
+                      <div className="py-4 text-center text-slate-400 text-xs">{language === 'pt' ? 'Nenhum contato cadastrado.' : 'No contacts registered.'}</div>
                     )}
                   </Card>
 
@@ -1738,10 +1738,10 @@ export default function SupplierDetailPage() {
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                       <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
                         <ClipboardList size={16} className="text-emerald-600" />
-                        Tarefas e Pendências
+                        {language === 'pt' ? 'Tarefas e Pendências' : 'Tasks and Action Items'}
                       </h3>
                       <Button size="sm" variant="outline" onClick={() => setIsTaskModalOpen(true)} className="text-xs">
-                        + Tarefa
+                        {language === 'pt' ? '+ Tarefa' : '+ Task'}
                       </Button>
                     </div>
 
@@ -1753,21 +1753,21 @@ export default function SupplierDetailPage() {
                               <p className={`font-semibold text-slate-800 ${task.status === 'completed' ? 'line-through opacity-50' : ''}`}>
                                 {task.description}
                               </p>
-                              {task.due_date && <span className="text-[10px] text-slate-400">Prazo: {formatDate(task.due_date)}</span>}
+                              {task.due_date && <span className="text-[10px] text-slate-400">{language === 'pt' ? 'Prazo:' : 'Due:'} {formatDate(task.due_date)}</span>}
                             </div>
                             {task.status === 'pending' && (
                               <button
                                 onClick={() => handleCompleteTask(task.id)}
                                 className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded font-bold cursor-pointer hover:bg-emerald-100"
                               >
-                                Concluir
+                                {language === 'pt' ? 'Concluir' : 'Complete'}
                               </button>
                             )}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="py-4 text-center text-slate-400 text-xs">Nenhuma pendência ativa.</div>
+                      <div className="py-4 text-center text-slate-400 text-xs">{language === 'pt' ? 'Nenhuma pendência ativa.' : 'No active tasks.'}</div>
                     )}
                   </Card>
                 </div>
@@ -1780,7 +1780,7 @@ export default function SupplierDetailPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                   <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
                     <Scale size={16} className="text-emerald-600" />
-                    Materiais Declarados
+                    {language === 'pt' ? 'Materiais Declarados' : 'Declared Materials'}
                   </h3>
                   {canUserModifySupplier() && (
                     <Button size="sm" className="gap-1.5" onClick={() => setIsMaterialModalOpen(true)}>
@@ -1821,7 +1821,7 @@ export default function SupplierDetailPage() {
                                 <Badge variant="success">{language === 'pt' ? 'Doação' : 'Donation'}</Badge>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-slate-500">{mat.storage_form || '-'}</td>
+                            <td className="px-4 py-3 text-slate-500">{translateStorageForm(mat.storage_form, language)}</td>
                             {canUserModifySupplier() && (
                               <td className="px-4 py-3 text-right">
                                 <button
@@ -1904,8 +1904,8 @@ export default function SupplierDetailPage() {
                         </div>
                         {doc.notes && <p className="text-[11px] text-slate-500 bg-white p-2 rounded-xl border border-[#CCEAF1]">{doc.notes}</p>}
                         <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-[#E5F4F7]">
-                          <span>Anexado em {formatDate(doc.uploaded_at)}</span>
-                          <span className="font-bold text-[#48780E] bg-[#EBF7D4] px-1.5 py-0.2 rounded-full">Válido</span>
+                          <span>{language === 'pt' ? 'Anexado em' : 'Attached on'} {formatDate(doc.uploaded_at)}</span>
+                          <span className="font-bold text-[#48780E] bg-[#EBF7D4] px-1.5 py-0.2 rounded-full">{language === 'pt' ? 'Válido' : 'Valid'}</span>
                         </div>
                       </div>
                     ))}
@@ -1913,9 +1913,9 @@ export default function SupplierDetailPage() {
                 ) : (
                   <div className="py-16 text-center text-slate-400 text-sm space-y-2">
                     <FileText size={32} className="mx-auto text-slate-300" />
-                    <p>Nenhum documento ou termo anexado para este gerador.</p>
+                    <p>{language === 'pt' ? 'Nenhum documento ou termo anexado para este gerador.' : 'No documents or agreements attached for this generator.'}</p>
                     <Button variant="outline" size="sm" onClick={() => setIsDocModalOpen(true)} className="mt-2 gap-1">
-                      <Upload size={12} /> Anexar Primeiro Documento
+                      <Upload size={12} /> {language === 'pt' ? 'Anexar Primeiro Documento' : 'Attach First Document'}
                     </Button>
                   </div>
                 )}
@@ -1928,10 +1928,10 @@ export default function SupplierDetailPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                   <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
                     <Truck size={16} className="text-emerald-600" />
-                    Parecer e Viabilidade Logística
+                    {language === 'pt' ? 'Parecer e Viabilidade Logística' : 'Logistics Feasibility & Opinion'}
                   </h3>
                   <Button size="sm" variant="outline" onClick={handleOpenLogisticsModal} className="text-xs">
-                    {activeLogistics ? 'Editar Parecer' : 'Preencher Parecer'}
+                    {activeLogistics ? (language === 'pt' ? 'Editar Parecer' : 'Edit Opinion') : (language === 'pt' ? 'Preencher Parecer' : 'Submit Opinion')}
                   </Button>
                 </div>
 
@@ -1940,46 +1940,46 @@ export default function SupplierDetailPage() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-3 bg-slate-50 rounded-lg">
-                          <span className="font-bold text-slate-400 uppercase text-[9px]">Distância</span>
+                          <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Distância' : 'Distance'}</span>
                           <p className="font-bold text-slate-800 text-sm mt-0.5">{activeLogistics.distance_km ? `${activeLogistics.distance_km} km` : '-'}</p>
                         </div>
                         <div className="p-3 bg-slate-50 rounded-lg">
-                          <span className="font-bold text-slate-400 uppercase text-[9px]">Frete Estimado</span>
+                          <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Frete Estimado' : 'Estimated Freight'}</span>
                           <p className="font-bold text-slate-800 text-sm mt-0.5">{formatCurrency(activeLogistics.estimated_cost)}</p>
                         </div>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-400 uppercase text-[9px]">Tipo de Veículo</span>
+                        <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Tipo de Veículo' : 'Vehicle Type'}</span>
                         <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.transport_type || '-'}</p>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-400 uppercase text-[9px]">Responsável pelo Transporte</span>
+                        <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Responsável pelo Transporte' : 'Freight Responsible'}</span>
                         <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.transport_responsible || '-'}</p>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-400 uppercase text-[9px]">Frequência Recomendada</span>
+                        <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Frequência Recomendada' : 'Recommended Frequency'}</span>
                         <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.recommended_frequency || '-'}</p>
                       </div>
                     </div>
 
                     <div className="space-y-4">
                       <div>
-                        <span className="font-bold text-slate-400 uppercase text-[9px]">Parecer da Análise</span>
+                        <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Parecer da Análise' : 'Feasibility Decision'}</span>
                         <div className="mt-1">
                           <Badge variant={activeLogistics.feasibility === 'FEASIBLE' ? 'success' : activeLogistics.feasibility === 'INFEASIBLE' ? 'danger' : 'warning'}>
-                            {translateFeasibility(activeLogistics.feasibility as any)}
+                            {translateFeasibility(activeLogistics.feasibility as any, language)}
                           </Badge>
                         </div>
                       </div>
                       {activeLogistics.conditioning_infrastructure_needed && (
                         <div>
-                          <span className="font-bold text-slate-400 uppercase text-[9px]">Infraestrutura Necessária</span>
+                          <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Infraestrutura Necessária' : 'Required Infrastructure'}</span>
                           <p className="text-slate-800 mt-0.5">{activeLogistics.conditioning_infrastructure_needed}</p>
                         </div>
                       )}
                       {activeLogistics.notes && (
                         <div>
-                          <span className="font-bold text-slate-400 uppercase text-[9px]">Observações da Logística</span>
+                          <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Observações da Logística' : 'Logistics Notes'}</span>
                           <p className="text-slate-800 mt-0.5 p-3 bg-slate-50 rounded-lg border border-slate-150">{activeLogistics.notes}</p>
                         </div>
                       )}
@@ -1987,9 +1987,9 @@ export default function SupplierDetailPage() {
                   </div>
                 ) : (
                   <div className="py-12 text-center text-slate-400 text-sm space-y-3">
-                    <p>Nenhuma análise logística registrada para este gerador.</p>
+                    <p>{language === 'pt' ? 'Nenhuma análise logística registrada para este gerador.' : 'No logistics analysis registered for this generator.'}</p>
                     <Button size="sm" onClick={handleOpenLogisticsModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                      Preencher Análise Logística
+                      {language === 'pt' ? 'Preencher Análise Logística' : 'Fill Logistics Analysis'}
                     </Button>
                   </div>
                 )}
@@ -2002,11 +2002,11 @@ export default function SupplierDetailPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                   <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
                     <Calendar size={16} className="text-emerald-600" />
-                    Histórico de Coletas Programadas
+                    {language === 'pt' ? 'Histórico de Coletas Programadas' : 'Scheduled Collections History'}
                   </h3>
                   <Button size="sm" className="gap-1.5" onClick={() => setIsCollectionModalOpen(true)}>
                     <Plus size={14} />
-                    Agendar Coleta
+                    {language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection'}
                   </Button>
                 </div>
 
@@ -2015,11 +2015,11 @@ export default function SupplierDetailPage() {
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          <th className="px-4 py-3">Data Agendada</th>
-                          <th className="px-4 py-3">Situação</th>
-                          <th className="px-4 py-3">Motorista</th>
-                          <th className="px-4 py-3">Transportadora</th>
-                          <th className="px-4 py-3">Notas</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Data Agendada' : 'Scheduled Date'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Situação' : 'Status'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Motorista' : 'Driver'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Transportadora' : 'Carrier'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Notas' : 'Notes'}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -2028,7 +2028,7 @@ export default function SupplierDetailPage() {
                             <td className="px-4 py-3 font-bold text-slate-800">{formatDate(col.scheduled_date)}</td>
                             <td className="px-4 py-3">
                               <Badge variant={col.status === 'COMPLETED' ? 'success' : 'warning'}>
-                                {col.status === 'COMPLETED' ? 'Realizada' : 'Agendada'}
+                                {col.status === 'COMPLETED' ? (language === 'pt' ? 'Realizada' : 'Completed') : (language === 'pt' ? 'Agendada' : 'Scheduled')}
                               </Badge>
                             </td>
                             <td className="px-4 py-3 text-slate-600">{col.driver_name || '-'}</td>
@@ -2041,7 +2041,7 @@ export default function SupplierDetailPage() {
                   </div>
                 ) : (
                   <div className="py-12 text-center text-slate-400 text-sm">
-                    Nenhuma coleta registrada para este gerador.
+                    {language === 'pt' ? 'Nenhuma coleta registrada para este gerador.' : 'No collections registered for this generator.'}
                   </div>
                 )}
               </Card>
@@ -2052,7 +2052,7 @@ export default function SupplierDetailPage() {
               <Card>
                 <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3 mb-6">
                   <Clock size={16} className="text-emerald-600" />
-                  Linha do Tempo de Interações
+                  {language === 'pt' ? 'Linha do Tempo de Interações' : 'Interaction Timeline'}
                 </h3>
 
                 <div className="space-y-6 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-200">
@@ -2065,7 +2065,7 @@ export default function SupplierDetailPage() {
                           <span className="text-[10px] text-slate-400">{formatDate(item.date)}</span>
                         </div>
                         <p className="text-xs text-slate-600">{item.description}</p>
-                        {item.user && <p className="text-[10px] text-emerald-600 font-semibold">Por: {item.user}</p>}
+                        {item.user && <p className="text-[10px] text-emerald-600 font-semibold">{language === 'pt' ? 'Por:' : 'By:'} {item.user}</p>}
                       </div>
                     </div>
                   ))}
@@ -2078,106 +2078,120 @@ export default function SupplierDetailPage() {
       )}
 
       {/* Modal: Editar Ficha */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Editar Ficha do Gerador" size="lg">
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={language === 'pt' ? 'Editar Ficha do Gerador' : 'Edit Generator Record'} size="lg">
         <form onSubmit={handleUpdateSupplier} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input label="Razão Social *" value={editSupplier.name} onChange={e => setEditSupplier(p => ({ ...p, name: e.target.value }))} required />
-            <Input label="Nome Fantasia" value={editSupplier.trade_name} onChange={e => setEditSupplier(p => ({ ...p, trade_name: e.target.value }))} />
-            <Input label="CNPJ / CPF" value={editSupplier.document} onChange={e => setEditSupplier(p => ({ ...p, document: e.target.value }))} />
+            <Input label={language === 'pt' ? 'Razão Social *' : 'Company Name *'} value={editSupplier.name} onChange={e => setEditSupplier(p => ({ ...p, name: e.target.value }))} required />
+            <Input label={language === 'pt' ? 'Nome Fantasia' : 'Trade Name'} value={editSupplier.trade_name} onChange={e => setEditSupplier(p => ({ ...p, trade_name: e.target.value }))} />
+            <Input label={language === 'pt' ? 'CNPJ / CPF' : 'Tax ID / CNPJ'} value={editSupplier.document} onChange={e => setEditSupplier(p => ({ ...p, document: e.target.value }))} />
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Segmento do Gerador *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Segmento do Gerador *' : 'Generator Segment *'}
+              </label>
               <select
                 value={editSupplier.supplier_type}
                 onChange={e => setEditSupplier(p => ({ ...p, supplier_type: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer font-medium"
               >
-                <option value="Indústria">Indústria</option>
-                <option value="Comércio">Comércio</option>
-                <option value="Condomínio">Condomínio</option>
-                <option value="Cooperativa">Cooperativa</option>
-                <option value="Residencial">Residencial</option>
-                <option value="Outro">Outro (digitar)</option>
+                <option value="Indústria">{language === 'pt' ? 'Indústria' : 'Industry'}</option>
+                <option value="Comércio">{language === 'pt' ? 'Comércio' : 'Commerce'}</option>
+                <option value="Condomínio">{language === 'pt' ? 'Condomínio' : 'Condominium'}</option>
+                <option value="Cooperativa">{language === 'pt' ? 'Cooperativa' : 'Cooperative'}</option>
+                <option value="Residencial">{language === 'pt' ? 'Residencial' : 'Residential'}</option>
+                <option value="Outro">{language === 'pt' ? 'Outro (digitar)' : 'Other (type)'}</option>
               </select>
               {editSupplier.supplier_type === 'Outro' && (
                 <input
                   type="text"
-                  placeholder="Digite o segmento..."
+                  placeholder={language === 'pt' ? 'Digite o segmento...' : 'Type segment...'}
                   value={editSupplier.custom_supplier_type}
                   onChange={e => setEditSupplier(p => ({ ...p, custom_supplier_type: e.target.value }))}
-                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-400 rounded-lg"
+                  className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-emerald-400 rounded-lg"
                 />
               )}
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Como encontramos *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Como encontramos *' : 'Lead Source *'}
+              </label>
               <select
                 value={editSupplier.lead_source}
                 onChange={e => setEditSupplier(p => ({ ...p, lead_source: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer font-medium"
               >
-                <option value="Busca própria">Busca própria</option>
+                <option value="Busca própria">{language === 'pt' ? 'Busca própria' : 'Direct Search'}</option>
                 <option value="Zion">Zion</option>
                 <option value="Google Search">Google Search</option>
-                <option value="Indicação">Indicação</option>
-                <option value="Outro">Outro (digitar)</option>
+                <option value="Indicação">{language === 'pt' ? 'Indicação' : 'Referral'}</option>
+                <option value="Outro">{language === 'pt' ? 'Outro (digitar)' : 'Other (type)'}</option>
               </select>
               {editSupplier.lead_source === 'Outro' && (
                 <input
                   type="text"
-                  placeholder="Digite a origem..."
+                  placeholder={language === 'pt' ? 'Digite a origem...' : 'Type source...'}
                   value={editSupplier.custom_lead_source}
                   onChange={e => setEditSupplier(p => ({ ...p, custom_lead_source: e.target.value }))}
-                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-400 rounded-lg"
+                  className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-emerald-400 rounded-lg"
                 />
               )}
             </div>
 
             <Select
-              label="Responsável Interno"
+              label={language === 'pt' ? 'Responsável Interno' : 'Internal Responsible'}
               value={editSupplier.internal_responsible_id}
               onChange={e => setEditSupplier(p => ({ ...p, internal_responsible_id: e.target.value }))}
               options={profiles.map(p => ({ value: p.id, label: p.name }))}
             />
           </div>
 
-          <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl space-y-3">
-            <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Credenciais MTR</h4>
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 rounded-xl space-y-3">
+            <h4 className="text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">
+              {language === 'pt' ? 'Credenciais MTR' : 'MTR Credentials'}
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Input
-                label="Login do MTR"
+                label={language === 'pt' ? 'Login do MTR' : 'MTR Login'}
                 value={editSupplier.mtr_login}
                 onChange={e => setEditSupplier(p => ({ ...p, mtr_login: e.target.value }))}
-                placeholder="Ex: usuario.sigor"
+                placeholder={language === 'pt' ? 'Ex: usuario.sigor' : 'E.g. user.sigor'}
               />
               <Input
-                label="Senha do MTR"
+                label={language === 'pt' ? 'Senha do MTR' : 'MTR Password'}
                 value={editSupplier.mtr_password}
                 onChange={e => setEditSupplier(p => ({ ...p, mtr_password: e.target.value }))}
-                placeholder="Senha de emissão de MTR"
+                placeholder={language === 'pt' ? 'Senha de emissão de MTR' : 'MTR emission password'}
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancelar</Button>
-            <Button type="submit">Salvar Alterações</Button>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button type="submit">
+              {language === 'pt' ? 'Salvar Alterações' : 'Save Changes'}
+            </Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal: Anexar Documento */}
-      <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title="Anexar Documento do Gerador" size="md">
+      <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title={language === 'pt' ? 'Anexar Documento do Gerador' : 'Attach Generator Document'} size="md">
         <div className="space-y-5">
           {/* Quick upload from PC */}
-          <div className="p-4 bg-[#F0F9FB] border border-[#CCEAF1] rounded-2xl text-center space-y-2">
+          <div className="p-4 bg-[#F0F9FB] dark:bg-slate-900 border border-[#CCEAF1] dark:border-slate-800 rounded-2xl text-center space-y-2">
             <Upload size={24} className="mx-auto text-[#2098D1]" />
-            <p className="text-xs font-bold text-[#0D2439]">Anexar arquivos do Computador</p>
-            <p className="text-[11px] text-[#547990]">Selecione um ou vários arquivos (PDF, imagens, MTRs, contratos):</p>
+            <p className="text-xs font-bold text-[#0D2439] dark:text-white">
+              {language === 'pt' ? 'Anexar arquivos do Computador' : 'Attach files from Computer'}
+            </p>
+            <p className="text-[11px] text-[#547990] dark:text-slate-400">
+              {language === 'pt' ? 'Selecione um ou vários arquivos (PDF, imagens, MTRs, contratos):' : 'Select one or multiple files (PDF, images, MTRs, agreements):'}
+            </p>
             <label className="inline-flex items-center gap-1.5 bg-[#2098D1] hover:bg-[#1883B5] text-white px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer shadow-md shadow-[#2098D1]/20">
               <Plus size={14} />
-              <span>Buscar Arquivos no PC</span>
+              <span>{language === 'pt' ? 'Buscar Arquivos no PC' : 'Browse Files on PC'}</span>
               <input
                 type="file"
                 multiple
@@ -2188,63 +2202,71 @@ export default function SupplierDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="h-px bg-[#E2F4F7] flex-1" />
-            <span className="text-[10px] font-bold text-slate-400 uppercase">ou preencha manualmente</span>
-            <div className="h-px bg-[#E2F4F7] flex-1" />
+            <div className="h-px bg-[#E2F4F7] dark:bg-slate-800 flex-1" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase">
+              {language === 'pt' ? 'ou preencha manualmente' : 'or fill in manually'}
+            </span>
+            <div className="h-px bg-[#E2F4F7] dark:bg-slate-800 flex-1" />
           </div>
 
           <form onSubmit={handleAddDocument} className="space-y-4">
             <Input
-              label="Nome do Arquivo / Título *"
+              label={language === 'pt' ? 'Nome do Arquivo / Título *' : 'File Name / Title *'}
               value={newDoc.name}
               onChange={e => setNewDoc(p => ({ ...p, name: e.target.value }))}
-              placeholder="Ex: Termo_Parceria_2026.pdf ou MTR-9821"
+              placeholder={language === 'pt' ? 'Ex: Termo_Parceria_2026.pdf ou MTR-9821' : 'E.g. Partnership_Agreement_2026.pdf or MTR-9821'}
               required
             />
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Tipo de Documento *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Tipo de Documento *' : 'Document Type *'}
+              </label>
               <select
                 value={newDoc.type}
                 onChange={e => setNewDoc(p => ({ ...p, type: e.target.value as any }))}
-                className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 required
               >
-                <option value="">Selecione o tipo de documento...</option>
-                <option value="mtr">MTR (Manifesto de Transporte)</option>
-                <option value="donation_letter">Carta de Doação</option>
-                <option value="partnership_agreement">Termo de Parceria / Contrato</option>
-                <option value="env_license">Licença Ambiental</option>
-                <option value="cnpj_card">Cartão CNPJ</option>
-                <option value="other">Outro Documento</option>
+                <option value="">{language === 'pt' ? 'Selecione o tipo de documento...' : 'Select document type...'}</option>
+                <option value="mtr">{language === 'pt' ? 'MTR (Manifesto de Transporte)' : 'MTR (Transport Manifest)'}</option>
+                <option value="donation_letter">{language === 'pt' ? 'Carta de Doação' : 'Donation Letter'}</option>
+                <option value="partnership_agreement">{language === 'pt' ? 'Termo de Parceria / Contrato' : 'Partnership Agreement / Contract'}</option>
+                <option value="env_license">{language === 'pt' ? 'Licença Ambiental' : 'Environmental License'}</option>
+                <option value="cnpj_card">{language === 'pt' ? 'Cartão CNPJ' : 'Tax ID / CNPJ Card'}</option>
+                <option value="other">{language === 'pt' ? 'Outro Documento' : 'Other Document'}</option>
               </select>
             </div>
             <Input
-              label="Observações / Validade"
+              label={language === 'pt' ? 'Observações / Validade' : 'Notes / Expiration'}
               value={newDoc.notes}
               onChange={e => setNewDoc(p => ({ ...p, notes: e.target.value }))}
-              placeholder="Ex: Válido até 31/12/2026"
+              placeholder={language === 'pt' ? 'Ex: Válido até 31/12/2026' : 'E.g. Valid until 12/31/2026'}
             />
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-              <Button type="button" variant="outline" onClick={() => setIsDocModalOpen(false)}>Cancelar</Button>
-              <Button type="submit">Salvar Documento</Button>
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button type="button" variant="outline" onClick={() => setIsDocModalOpen(false)}>
+                {language === 'pt' ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button type="submit">
+                {language === 'pt' ? 'Salvar Documento' : 'Save Document'}
+              </Button>
             </div>
           </form>
         </div>
       </Modal>
 
       {/* Modal: Adicionar Material */}
-      <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title="Adicionar Material Declarado" size="md">
+      <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={language === 'pt' ? 'Adicionar Material Declarado' : 'Add Declared Material'} size="md">
         <form onSubmit={handleAddMaterial} className="space-y-4">
           <Input
-            label="Nome do Material *"
+            label={language === 'pt' ? 'Nome do Material *' : 'Material Name *'}
             value={newMaterial.material_name}
             onChange={e => setNewMaterial(p => ({ ...p, material_name: e.target.value }))}
-            placeholder="Ex: Papelão Ondulado, Plástico Filme..."
+            placeholder={language === 'pt' ? 'Ex: Papelão Ondulado, Plástico Filme...' : 'E.g. Corrugated Cardboard, Plastic Film...'}
             required
           />
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Volume Estimado *"
+              label={language === 'pt' ? 'Volume Estimado *' : 'Estimated Volume *'}
               type="number"
               value={newMaterial.estimated_volume}
               onChange={e => setNewMaterial(p => ({ ...p, estimated_volume: e.target.value }))}
@@ -2252,11 +2274,13 @@ export default function SupplierDetailPage() {
               required
             />
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Unidade</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Unidade' : 'Unit'}
+              </label>
               <select
                 value={newMaterial.unit}
                 onChange={e => setNewMaterial(p => ({ ...p, unit: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none"
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none font-medium"
               >
                 <option value="kg">kg</option>
                 <option value="ton">ton</option>
@@ -2265,33 +2289,37 @@ export default function SupplierDetailPage() {
               </select>
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsMaterialModalOpen(false)}>Cancelar</Button>
-            <Button type="submit">Salvar Material</Button>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsMaterialModalOpen(false)}>
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button type="submit">
+              {language === 'pt' ? 'Salvar Material' : 'Save Material'}
+            </Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal: Agendar Coleta */}
-      <Modal isOpen={isCollectionModalOpen} onClose={() => setIsCollectionModalOpen(false)} title="Agendar Coleta de Materiais" size="md">
+      <Modal isOpen={isCollectionModalOpen} onClose={() => setIsCollectionModalOpen(false)} title={language === 'pt' ? 'Agendar Coleta de Materiais' : 'Schedule Material Collection'} size="md">
         <form onSubmit={handleAddCollection} className="space-y-4">
           <Input
-            label="Data Programada *"
+            label={language === 'pt' ? 'Data Programada *' : 'Scheduled Date *'}
             type="date"
             value={newCollection.scheduled_date}
             onChange={e => setNewCollection(p => ({ ...p, scheduled_date: e.target.value }))}
             required
           />
           <Input
-            label="Material a Coletar *"
+            label={language === 'pt' ? 'Material a Coletar *' : 'Material to Collect *'}
             value={newCollection.material_name}
             onChange={e => setNewCollection(p => ({ ...p, material_name: e.target.value }))}
-            placeholder="Ex: Papelão e Sucata"
+            placeholder={language === 'pt' ? 'Ex: Papelão e Sucata' : 'E.g. Cardboard and Scrap'}
             required
           />
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Volume Estimado *"
+              label={language === 'pt' ? 'Volume Estimado *' : 'Estimated Volume *'}
               type="number"
               value={newCollection.estimated_volume}
               onChange={e => setNewCollection(p => ({ ...p, estimated_volume: e.target.value }))}
@@ -2299,92 +2327,108 @@ export default function SupplierDetailPage() {
               required
             />
             <Input
-              label="Motorista"
+              label={language === 'pt' ? 'Motorista' : 'Driver'}
               value={newCollection.driver_name}
               onChange={e => setNewCollection(p => ({ ...p, driver_name: e.target.value }))}
-              placeholder="Ex: José Silva"
+              placeholder={language === 'pt' ? 'Ex: José Silva' : 'E.g. John Doe'}
             />
           </div>
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsCollectionModalOpen(false)}>Cancelar</Button>
-            <Button type="submit">Agendar Coleta</Button>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsCollectionModalOpen(false)}>
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button type="submit">
+              {language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection'}
+            </Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal: Tarefa */}
-      <Modal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} title="Criar Nova Tarefa / Pendência" size="md">
+      <Modal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} title={language === 'pt' ? 'Criar Nova Tarefa / Pendência' : 'Create New Task / Action Item'} size="md">
         <form onSubmit={handleAddTask} className="space-y-4">
           <Input
-            label="Descrição da Tarefa *"
+            label={language === 'pt' ? 'Descrição da Tarefa *' : 'Task Description *'}
             value={newTask.description}
             onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))}
-            placeholder="Ex: Solicitar novo login de MTR"
+            placeholder={language === 'pt' ? 'Ex: Solicitar novo login de MTR' : 'E.g. Request new MTR login'}
             required
           />
           <Input
-            label="Prazo"
+            label={language === 'pt' ? 'Prazo' : 'Due Date'}
             type="date"
             value={newTask.due_date}
             onChange={e => setNewTask(p => ({ ...p, due_date: e.target.value }))}
           />
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsTaskModalOpen(false)}>Cancelar</Button>
-            <Button type="submit">Criar Tarefa</Button>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsTaskModalOpen(false)}>
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button type="submit">
+              {language === 'pt' ? 'Criar Tarefa' : 'Create Task'}
+            </Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal: Contato */}
-      <Modal isOpen={isInteractionModalOpen} onClose={() => setIsInteractionModalOpen(false)} title="Registrar Contato com Gerador" size="md">
+      <Modal isOpen={isInteractionModalOpen} onClose={() => setIsInteractionModalOpen(false)} title={language === 'pt' ? 'Registrar Contato com Gerador' : 'Log Contact with Generator'} size="md">
         <form onSubmit={handleAddInteraction} className="space-y-4">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-700">Tipo de Contato *</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {language === 'pt' ? 'Tipo de Contato *' : 'Contact Type *'}
+            </label>
             <select
               value={newInteraction.type}
               onChange={e => setNewInteraction(p => ({ ...p, type: e.target.value }))}
-              className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+              className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
               required
             >
-              <option value="">Selecione o tipo de contato...</option>
+              <option value="">{language === 'pt' ? 'Selecione o tipo de contato...' : 'Select contact type...'}</option>
               <option value="whatsapp">WhatsApp</option>
-              <option value="phone">Ligação Telefônica</option>
-              <option value="email">E-mail</option>
-              <option value="meeting">Reunião Presencial / Online</option>
-              <option value="visit">Visita Técnica</option>
-              <option value="internal_obs">Anotação Interna</option>
+              <option value="phone">{language === 'pt' ? 'Ligação Telefônica' : 'Phone Call'}</option>
+              <option value="email">{language === 'pt' ? 'E-mail' : 'Email'}</option>
+              <option value="meeting">{language === 'pt' ? 'Reunião Presencial / Online' : 'Meeting (In-person / Online)'}</option>
+              <option value="visit">{language === 'pt' ? 'Visita Técnica' : 'Technical Visit'}</option>
+              <option value="internal_obs">{language === 'pt' ? 'Anotação Interna' : 'Internal Note'}</option>
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-700">Resumo do Contato *</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {language === 'pt' ? 'Resumo do Contato *' : 'Contact Summary *'}
+            </label>
             <textarea
               value={newInteraction.description}
               onChange={e => setNewInteraction(p => ({ ...p, description: e.target.value }))}
-              placeholder="Descreva os pontos alinhados..."
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none min-h-[90px]"
+              placeholder={language === 'pt' ? 'Descreva os pontos alinhados...' : 'Describe the points discussed...'}
+              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none min-h-[90px]"
               required
             />
           </div>
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsInteractionModalOpen(false)}>Cancelar</Button>
-            <Button type="submit">Registrar</Button>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsInteractionModalOpen(false)}>
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button type="submit">
+              {language === 'pt' ? 'Registrar' : 'Log Contact'}
+            </Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal: Resposta / Parecer Logístico (Idêntico ao da tela de Logística) */}
       <Modal isOpen={isLogisticsModalOpen} onClose={() => setIsLogisticsModalOpen(false)}
-        title={`Análise Logística — ${supplier.name}`} size="lg">
+        title={`${language === 'pt' ? 'Análise Logística' : 'Logistics Analysis'} — ${supplier.name}`} size="lg">
         <form onSubmit={handleSaveLogisticsResponse} className="space-y-5">
 
           {/* Materials recap */}
           {supplier.materials && supplier.materials.length > 0 && (
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
-              <span className="font-bold text-slate-600">Materiais Declarados:</span>
+            <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs space-y-1">
+              <span className="font-bold text-slate-600 dark:text-slate-400">{language === 'pt' ? 'Materiais Declarados:' : 'Declared Materials:'}</span>
               <div className="grid grid-cols-2 gap-1 mt-1">
                 {supplier.materials.map((m, i) => (
-                  <span key={i} className="font-semibold text-slate-700">
-                    • {m.material_name}: {formatVolume(m.estimated_volume, m.unit)} ({m.transaction_type === 'purchase' ? 'Compra' : 'Doação'})
+                  <span key={i} className="font-semibold text-slate-700 dark:text-slate-300">
+                    • {m.material_name}: {formatVolume(m.estimated_volume, m.unit)} ({m.transaction_type === 'purchase' ? (language === 'pt' ? 'Compra' : 'Purchase') : (language === 'pt' ? 'Doação' : 'Donation')})
                   </span>
                 ))}
               </div>
@@ -2393,11 +2437,11 @@ export default function SupplierDetailPage() {
 
           {/* Documents attached */}
           {supplier.attached_documents && supplier.attached_documents.length > 0 && (
-            <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-lg text-xs space-y-1">
-              <span className="font-bold text-indigo-700">Documentos Anexados pelo Comercial:</span>
+            <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 rounded-lg text-xs space-y-1">
+              <span className="font-bold text-indigo-700 dark:text-indigo-300">{language === 'pt' ? 'Documentos Anexados pelo Comercial:' : 'Documents Attached by Commercial:'}</span>
               <div className="flex flex-wrap gap-2 mt-1">
                 {supplier.attached_documents.map(d => (
-                  <span key={d.id} className="inline-flex items-center gap-1 font-bold text-indigo-800 bg-white px-2 py-0.5 rounded border border-indigo-200">
+                  <span key={d.id} className="inline-flex items-center gap-1 font-bold text-indigo-800 dark:text-indigo-300 bg-white dark:bg-slate-950 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
                     <FileCheck size={12} /> {d.name}
                   </span>
                 ))}
@@ -2407,41 +2451,41 @@ export default function SupplierDetailPage() {
 
           {/* Location */}
           {supplier.address && (
-            <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-2 rounded-lg">
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg">
               <MapPin size={13} className="text-slate-400" />
-              <span>{supplier.address.street || 'Endereço'}, {supplier.address.number || 'S/N'} — {supplier.address.neighborhood || ''} • {supplier.address.city}/{supplier.address.state}</span>
+              <span>{supplier.address.street || (language === 'pt' ? 'Endereço' : 'Address')}, {supplier.address.number || 'S/N'} — {supplier.address.neighborhood || ''} • {supplier.address.city}/{supplier.address.state}</span>
             </div>
           )}
 
           {/* Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Distância até o local (km)" type="number"
+            <Input label={language === 'pt' ? 'Distância até o local (km)' : 'Distance to site (km)'} type="number"
               value={logisticsForm.distance_km}
               onChange={e => setLogisticsForm(p => ({ ...p, distance_km: e.target.value }))}
               placeholder="Ex: 45" />
 
-            <Input label="Custo estimado de frete (R$)" type="number"
+            <Input label={language === 'pt' ? 'Custo estimado de frete (R$)' : 'Estimated Freight Cost (R$)'} type="number"
               value={logisticsForm.estimated_cost}
               onChange={e => setLogisticsForm(p => ({ ...p, estimated_cost: e.target.value }))}
               placeholder="Ex: 350" />
 
             {/* Tipo de Veículo */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Tipo de Veículo *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Tipo de Veículo *' : 'Vehicle Type *'}</label>
               <select
                 value={logisticsForm.transport_type}
                 onChange={e => setLogisticsForm(p => ({ ...p, transport_type: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
               >
                 {transportTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               {logisticsForm.transport_type === 'Outros' && (
                 <input
                   type="text"
-                  placeholder="Digite o outro tipo de transporte..."
+                  placeholder={language === 'pt' ? 'Digite o outro tipo de transporte...' : 'Type transport type...'}
                   value={logisticsForm.custom_transport_type}
                   onChange={e => setLogisticsForm(p => ({ ...p, custom_transport_type: e.target.value }))}
-                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 />
               )}
@@ -2449,21 +2493,21 @@ export default function SupplierDetailPage() {
 
             {/* Responsável pelo Transporte */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Responsável pelo Transporte *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Responsável pelo Transporte *' : 'Freight Responsible *'}</label>
               <select
                 value={logisticsForm.transport_responsible}
                 onChange={e => setLogisticsForm(p => ({ ...p, transport_responsible: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
               >
                 {responsibleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               {logisticsForm.transport_responsible === 'Outros' && (
                 <input
                   type="text"
-                  placeholder="Digite o responsável..."
+                  placeholder={language === 'pt' ? 'Digite o responsável...' : 'Type responsible...'}
                   value={logisticsForm.custom_transport_responsible}
                   onChange={e => setLogisticsForm(p => ({ ...p, custom_transport_responsible: e.target.value }))}
-                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 />
               )}
@@ -2471,41 +2515,43 @@ export default function SupplierDetailPage() {
 
             {/* Frequência Recomendada */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Frequência Recomendada *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Frequência Recomendada *' : 'Recommended Frequency *'}</label>
               <select
                 value={logisticsForm.recommended_frequency}
                 onChange={e => setLogisticsForm(p => ({ ...p, recommended_frequency: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
               >
                 {frequencyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               {logisticsForm.recommended_frequency === 'Outros' && (
                 <input
                   type="text"
-                  placeholder="Especifique a frequência (ex: 2x por semana, a cada 10 dias)..."
+                  placeholder={language === 'pt' ? 'Especifique a frequência...' : 'Specify frequency...'}
                   value={logisticsForm.custom_frequency}
                   onChange={e => setLogisticsForm(p => ({ ...p, custom_frequency: e.target.value }))}
-                  className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 />
               )}
             </div>
 
-            <Select label="Decisão de Viabilidade *" value={logisticsForm.feasibility}
+            <Select label={language === 'pt' ? 'Decisão de Viabilidade *' : 'Feasibility Decision *'} value={logisticsForm.feasibility}
               onChange={e => setLogisticsForm(p => ({ ...p, feasibility: e.target.value }))}
               options={feasibilityOptions} />
           </div>
 
             {/* Documentation checklist (shown only when Necessita Informação Adicional) */}
             {logisticsForm.feasibility === 'NEED_INFO' && (
-              <div className="space-y-2 p-3.5 bg-amber-50/70 border border-amber-300 rounded-xl">
-                <label className="text-xs font-bold text-amber-900 uppercase tracking-widest block">Documentação Pendente a ser Solicitada</label>
+              <div className="space-y-2 p-3.5 bg-amber-50/70 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl">
+                <label className="text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-widest block">
+                  {language === 'pt' ? 'Documentação Pendente a ser Solicitada' : 'Pending Documentation to be Requested'}
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   {DOC_CHECKLIST.map(doc => (
                     <label key={doc.key} className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
                       pendingDocs.includes(doc.key)
                         ? 'border-amber-300 bg-amber-100 text-amber-900'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 hover:border-slate-300'
                     }`}>
                       <input type="checkbox" className="rounded accent-amber-500"
                         checked={pendingDocs.includes(doc.key)}
@@ -2518,93 +2564,107 @@ export default function SupplierDetailPage() {
                 {pendingDocs.includes('Outros') && (
                   <input
                     type="text"
-                    placeholder="Especifique qual outra documentação está pendente..."
+                    placeholder={language === 'pt' ? 'Especifique qual outra documentação está pendente...' : 'Specify which other documentation is pending...'}
                     value={customPendingDoc}
                     onChange={e => setCustomPendingDoc(e.target.value)}
-                    className="w-full mt-2 px-3 py-2 text-xs bg-white border border-amber-400 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full mt-2 px-3 py-2 text-xs bg-white dark:bg-slate-950 border border-amber-400 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
                     required
                   />
                 )}
 
                 {pendingDocs.length > 0 && (
-                  <p className="text-[10px] text-amber-700 font-semibold flex items-center gap-1 mt-1">
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1 mt-1">
                     <AlertTriangle size={10} />
-                    {pendingDocs.length} pendência(s) marcada(s) para Compras providenciar.
+                    {language === 'pt' 
+                      ? `${pendingDocs.length} pendência(s) marcada(s) para Compras providenciar.`
+                      : `${pendingDocs.length} action item(s) marked for Commercial to provide.`}
                   </p>
                 )}
               </div>
             )}
 
           {logisticsForm.feasibility === 'NEED_INFO' && (
-            <Input label="O que precisa ser esclarecido com Compras? (Gera pendência automática) *"
+            <Input label={language === 'pt' ? 'O que precisa ser esclarecido com Compras? (Gera pendência automática) *' : 'What needs to be clarified with Commercial? (Creates auto-task) *'}
               value={logisticsForm.need_info_reason}
               onChange={e => setLogisticsForm(p => ({ ...p, need_info_reason: e.target.value }))}
-              placeholder="Ex: Confirmar se o acesso do caminhão Truck comporta portão de 4m" required />
+              placeholder={language === 'pt' ? 'Ex: Confirmar se o acesso do caminhão Truck comporta portão de 4m' : 'E.g. Confirm whether 4m gate allows Truck access'} required />
           )}
 
-          <Input label="Infraestrutura necessária no local"
+          <Input label={language === 'pt' ? 'Infraestrutura necessária no local' : 'Infrastructure needed on site'}
             value={logisticsForm.conditioning_infrastructure_needed}
             onChange={e => setLogisticsForm(p => ({ ...p, conditioning_infrastructure_needed: e.target.value }))}
-            placeholder="Ex: Deixar 2 caçambas de 30m³, disponibilizar paleteira..." />
+            placeholder={language === 'pt' ? 'Ex: Deixar 2 caçambas de 30m³, disponibilizar paleteira...' : 'E.g. Place 2x 30m³ dumpsters, provide pallet jack...'} />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-700">Observações Gerais da Logística</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {language === 'pt' ? 'Observações Gerais da Logística' : 'General Logistics Notes'}
+            </label>
             <textarea value={logisticsForm.notes}
               onChange={e => setLogisticsForm(p => ({ ...p, notes: e.target.value }))}
-              placeholder="Justifique a decisão, rotas sugeridas, pedágios ou restrições de trânsito..."
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]" />
+              placeholder={language === 'pt' ? 'Justifique a decisão, rotas sugeridas, pedágios ou restrições de trânsito...' : 'Justify decision, suggested routes, tolls or traffic restrictions...'}
+              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]" />
           </div>
 
           {logisticsForm.feasibility === 'FEASIBLE' && (
-            <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700 font-semibold">
+            <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg text-sm text-emerald-700 dark:text-emerald-300 font-semibold">
               <CheckCircle size={16} />
-              Este lead será homologado e integrado ao módulo de <strong>Geradores</strong>.
+              {language === 'pt' 
+                ? 'Este lead será homologado e integrado ao módulo de Geradores.'
+                : 'This lead will be approved and integrated into the Generators module.'}
             </div>
           )}
 
           {logisticsForm.feasibility === 'INFEASIBLE' && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-semibold">
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 font-semibold">
               <XCircle size={16} />
-              Este lead será marcado como <strong>Inviável</strong> e constará em Geradores com status de inviabilidade.
+              {language === 'pt'
+                ? 'Este lead será marcado como Inviável e constará em Geradores com status de inviabilidade.'
+                : 'This lead will be marked as Infeasible and listed with infeasibility status.'}
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsLogisticsModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">Salvar Parecer</Button>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsLogisticsModalOpen(false)}>
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              {language === 'pt' ? 'Salvar Parecer' : 'Save Opinion'}
+            </Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal: Responder Informações para Logística (Compras) */}
       <Modal isOpen={isRespondInfoModalOpen} onClose={() => setIsRespondInfoModalOpen(false)}
-        title={`Esclarecimentos Solicitados pela Logística — ${supplier.name}`} size="lg">
+        title={`${language === 'pt' ? 'Esclarecimentos Solicitados pela Logística' : 'Clarifications Requested by Logistics'} — ${supplier.name}`} size="lg">
         <form onSubmit={handleRespondInfoSubmit} className="space-y-5">
           
           {/* Card 1: Dúvidas e Solicitações da Logística */}
-          <div className="bg-amber-50/90 border border-amber-300 rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+          <div className="bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-amber-900 dark:text-amber-300 font-bold text-xs uppercase tracking-wider">
               <AlertTriangle size={16} className="text-amber-600 shrink-0" />
-              O que a Logística precisa saber / solicitou:
+              {language === 'pt' ? 'O que a Logística precisa saber / solicitou:' : 'What Logistics needs to know / requested:'}
             </div>
             
             {/* Main reason / question */}
-            <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs">
-              <p className="text-xs font-bold text-slate-400 uppercase text-[10px] tracking-wider">Dúvida / Esclarecimento Principal:</p>
-              <p className="text-sm font-bold text-amber-950 mt-1 leading-relaxed">
-                {supplier.backlog_reason || activeLogistics?.notes || 'A Logística solicitou esclarecimentos adicionais de rota, acesso ou documentação.'}
+            <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-amber-200 dark:border-amber-800 shadow-2xs">
+              <p className="text-xs font-bold text-slate-400 uppercase text-[10px] tracking-wider">
+                {language === 'pt' ? 'Dúvida / Esclarecimento Principal:' : 'Main Question / Clarification:'}
+              </p>
+              <p className="text-sm font-bold text-amber-950 dark:text-amber-200 mt-1 leading-relaxed">
+                {supplier.backlog_reason || activeLogistics?.notes || (language === 'pt' ? 'A Logística solicitou esclarecimentos adicionais de rota, acesso ou documentação.' : 'Logistics requested additional clarifications on route, access or documentation.')}
               </p>
             </div>
 
             {/* Pending documents checklist from Logistics */}
             {activeLogistics?.pending_docs && activeLogistics.pending_docs.length > 0 && (
               <div className="space-y-1.5 pt-1">
-                <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">
-                  Documentação Solicitada pela Logística:
+                <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider block">
+                  {language === 'pt' ? 'Documentação Solicitada pela Logística:' : 'Documentation Requested by Logistics:'}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {activeLogistics.pending_docs.map((doc, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-1 text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1 rounded-lg">
+                    <span key={idx} className="inline-flex items-center gap-1 text-xs font-bold bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 px-2.5 py-1 rounded-lg">
                       📋 {doc}
                     </span>
                   ))}
@@ -2614,18 +2674,24 @@ export default function SupplierDetailPage() {
 
             {/* Logistics context details */}
             {activeLogistics && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 border-t border-amber-200 text-xs text-amber-900">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 border-t border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200">
                 <div>
-                  <span className="text-[10px] text-amber-700 font-semibold block">Veículo Planejado:</span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block">
+                    {language === 'pt' ? 'Veículo Planejado:' : 'Planned Vehicle:'}
+                  </span>
                   <span className="font-bold">{activeLogistics.transport_type || 'VUC'}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-amber-700 font-semibold block">Distância Estimada:</span>
-                  <span className="font-bold">{activeLogistics.distance_km ? `${activeLogistics.distance_km} km` : 'A calcular'}</span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block">
+                    {language === 'pt' ? 'Distância Estimada:' : 'Estimated Distance:'}
+                  </span>
+                  <span className="font-bold">{activeLogistics.distance_km ? `${activeLogistics.distance_km} km` : (language === 'pt' ? 'A calcular' : 'To calculate')}</span>
                 </div>
                 {activeLogistics.conditioning_infrastructure_needed && (
                   <div className="col-span-2 sm:col-span-1">
-                    <span className="text-[10px] text-amber-700 font-semibold block">Infraestrutura Solicitada:</span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold block">
+                      {language === 'pt' ? 'Infraestrutura Solicitada:' : 'Requested Infrastructure:'}
+                    </span>
                     <span className="font-bold truncate block" title={activeLogistics.conditioning_infrastructure_needed}>
                       {activeLogistics.conditioning_infrastructure_needed}
                     </span>
@@ -2638,24 +2704,26 @@ export default function SupplierDetailPage() {
           {/* Card 2: Campos de Resposta de Compras */}
           <div className="space-y-3.5">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                <span>Sua Resposta e Esclarecimentos para a Logística *</span>
-                <span className="text-[10px] font-normal text-slate-400">Seja detalhado sobre acesso, restrições e portão</span>
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                <span>{language === 'pt' ? 'Sua Resposta e Esclarecimentos para a Logística *' : 'Your Response and Clarifications to Logistics *'}</span>
+                <span className="text-[10px] font-normal text-slate-400">
+                  {language === 'pt' ? 'Seja detalhado sobre acesso, restrições e portão' : 'Be detailed about access, gate and time limits'}
+                </span>
               </label>
               <textarea
                 value={respondInfoText}
                 onChange={e => setRespondInfoText(e.target.value)}
-                placeholder="Ex: Conversei com o responsável Fábio. O portão tem 4,5m de altura livre, comporta caminhão Truck sem problemas de segunda a sexta das 08h às 17h. O contato para recepção do motorista na expedição é (11) 98888-7777..."
-                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 min-h-[110px]"
+                placeholder={language === 'pt' ? 'Ex: Conversei com o responsável Fábio. O portão tem 4,5m de altura livre, comporta caminhão Truck sem problemas de segunda a sexta das 08h às 17h. O contato para recepção do motorista na expedição é (11) 98888-7777...' : 'E.g. Spoke with manager. Gate clearance is 4.5m, fits Truck easily Monday to Friday 8am to 5pm...'}
+                className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 min-h-[110px]"
                 required
               />
             </div>
 
             {/* Optional Document Upload inside the response */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Upload size={14} className="text-indigo-600" />
-                Anexar Documento ou Foto Solicitada (Opcional)
+                {language === 'pt' ? 'Anexar Documento ou Foto Solicitada (Opcional)' : 'Attach Requested Document or Photo (Optional)'}
               </label>
               <input
                 type="file"
@@ -2684,7 +2752,7 @@ export default function SupplierDetailPage() {
                         size: sizeStr,
                         file_data: reader.result as string,
                         type: inferredType,
-                        notes: 'Anexado em resposta à solicitação da Logística'
+                        notes: language === 'pt' ? 'Anexado em resposta à solicitação da Logística' : 'Attached in response to Logistics request'
                       });
                       fetchSupplierData();
                     };
@@ -2694,24 +2762,30 @@ export default function SupplierDetailPage() {
                 className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
               />
               <p className="text-[10px] text-slate-400">
-                Você pode anexar arquivos aqui (ex: Carta de Doação, Cartão CNPJ, fotos do portão ou doca de carga).
+                {language === 'pt' 
+                  ? 'Você pode anexar arquivos aqui (ex: Carta de Doação, Cartão CNPJ, fotos do portão ou doca de carga).'
+                  : 'You can attach files here (e.g. Donation Letter, CNPJ card, gate or loading dock photos).'}
               </p>
             </div>
           </div>
 
           {/* Banner explicativo de envio */}
-          <div className="flex items-center gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-800 font-medium">
+          <div className="flex items-center gap-2 p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 rounded-xl text-xs text-indigo-800 dark:text-indigo-300 font-medium">
             <Send size={14} className="shrink-0 text-indigo-600" />
             <span>
-              Ao clicar em <strong>Enviar Resposta à Logística</strong>, esses esclarecimentos serão registrados e o lead voltará automaticamente para a fila de avaliação da Logística.
+              {language === 'pt'
+                ? 'Ao clicar em Enviar Resposta à Logística, esses esclarecimentos serão registrados e o lead voltará automaticamente para a fila de avaliação da Logística.'
+                : 'By clicking Send Response to Logistics, these details will be logged and the lead will automatically return to Logistics review queue.'}
             </span>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsRespondInfoModalOpen(false)}>Cancelar</Button>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsRespondInfoModalOpen(false)}>
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
             <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5">
               <Send size={14} />
-              Enviar Resposta à Logística
+              {language === 'pt' ? 'Enviar Resposta à Logística' : 'Send Response to Logistics'}
             </Button>
           </div>
         </form>

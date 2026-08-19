@@ -850,35 +850,35 @@ export default function LogisticsPage() {
                                 key={d.id}
                                 onClick={() => handleDownloadDoc(d)}
                                 className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#E5F5F8] text-[#2098D1] hover:bg-[#DDF4F9] px-2 py-0.5 rounded-full border border-[#CCEAF1] transition-all cursor-pointer text-left w-fit"
-                                title="Clique para baixar ou visualizar arquivo"
+                                title={language === 'pt' ? 'Clique para baixar ou visualizar arquivo' : 'Click to download or view file'}
                               >
                                 <Download size={10} /> {d.name}
                               </button>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">Sem anexos</span>
+                          <span className="text-xs text-slate-400">{language === 'pt' ? 'Sem anexos' : 'No attachments'}</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-500 text-xs">{supplier.responsible?.name || 'Não atribuído'}</td>
+                      <td className="px-6 py-4 text-slate-500 text-xs">{supplier.responsible?.name || (language === 'pt' ? 'Não atribuído' : 'Unassigned')}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link href={`/fornecedores/${supplier.id}`}>
                             <button className="text-xs text-[#2098D1] hover:text-[#1883B5] bg-[#E5F5F8] px-3 py-1.5 rounded-full font-bold border border-[#CCEAF1] cursor-pointer">
-                              Analisar
+                              {language === 'pt' ? 'Analisar' : 'Review'}
                             </button>
                           </Link>
 
                           <Button size="sm" className="gap-1 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
                             onClick={() => handleOpenAnalysis(supplier)}>
                             <FileEdit size={12} />
-                            Responder
+                            {language === 'pt' ? 'Responder' : 'Respond'}
                           </Button>
 
                           <button
                             onClick={() => handleDeleteSupplier(supplier.id, supplier.name)}
                             className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
-                            title="Apagar Lead"
+                            title={language === 'pt' ? 'Apagar Lead' : 'Delete Lead'}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -899,21 +899,27 @@ export default function LogisticsPage() {
           {schedulingQueue.length === 0 ? (
             <div className="p-12 text-center text-slate-400 space-y-2">
               <Calendar size={36} className="mx-auto text-slate-300 opacity-60" />
-              <p className="font-semibold text-sm">Nenhum gerador aguardando agendamento no momento.</p>
-              <p className="text-xs text-slate-400">Os geradores liberados pelo Comercial e aqueles cujo ciclo da coleta mensal/periódica venceu reaparecem automaticamente aqui.</p>
+              <p className="font-semibold text-sm">
+                {language === 'pt' ? 'Nenhum gerador aguardando agendamento no momento.' : 'No generators awaiting scheduling at the moment.'}
+              </p>
+              <p className="text-xs text-slate-400">
+                {language === 'pt' 
+                  ? 'Os geradores liberados pelo Comercial e aqueles cujo ciclo da coleta mensal/periódica venceu reaparecem automaticamente aqui.'
+                  : 'Generators released by Commercial and those due for periodic collection will automatically appear here.'}
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto text-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <th className="px-6 py-4">Gerador</th>
-                    <th className="px-6 py-4">Endereço de Coleta</th>
-                    <th className="px-6 py-4">Materiais</th>
-                    <th className="px-6 py-4">Frequência</th>
-                    <th className="px-6 py-4">Última Coleta</th>
-                    <th className="px-6 py-4">Situação do Agendamento</th>
-                    <th className="px-6 py-4 text-right">Ação</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Gerador' : 'Generator'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Endereço de Coleta' : 'Collection Address'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Materiais' : 'Materials'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Frequência' : 'Frequency'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Situação do Agendamento' : 'Scheduling Status'}</th>
+                    <th className="px-6 py-4 text-right">{language === 'pt' ? 'Ação' : 'Action'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -932,7 +938,7 @@ export default function LogisticsPage() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-900 leading-snug">{supplier.name}</span>
-                            <span className="text-xs text-slate-400">{supplier.code || 'GER-001'} • {supplier.supplier_type || 'Indústria'}</span>
+                            <span className="text-xs text-slate-400">{supplier.code || 'GER-001'} • {supplier.supplier_type || (language === 'pt' ? 'Indústria' : 'Industry')}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-slate-500">
@@ -949,7 +955,7 @@ export default function LogisticsPage() {
                               <span key={i} className="text-xs font-semibold text-slate-700">
                                 • {m.material_name} ({formatVolume(m.estimated_volume, m.unit)})
                               </span>
-                            )) : <span className="text-xs text-slate-400">Nenhum</span>}
+                            )) : <span className="text-xs text-slate-400">{language === 'pt' ? 'Nenhum' : 'None'}</span>}
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -961,25 +967,25 @@ export default function LogisticsPage() {
                           {supplier.last_collection_date ? (
                             <div className="flex flex-col text-xs">
                               <span className="font-bold text-slate-800">{formatDate(supplier.last_collection_date)}</span>
-                              <span className="text-[10px] text-slate-400">Última realizada</span>
+                              <span className="text-[10px] text-slate-400">{language === 'pt' ? 'Última realizada' : 'Last completed'}</span>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-400 italic">Nenhuma (1ª coleta)</span>
+                            <span className="text-xs text-slate-400 italic">{language === 'pt' ? 'Nenhuma (1ª coleta)' : 'None (1st collection)'}</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
                           {hasLastDate && nextDueDate ? (
                             <Badge variant="warning" className="gap-1">
-                              🔔 Nova Coleta Devida ({formatDate(nextDueDate.toISOString())})
+                              🔔 {language === 'pt' ? 'Nova Coleta Devida' : 'New Collection Due'} ({formatDate(nextDueDate.toISOString())})
                             </Badge>
                           ) : hasScheduledCol && latestCol ? (
                             <div className="flex flex-col gap-0.5">
-                              <Badge variant="success">Agendada p/ {formatDate(latestCol.scheduled_date)}</Badge>
-                              {latestCol.driver_name && <span className="text-[10px] text-slate-500">Mot: {latestCol.driver_name}</span>}
+                              <Badge variant="success">{language === 'pt' ? 'Agendada p/' : 'Scheduled for'} {formatDate(latestCol.scheduled_date)}</Badge>
+                              {latestCol.driver_name && <span className="text-[10px] text-slate-500">{language === 'pt' ? 'Mot:' : 'Driver:'} {latestCol.driver_name}</span>}
                             </div>
                           ) : (
                             <Badge variant="info">
-                              🆕 Aguardando 1º Agendamento
+                              🆕 {language === 'pt' ? 'Aguardando 1º Agendamento' : 'Awaiting 1st Scheduling'}
                             </Badge>
                           )}
                         </td>
@@ -987,16 +993,18 @@ export default function LogisticsPage() {
                           <div className="flex items-center justify-end gap-2">
                             <Link href={`/fornecedores/${supplier.id}`}>
                               <button className="text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full font-bold transition-all cursor-pointer">
-                                Ver Ficha
+                                {language === 'pt' ? 'Ver Ficha' : 'View Details'}
                               </button>
                             </Link>
                             <Button
                               size="sm"
-                              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-bold"
                               onClick={() => handleOpenScheduleModal(supplier)}
                             >
                               <Calendar size={13} />
-                              {hasLastDate ? 'Agendar Próxima Coleta' : 'Agendar Coleta'}
+                              {hasLastDate 
+                                ? (language === 'pt' ? 'Agendar Próxima Coleta' : 'Schedule Next Collection') 
+                                : (language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection')}
                             </Button>
                           </div>
                         </td>
@@ -1015,20 +1023,20 @@ export default function LogisticsPage() {
         <Card className="overflow-hidden !p-0 border border-slate-200">
           {history.length === 0 ? (
             <div className="p-12 text-center text-slate-400">
-              Nenhum parecer concluído no histórico.
+              {language === 'pt' ? 'Nenhum parecer concluído no histórico.' : 'No completed opinions in history.'}
             </div>
           ) : (
             <div className="overflow-x-auto text-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <th className="px-6 py-4">Gerador</th>
-                    <th className="px-6 py-4">Endereço</th>
-                    <th className="px-6 py-4">Parecer Logístico</th>
-                    <th className="px-6 py-4">Distância / Frete</th>
-                    <th className="px-6 py-4">Veículo</th>
-                    <th className="px-6 py-4">Etapa Atual</th>
-                    <th className="px-6 py-4 text-right">Ações</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Gerador' : 'Generator'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Endereço' : 'Address'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Parecer Logístico' : 'Logistics Decision'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Distância / Frete' : 'Distance / Freight'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Veículo' : 'Vehicle'}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Etapa Atual' : 'Current Stage'}</th>
+                    <th className="px-6 py-4 text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1041,7 +1049,7 @@ export default function LogisticsPage() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-900 leading-snug">{supplier.name}</span>
-                            <span className="text-xs text-slate-400">{supplier.supplier_type || 'Indústria'}</span>
+                            <span className="text-xs text-slate-400">{supplier.supplier_type || (language === 'pt' ? 'Indústria' : 'Industry')}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-slate-500 text-xs">
@@ -1049,7 +1057,7 @@ export default function LogisticsPage() {
                         </td>
                         <td className="px-6 py-4">
                           <Badge variant={getFeasibilityColor(feasibility as any)}>
-                            {translateFeasibility(feasibility as any)}
+                            {translateFeasibility(feasibility as any, language)}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 text-xs">
@@ -1066,11 +1074,11 @@ export default function LogisticsPage() {
                           <div className="flex items-center justify-end gap-2">
                             <Link href={`/fornecedores/${supplier.id}`}>
                               <button className="text-xs text-[#2098D1] hover:text-[#1883B5] bg-[#E5F5F8] px-3 py-1.5 rounded-full font-bold border border-[#CCEAF1] cursor-pointer">
-                                Ver Ficha 360º
+                                {language === 'pt' ? 'Ver Ficha 360º' : 'View 360º File'}
                               </button>
                             </Link>
                             <Button size="sm" variant="outline" onClick={() => handleOpenAnalysis(supplier)}>
-                              Editar Parecer
+                              {language === 'pt' ? 'Editar Parecer' : 'Edit Opinion'}
                             </Button>
                           </div>
                         </td>
@@ -1339,41 +1347,41 @@ export default function LogisticsPage() {
 
             {/* Location */}
             {selectedSupplier.address && (
-              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-2 rounded-lg">
+              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg">
                 <MapPin size={13} className="text-slate-400" />
-                <span>{selectedSupplier.address.street || 'Endereço'}, {selectedSupplier.address.number || 'S/N'} — {selectedSupplier.address.neighborhood || ''} • {selectedSupplier.address.city}/{selectedSupplier.address.state}</span>
+                <span>{selectedSupplier.address.street || (language === 'pt' ? 'Endereço' : 'Address')}, {selectedSupplier.address.number || 'S/N'} — {selectedSupplier.address.neighborhood || ''} • {selectedSupplier.address.city}/{selectedSupplier.address.state}</span>
               </div>
             )}
 
             {/* Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Distância até o local (km)" type="number"
+              <Input label={language === 'pt' ? 'Distância até o local (km)' : 'Distance to site (km)'} type="number"
                 value={analysisForm.distance_km}
                 onChange={e => setAnalysisForm(p => ({ ...p, distance_km: e.target.value }))}
                 placeholder="Ex: 45" />
 
-              <Input label="Custo estimado de frete (R$)" type="number"
+              <Input label={language === 'pt' ? 'Custo estimado de frete (R$)' : 'Estimated Freight Cost (R$)'} type="number"
                 value={analysisForm.estimated_cost}
                 onChange={e => setAnalysisForm(p => ({ ...p, estimated_cost: e.target.value }))}
                 placeholder="Ex: 350" />
 
               {/* Tipo de Veículo */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Tipo de Veículo *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Tipo de Veículo *' : 'Vehicle Type *'}</label>
                 <select
                   value={analysisForm.transport_type}
                   onChange={e => setAnalysisForm(p => ({ ...p, transport_type: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 >
                   {transportTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {analysisForm.transport_type === 'Outros' && (
                   <input
                     type="text"
-                    placeholder="Digite o outro tipo de transporte..."
+                    placeholder={language === 'pt' ? 'Digite o outro tipo de transporte...' : 'Type transport type...'}
                     value={analysisForm.custom_transport_type}
                     onChange={e => setAnalysisForm(p => ({ ...p, custom_transport_type: e.target.value }))}
-                    className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 )}
@@ -1381,21 +1389,21 @@ export default function LogisticsPage() {
 
               {/* Responsável pelo Transporte */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Responsável pelo Transporte *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Responsável pelo Transporte *' : 'Freight Responsible *'}</label>
                 <select
                   value={analysisForm.transport_responsible}
                   onChange={e => setAnalysisForm(p => ({ ...p, transport_responsible: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 >
                   {responsibleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {analysisForm.transport_responsible === 'Outros' && (
                   <input
                     type="text"
-                    placeholder="Digite o responsável..."
+                    placeholder={language === 'pt' ? 'Digite o responsável...' : 'Type responsible...'}
                     value={analysisForm.custom_transport_responsible}
                     onChange={e => setAnalysisForm(p => ({ ...p, custom_transport_responsible: e.target.value }))}
-                    className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 )}
@@ -1403,41 +1411,43 @@ export default function LogisticsPage() {
 
               {/* Frequência Recomendada */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Frequência Recomendada *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Frequência Recomendada *' : 'Recommended Frequency *'}</label>
                 <select
                   value={analysisForm.recommended_frequency}
                   onChange={e => setAnalysisForm(p => ({ ...p, recommended_frequency: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 >
                   {frequencyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {analysisForm.recommended_frequency === 'Outros' && (
                   <input
                     type="text"
-                    placeholder="Especifique a frequência (ex: 2x por semana, a cada 10 dias)..."
+                    placeholder={language === 'pt' ? 'Especifique a frequência...' : 'Specify frequency...'}
                     value={analysisForm.custom_frequency}
                     onChange={e => setAnalysisForm(p => ({ ...p, custom_frequency: e.target.value }))}
-                    className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 )}
               </div>
 
-              <Select label="Decisão de Viabilidade *" value={analysisForm.feasibility}
+              <Select label={language === 'pt' ? 'Decisão de Viabilidade *' : 'Feasibility Decision *'} value={analysisForm.feasibility}
                 onChange={e => setAnalysisForm(p => ({ ...p, feasibility: e.target.value }))}
                 options={feasibilityOptions} />
             </div>
 
             {/* Documentation checklist (shown only when Necessita Informação Adicional) */}
             {analysisForm.feasibility === 'NEED_INFO' && (
-              <div className="space-y-2 p-3.5 bg-amber-50/70 border border-amber-300 rounded-xl">
-                <label className="text-xs font-bold text-amber-900 uppercase tracking-widest block">Documentação Pendente a ser Solicitada</label>
+              <div className="space-y-2 p-3.5 bg-amber-50/70 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl">
+                <label className="text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-widest block">
+                  {language === 'pt' ? 'Documentação Pendente a ser Solicitada' : 'Pending Documentation to be Requested'}
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   {DOC_CHECKLIST.map(doc => (
                     <label key={doc.key} className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
                       pendingDocs.includes(doc.key)
                         ? 'border-amber-300 bg-amber-100 text-amber-900'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 hover:border-slate-300'
                     }`}>
                       <input type="checkbox" className="rounded accent-amber-500"
                         checked={pendingDocs.includes(doc.key)}
@@ -1450,60 +1460,72 @@ export default function LogisticsPage() {
                 {pendingDocs.includes('Outros') && (
                   <input
                     type="text"
-                    placeholder="Especifique qual outra documentação está pendente..."
+                    placeholder={language === 'pt' ? 'Especifique qual outra documentação está pendente...' : 'Specify which other documentation is pending...'}
                     value={customPendingDoc}
                     onChange={e => setCustomPendingDoc(e.target.value)}
-                    className="w-full mt-2 px-3 py-2 text-xs bg-white border border-amber-400 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full mt-2 px-3 py-2 text-xs bg-white dark:bg-slate-950 border border-amber-400 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
                     required
                   />
                 )}
 
                 {pendingDocs.length > 0 && (
-                  <p className="text-[10px] text-amber-700 font-semibold flex items-center gap-1 mt-1">
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1 mt-1">
                     <AlertTriangle size={10} />
-                    {pendingDocs.length} pendência(s) marcada(s) para Compras providenciar.
+                    {language === 'pt' 
+                      ? `${pendingDocs.length} pendência(s) marcada(s) para Compras providenciar.`
+                      : `${pendingDocs.length} action item(s) marked for Commercial to provide.`}
                   </p>
                 )}
               </div>
             )}
 
             {analysisForm.feasibility === 'NEED_INFO' && (
-              <Input label="O que precisa ser esclarecido com Compras? (Gera pendência automática) *"
+              <Input label={language === 'pt' ? 'O que precisa ser esclarecido com Compras? (Gera pendência automática) *' : 'What needs to be clarified with Commercial? (Creates auto-task) *'}
                 value={analysisForm.need_info_reason}
                 onChange={e => setAnalysisForm(p => ({ ...p, need_info_reason: e.target.value }))}
-                placeholder="Ex: Confirmar se o acesso do caminhão Truck comporta portão de 4m" required />
+                placeholder={language === 'pt' ? 'Ex: Confirmar se o acesso do caminhão Truck comporta portão de 4m' : 'E.g. Confirm whether 4m gate allows Truck access'} required />
             )}
 
-            <Input label="Infraestrutura necessária no local"
+            <Input label={language === 'pt' ? 'Infraestrutura necessária no local' : 'Infrastructure needed on site'}
               value={analysisForm.conditioning_infrastructure_needed}
               onChange={e => setAnalysisForm(p => ({ ...p, conditioning_infrastructure_needed: e.target.value }))}
-              placeholder="Ex: Deixar 2 caçambas de 30m³, disponibilizar paleteira..." />
+              placeholder={language === 'pt' ? 'Ex: Deixar 2 caçambas de 30m³, disponibilizar paleteira...' : 'E.g. Place 2x 30m³ dumpsters, provide pallet jack...'} />
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-700">Observações Gerais da Logística</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Observações Gerais da Logística' : 'General Logistics Notes'}
+              </label>
               <textarea value={analysisForm.notes}
                 onChange={e => setAnalysisForm(p => ({ ...p, notes: e.target.value }))}
-                placeholder="Justifique a decisão, rotas sugeridas, pedágios ou restrições de trânsito..."
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]" />
+                placeholder={language === 'pt' ? 'Justifique a decisão, rotas sugeridas, pedágios ou restrições de trânsito...' : 'Justify decision, suggested routes, tolls or traffic restrictions...'}
+                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]" />
             </div>
 
             {analysisForm.feasibility === 'FEASIBLE' && (
-              <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700 font-semibold">
+              <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg text-sm text-emerald-700 dark:text-emerald-300 font-semibold">
                 <CheckCircle size={16} />
-                Este lead será homologado e integrado ao módulo de <strong>Geradores</strong>.
+                {language === 'pt' 
+                  ? 'Este lead será homologado e integrado ao módulo de Geradores.'
+                  : 'This lead will be approved and integrated into the Generators module.'}
               </div>
             )}
 
             {analysisForm.feasibility === 'INFEASIBLE' && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-semibold">
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 font-semibold">
                 <XCircle size={16} />
-                Este lead será marcado como <strong>Inviável</strong> e constará em Geradores com status de inviabilidade.
+                {language === 'pt'
+                  ? 'Este lead será marcado como Inviável e constará em Geradores com status de inviabilidade.'
+                  : 'This lead will be marked as Infeasible and listed with infeasibility status.'}
               </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-              <Button type="submit" isLoading={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white">Salvar Parecer</Button>
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                {language === 'pt' ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button type="submit" isLoading={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+                {language === 'pt' ? 'Salvar Parecer' : 'Save Opinion'}
+              </Button>
             </div>
           </form>
         </Modal>
@@ -1512,18 +1534,18 @@ export default function LogisticsPage() {
       {/* Schedule Collection Modal */}
       {schedulingSupplier && (
         <Modal isOpen={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)}
-          title={`Agendar Coleta — ${schedulingSupplier.name}`} size="md">
+          title={`${language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection'} — ${schedulingSupplier.name}`} size="md">
           <form onSubmit={handleSaveSchedule} className="space-y-4">
-            <div className="p-3 bg-slate-50 rounded-xl text-xs space-y-1 border border-slate-200">
-              <p className="font-bold text-slate-800">Endereço de Coleta:</p>
-              <p className="text-slate-600">
-                {schedulingSupplier.address ? `${schedulingSupplier.address.street || ''}, ${schedulingSupplier.address.number || ''} — ${schedulingSupplier.address.city}/${schedulingSupplier.address.state}` : 'Não informado'}
+            <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-xs space-y-1 border border-slate-200 dark:border-slate-800">
+              <p className="font-bold text-slate-800 dark:text-slate-200">{language === 'pt' ? 'Endereço de Coleta:' : 'Collection Address:'}</p>
+              <p className="text-slate-600 dark:text-slate-400">
+                {schedulingSupplier.address ? `${schedulingSupplier.address.street || ''}, ${schedulingSupplier.address.number || ''} — ${schedulingSupplier.address.city}/${schedulingSupplier.address.state}` : (language === 'pt' ? 'Não informado' : 'Not provided')}
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
-                label="Data Programada da Coleta *"
+                label={language === 'pt' ? 'Data Programada da Coleta *' : 'Scheduled Collection Date *'}
                 type="date"
                 value={scheduleForm.scheduled_date}
                 onChange={e => setScheduleForm(p => ({ ...p, scheduled_date: e.target.value }))}
@@ -1531,42 +1553,46 @@ export default function LogisticsPage() {
               />
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Frequência da Coleta (Recorrência) *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'pt' ? 'Frequência da Coleta (Recorrência) *' : 'Collection Frequency (Recurrence) *'}
+                </label>
                 <select
                   value={scheduleForm.frequency}
                   onChange={e => setScheduleForm(p => ({ ...p, frequency: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 >
                   {frequencyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {scheduleForm.frequency === 'Outros' && (
                   <input
                     type="text"
-                    placeholder="Especifique (ex: 2x por semana, a cada 10 dias)..."
+                    placeholder={language === 'pt' ? 'Especifique (ex: 2x por semana, a cada 10 dias)...' : 'Specify frequency...'}
                     value={scheduleForm.custom_frequency}
                     onChange={e => setScheduleForm(p => ({ ...p, custom_frequency: e.target.value }))}
-                    className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 )}
               </div>
             </div>
 
-            <p className="text-[11px] text-indigo-700 bg-indigo-50/80 p-2.5 rounded-lg border border-indigo-100 leading-relaxed">
-              💡 <strong>Aviso Antecipado (3 dias):</strong> Ao confirmar, o gerador sai desta lista imediatamente. Ele reaparecerá automaticamente aqui <strong>3 dias antes</strong> da data da próxima coleta para a Logística realizar o novo agendamento.
+            <p className="text-[11px] text-indigo-700 dark:text-indigo-300 bg-indigo-50/80 dark:bg-indigo-950/40 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-800 leading-relaxed">
+              💡 <strong>{language === 'pt' ? 'Aviso Antecipado (3 dias):' : 'Advance Notice (3 days):'}</strong> {language === 'pt' 
+                ? 'Ao confirmar, o gerador sai desta lista imediatamente. Ele reaparecerá automaticamente aqui 3 dias antes da data da próxima coleta para a Logística realizar o novo agendamento.'
+                : 'Upon confirming, generator leaves this queue immediately. It will reappear here 3 days before the next collection due date.'}
             </p>
 
             <Input
-              label="Material a Coletar *"
+              label={language === 'pt' ? 'Material a Coletar *' : 'Material to Collect *'}
               value={scheduleForm.material_name}
               onChange={e => setScheduleForm(p => ({ ...p, material_name: e.target.value }))}
-              placeholder="Ex: Papelão Ondulado"
+              placeholder={language === 'pt' ? 'Ex: Papelão Ondulado' : 'E.g. Corrugated Cardboard'}
               required
             />
 
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Volume Estimado *"
+                label={language === 'pt' ? 'Volume Estimado *' : 'Estimated Volume *'}
                 type="number"
                 value={scheduleForm.estimated_volume}
                 onChange={e => setScheduleForm(p => ({ ...p, estimated_volume: e.target.value }))}
@@ -1574,11 +1600,11 @@ export default function LogisticsPage() {
                 required
               />
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Unidade</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Unidade' : 'Unit'}</label>
                 <select
                   value={scheduleForm.unit}
                   onChange={e => setScheduleForm(p => ({ ...p, unit: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
                 >
                   <option value="kg">kg</option>
                   <option value="ton">ton</option>
@@ -1590,32 +1616,38 @@ export default function LogisticsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Motorista"
+                label={language === 'pt' ? 'Motorista' : 'Driver'}
                 value={scheduleForm.driver_name}
                 onChange={e => setScheduleForm(p => ({ ...p, driver_name: e.target.value }))}
-                placeholder="Ex: Carlos Oliveira"
+                placeholder={language === 'pt' ? 'Ex: Carlos Oliveira' : 'E.g. John Doe'}
               />
               <Input
-                label="Transportadora / Veículo"
+                label={language === 'pt' ? 'Transportadora / Veículo' : 'Carrier / Vehicle'}
                 value={scheduleForm.carrier_name}
                 onChange={e => setScheduleForm(p => ({ ...p, carrier_name: e.target.value }))}
-                placeholder="Ex: Terceirizado iWrc (VUC)"
+                placeholder={language === 'pt' ? 'Ex: Terceirizado iWrc (VUC)' : 'E.g. iWrc Carrier (Truck)'}
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Observações Operacionais</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Observações Operacionais' : 'Operational Notes'}
+              </label>
               <textarea
                 value={scheduleForm.notes}
                 onChange={e => setScheduleForm(p => ({ ...p, notes: e.target.value }))}
-                placeholder="Horário de chegada, instruções de pesagem..."
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none min-h-[70px]"
+                placeholder={language === 'pt' ? 'Horário de chegada, instruções de pesagem...' : 'Arrival time, scale instructions...'}
+                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none min-h-[70px]"
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-              <Button type="button" variant="outline" onClick={() => setIsScheduleModalOpen(false)}>Cancelar</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">Confirmar Agendamento</Button>
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button type="button" variant="outline" onClick={() => setIsScheduleModalOpen(false)}>
+                {language === 'pt' ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                {language === 'pt' ? 'Confirmar Agendamento' : 'Confirm Scheduling'}
+              </Button>
             </div>
           </form>
         </Modal>

@@ -586,97 +586,103 @@ export default function SuppliersPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Cadastrar Gerador Homologado"
+        title={language === 'pt' ? 'Cadastrar Gerador Homologado' : 'Register Approved Generator'}
         size="xl"
       >
         <form onSubmit={handleCreateSupplier} className="space-y-6">
           
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">
-              Dados da Empresa & Segmento
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100 dark:border-slate-800">
+              {language === 'pt' ? 'Dados da Empresa & Segmento' : 'Company Data & Segment'}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Razão Social *"
+                label={language === 'pt' ? 'Razão Social *' : 'Company Name *'}
                 value={formSupplier.name}
                 onChange={(e) => setFormSupplier(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Ex: Indústrias Metalúrgicas S/A"
+                placeholder={language === 'pt' ? 'Ex: Indústrias Metalúrgicas S/A' : 'E.g. Industrial Metal Corp'}
                 required
               />
               <Input
-                label="Nome Fantasia"
+                label={language === 'pt' ? 'Nome Fantasia' : 'Trade Name'}
                 value={formSupplier.trade_name}
                 onChange={(e) => setFormSupplier(prev => ({ ...prev, trade_name: e.target.value }))}
-                placeholder="Ex: Metalúrgica Alpha"
+                placeholder={language === 'pt' ? 'Ex: Metalúrgica Alpha' : 'E.g. Alpha Metal'}
               />
               <Input
-                label="CNPJ / CPF"
+                label={language === 'pt' ? 'CNPJ / CPF' : 'Tax ID / CNPJ / CPF'}
                 value={formSupplier.document}
                 onChange={(e) => setFormSupplier(prev => ({ ...prev, document: e.target.value }))}
                 placeholder="Ex: 00.000.000/0001-00"
               />
               
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Segmento do Gerador *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'pt' ? 'Segmento do Gerador *' : 'Generator Segment *'}
+                </label>
                 <select
                   value={formSupplier.supplier_type}
                   onChange={(e) => setFormSupplier(prev => ({ ...prev, supplier_type: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 >
-                  <option value="">Selecione o segmento...</option>
-                  <option value="Indústria">Indústria</option>
-                  <option value="Comércio">Comércio</option>
-                  <option value="Condomínio">Condomínio</option>
-                  <option value="Cooperativa">Cooperativa</option>
-                  <option value="Residencial">Residencial</option>
-                  <option value="Outro">Outro (digitar)</option>
+                  <option value="">{language === 'pt' ? 'Selecione o segmento...' : 'Select segment...'}</option>
+                  <option value="Indústria">{language === 'pt' ? 'Indústria' : 'Industry'}</option>
+                  <option value="Comércio">{language === 'pt' ? 'Comércio' : 'Commerce'}</option>
+                  <option value="Condomínio">{language === 'pt' ? 'Condomínio' : 'Condominium'}</option>
+                  <option value="Cooperativa">{language === 'pt' ? 'Cooperativa' : 'Cooperative'}</option>
+                  <option value="Residencial">{language === 'pt' ? 'Residencial' : 'Residential'}</option>
+                  <option value="Outro">{language === 'pt' ? 'Outro (digitar)' : 'Other (type)'}</option>
                 </select>
                 {formSupplier.supplier_type === 'Outro' && (
                   <input
                     type="text"
-                    placeholder="Digite o segmento..."
+                    placeholder={language === 'pt' ? 'Digite o segmento...' : 'Type segment name...'}
                     value={formSupplier.custom_supplier_type}
                     onChange={(e) => setFormSupplier(prev => ({ ...prev, custom_supplier_type: e.target.value }))}
-                    className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-400 rounded-lg outline-none"
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-emerald-400 rounded-lg outline-none"
                     required
                   />
                 )}
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Como encontramos *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'pt' ? 'Como encontramos *' : 'Lead Source *'}
+                </label>
                 <select
                   value={formSupplier.lead_source}
                   onChange={(e) => setFormSupplier(prev => ({ ...prev, lead_source: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 >
-                  <option value="">Selecione como encontramos...</option>
-                  <option value="Busca própria">Busca própria</option>
+                  <option value="">{language === 'pt' ? 'Selecione como encontramos...' : 'Select lead source...'}</option>
+                  <option value="Busca própria">{language === 'pt' ? 'Busca própria' : 'Direct Search'}</option>
                   <option value="Zion">Zion</option>
                   <option value="Google Search">Google Search</option>
-                  <option value="Indicação">Indicação</option>
-                  <option value="Outro">Outro (digitar)</option>
+                  <option value="Indicação">{language === 'pt' ? 'Indicação' : 'Referral'}</option>
+                  <option value="Outro">{language === 'pt' ? 'Outro (digitar)' : 'Other (type)'}</option>
                 </select>
                 {formSupplier.lead_source === 'Outro' && (
                   <input
                     type="text"
-                    placeholder="Digite a origem..."
+                    placeholder={language === 'pt' ? 'Digite a origem...' : 'Type source name...'}
                     value={formSupplier.custom_lead_source}
                     onChange={(e) => setFormSupplier(prev => ({ ...prev, custom_lead_source: e.target.value }))}
-                    className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-400 rounded-lg outline-none"
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-emerald-400 rounded-lg outline-none"
                     required
                   />
                 )}
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700">Responsável Interno *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'pt' ? 'Responsável Interno *' : 'Internal Responsible *'}
+                </label>
                 <select
                   value={formSupplier.internal_responsible_id}
                   onChange={(e) => setFormSupplier(prev => ({ ...prev, internal_responsible_id: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 >
-                  <option value="">Selecione o responsável...</option>
+                  <option value="">{language === 'pt' ? 'Selecione o responsável...' : 'Select responsible...'}</option>
                   {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
@@ -684,18 +690,18 @@ export default function SuppliersPage() {
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">
-              Credenciais MTR (Opcional)
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100 dark:border-slate-800">
+              {language === 'pt' ? 'Credenciais MTR (Opcional)' : 'MTR Credentials (Optional)'}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Login do MTR"
+                label={language === 'pt' ? 'Login do MTR' : 'MTR Login'}
                 value={formSupplier.mtr_login}
                 onChange={(e) => setFormSupplier(prev => ({ ...prev, mtr_login: e.target.value }))}
-                placeholder="Ex: usuario.sigor ou email"
+                placeholder={language === 'pt' ? 'Ex: usuario.sigor ou email' : 'E.g. user.sigor or email'}
               />
               <Input
-                label="Senha do MTR"
+                label={language === 'pt' ? 'Senha do MTR' : 'MTR Password'}
                 type="password"
                 value={formSupplier.mtr_password}
                 onChange={(e) => setFormSupplier(prev => ({ ...prev, mtr_password: e.target.value }))}
@@ -705,15 +711,15 @@ export default function SuppliersPage() {
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">
-              Contato Principal
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100 dark:border-slate-800">
+              {language === 'pt' ? 'Contato Principal' : 'Primary Contact'}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
-                label="Nome do Contato *"
+                label={language === 'pt' ? 'Nome do Contato *' : 'Contact Name *'}
                 value={formContact.name}
                 onChange={(e) => setFormContact(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Ex: Roberto Silva"
+                placeholder={language === 'pt' ? 'Ex: Roberto Silva' : 'E.g. Robert Smith'}
                 required
               />
               <Input
@@ -723,23 +729,23 @@ export default function SuppliersPage() {
                 placeholder="(11) 98765-4321"
               />
               <Input
-                label="E-mail"
+                label={language === 'pt' ? 'E-mail' : 'Email'}
                 type="email"
                 value={formContact.email}
                 onChange={(e) => setFormContact(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="roberto@empresa.com"
+                placeholder="contato@empresa.com"
               />
             </div>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">
-              Endereço Completo
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100 dark:border-slate-800">
+              {language === 'pt' ? 'Endereço Completo' : 'Complete Address'}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
                 <Input
-                  label="CEP"
+                  label={language === 'pt' ? 'CEP' : 'ZIP Code'}
                   value={formAddress.zip_code}
                   onChange={(e) => handleAddressCepChange(e.target.value)}
                   placeholder="01001-000"
@@ -747,38 +753,38 @@ export default function SuppliersPage() {
                 />
                 {isCepLoading && (
                   <span className="absolute right-3 top-8 text-xs text-[#2098D1] flex items-center gap-1 font-semibold animate-pulse">
-                    <Loader2 size={13} className="animate-spin" /> Buscando...
+                    <Loader2 size={13} className="animate-spin" /> {language === 'pt' ? 'Buscando...' : 'Searching...'}
                   </span>
                 )}
               </div>
               <div className="md:col-span-2">
                 <Input
-                  label="Logradouro"
+                  label={language === 'pt' ? 'Logradouro' : 'Street Address'}
                   value={formAddress.street}
                   onChange={(e) => setFormAddress(prev => ({ ...prev, street: e.target.value }))}
-                  placeholder="Avenida Paulista"
+                  placeholder={language === 'pt' ? 'Avenida Paulista' : 'Main Street'}
                 />
               </div>
               <Input
-                label="Número"
+                label={language === 'pt' ? 'Número' : 'Number'}
                 value={formAddress.number}
                 onChange={(e) => setFormAddress(prev => ({ ...prev, number: e.target.value }))}
                 placeholder="1000"
               />
               <Input
-                label="Bairro"
+                label={language === 'pt' ? 'Bairro' : 'Neighborhood'}
                 value={formAddress.neighborhood}
                 onChange={(e) => setFormAddress(prev => ({ ...prev, neighborhood: e.target.value }))}
-                placeholder="Bela Vista"
+                placeholder={language === 'pt' ? 'Bela Vista' : 'Downtown'}
               />
               <Input
-                label="Cidade"
+                label={language === 'pt' ? 'Cidade' : 'City'}
                 value={formAddress.city}
                 onChange={(e) => setFormAddress(prev => ({ ...prev, city: e.target.value }))}
-                placeholder="São Paulo"
+                placeholder={language === 'pt' ? 'São Paulo' : 'City'}
               />
               <Input
-                label="UF"
+                label={language === 'pt' ? 'UF' : 'State'}
                 value={formAddress.state}
                 onChange={(e) => setFormAddress(prev => ({ ...prev, state: e.target.value }))}
                 placeholder="SP"
@@ -786,19 +792,19 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsModalOpen(false)}
             >
-              Cancelar
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
             </Button>
             <Button
               type="submit"
               isLoading={isSubmitting}
             >
-              Salvar Gerador Homologado
+              {language === 'pt' ? 'Salvar Gerador Homologado' : 'Save Approved Generator'}
             </Button>
           </div>
         </form>

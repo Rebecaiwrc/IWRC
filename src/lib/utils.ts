@@ -186,17 +186,29 @@ export const getCollectionColor = (status: CollectionStatus): 'warning' | 'info'
 };
 
 // Interaction translator
-export const translateInteractionType = (type: InteractionType): string => {
-  const mapping: Record<InteractionType, string> = {
-    whatsapp: 'WhatsApp',
-    phone: 'Ligação',
-    email: 'E-mail',
-    meeting: 'Reunião',
-    visit: 'Visita',
-    internal_obs: 'Obs. Interna',
-    other: 'Outro'
+export const translateInteractionType = (type: InteractionType, lang?: 'pt' | 'en'): string => {
+  const currentLang = getActiveLang(lang);
+  const mapping: Record<'pt' | 'en', Record<InteractionType, string>> = {
+    pt: {
+      whatsapp: 'WhatsApp',
+      phone: 'Ligação Telefônica',
+      email: 'E-mail',
+      meeting: 'Reunião',
+      visit: 'Visita Técnica',
+      internal_obs: 'Obs. Interna',
+      other: 'Outro'
+    },
+    en: {
+      whatsapp: 'WhatsApp',
+      phone: 'Phone Call',
+      email: 'Email',
+      meeting: 'Meeting',
+      visit: 'Technical Visit',
+      internal_obs: 'Internal Note',
+      other: 'Other'
+    }
   };
-  return mapping[type] || type;
+  return mapping[currentLang]?.[type] || type;
 };
 
 // Supplier Type / Segment translator
