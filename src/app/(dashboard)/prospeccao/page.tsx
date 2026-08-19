@@ -783,7 +783,7 @@ export default function ProspectingPage() {
       <Card className="!p-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
           
-          <div className="lg:col-span-2">
+          <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
               {language === 'pt' ? 'Pesquisar Lead' : 'Search Lead'}
             </label>
@@ -792,7 +792,7 @@ export default function ProspectingPage() {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder={language === 'pt' ? 'Empresa, segmento, rua, cidade, telefone...' : 'Company, segment, street, city, phone...'}
+                placeholder={language === 'pt' ? 'Empresa, cidade...' : 'Company, city...'}
                 className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white"
               />
               <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
@@ -802,6 +802,22 @@ export default function ProspectingPage() {
                 </button>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              {language === 'pt' ? 'Status no Funil' : 'Funnel Status'}
+            </label>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white cursor-pointer font-medium"
+            >
+              <option value="">{language === 'pt' ? 'Todos os status' : 'All statuses'}</option>
+              {PROSPECTING_COLUMNS.map(c => (
+                <option key={c.key} value={c.key}>{translateProspectingStatus(c.key, language)}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -869,7 +885,7 @@ export default function ProspectingPage() {
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="mt-5 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/40 text-xs font-semibold flex items-center gap-1 shrink-0"
+                className="mt-5 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/40 text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
                 title={language === 'pt' ? 'Limpar filtros' : 'Clear filters'}
               >
                 <X size={14} />
