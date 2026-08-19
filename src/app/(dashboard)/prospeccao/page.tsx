@@ -1173,7 +1173,7 @@ export default function ProspectingPage() {
                               {isOverdue ? <AlertTriangle size={13} className="text-rose-600 animate-pulse shrink-0" /> : <Clock size={13} className="text-indigo-600 shrink-0" />}
                               <div className="flex flex-col">
                                 <span className="font-black text-[10px] leading-tight">{sla.statusLabel}</span>
-                                <span className="text-[9px] text-slate-500">{language === 'pt' ? 'Prazo Gabs: 5 dias corridos' : 'Gabs SLA: 5 calendar days'}</span>
+                                <span className="text-[9px] text-slate-500">{language === 'pt' ? 'Prazo Logística: 5 dias corridos' : 'Logistics SLA: 5 calendar days'}</span>
                               </div>
                             </div>
                             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/80 shrink-0 border border-slate-200">

@@ -795,7 +795,7 @@ export default function DashboardPage() {
                             <span className="font-bold text-indigo-700 text-sm">
                               {sentToLogistics}
                             </span>
-                            <span className="text-[10px] text-slate-400">{language === 'pt' ? 'encaminhadas ao Gabs' : 'sent to Gabs'}</span>
+                            <span className="text-[10px] text-slate-400">{language === 'pt' ? 'encaminhadas à Logística' : 'sent to Logistics'}</span>
                           </div>
                         </td>
 
@@ -845,13 +845,13 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* SEÇÃO 2: ÁREA DE LOGÍSTICA (GABS & OPERAÇÕES) */}
+          {/* SEÇÃO 2: ÁREA DE LOGÍSTICA (OPERAÇÕES) */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-indigo-600" />
                 <h3 className="text-base font-black text-[#0D2439]">
-                  {language === 'pt' ? 'Desempenho da Logística (Gabs / Operações)' : 'Logistics Performance (Gabs / Operations)'}
+                  {language === 'pt' ? 'Desempenho da Logística (Operações)' : 'Logistics Performance (Operations)'}
                 </h3>
               </div>
               <span className="text-xs font-bold text-slate-500">
