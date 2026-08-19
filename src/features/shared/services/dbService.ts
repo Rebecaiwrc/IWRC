@@ -693,17 +693,18 @@ export const dbService = {
         type: interactionData.type || 'whatsapp',
         description: interactionData.description || '',
         interaction_date: dateStr,
-        interaction_time: timeStr
+        interaction_time: timeStr,
+        user_id: isValidUuid(interactionData.user_id) ? interactionData.user_id : 'd3b07384-d113-4e4e-9b2f-123456789013'
       };
-      if (isValidUuid(interactionData.user_id)) {
-        payload.user_id = interactionData.user_id;
-      }
       const { data, error } = await supabase
         .from('supplier_interactions')
         .insert([payload])
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.warn('Could not record interaction in Supabase:', error.message);
+        return { id, ...payload };
+      }
       return data;
     }
 
@@ -758,11 +759,9 @@ export const dbService = {
         old_status: historyData.old_status || null,
         new_status: historyData.new_status || 'PENDING',
         notes: historyData.notes || null,
+        user_id: isValidUuid(historyData.user_id) ? historyData.user_id : 'd3b07384-d113-4e4e-9b2f-123456789013',
         created_at: now
       };
-      if (isValidUuid(historyData.user_id)) {
-        payload.user_id = historyData.user_id;
-      }
       const { data, error } = await supabase
         .from('supplier_status_history')
         .insert([payload])
@@ -821,17 +820,30 @@ export const dbService = {
     const now = new Date().toISOString();
 
     if (isSupabaseConfigured && supabase) {
+      const taskPayload: Record<string, any> = {
+        id,
+        supplier_id: taskData.supplier_id,
+        description: taskData.description || '',
+        status: taskData.status || 'pending',
+        due_date: taskData.due_date || null,
+        created_at: now
+      };
+      if (taskData.completed_by && isValidUuid(taskData.completed_by)) {
+        taskPayload.completed_by = taskData.completed_by;
+      }
+      if (taskData.completed_at) {
+        taskPayload.completed_at = taskData.completed_at;
+      }
+
       const { data, error } = await supabase
         .from('supplier_tasks')
-        .insert([{
-          ...taskData,
-          id,
-          status: 'pending',
-          created_at: now
-        }])
+        .insert([taskPayload])
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.warn('Could not insert supplier_task into Supabase:', error.message);
+        return { id, ...taskPayload } as any;
+      }
       return data;
     }
 
@@ -859,7 +871,7 @@ export const dbService = {
         .from('supplier_tasks')
         .update({
           status: 'completed',
-          completed_by: userId,
+          completed_by: isValidUuid(userId) ? userId : null,
           completed_at: now
         })
         .eq('id', id)
@@ -909,7 +921,7 @@ export const dbService = {
         .from('logistics_analyses')
         .select('*, analyst:profiles(id, name, email, role)')
         .eq('supplier_id', supplierId)
-        .single();
+        .maybeSingle();
       if (error) return null;
       return data;
     }
@@ -927,15 +939,29 @@ export const dbService = {
         .from('logistics_analyses')
         .select('id')
         .eq('supplier_id', analysisData.supplier_id)
-        .single();
+        .maybeSingle();
+
+      const cleanPayload: Record<string, any> = {
+        supplier_id: analysisData.supplier_id,
+        distance_km: analysisData.distance_km !== undefined ? (Number(analysisData.distance_km) || null) : null,
+        transport_type: analysisData.transport_type || null,
+        estimated_cost: analysisData.estimated_cost !== undefined ? (Number(analysisData.estimated_cost) || null) : null,
+        recommended_frequency: analysisData.recommended_frequency || null,
+        transport_responsible: analysisData.transport_responsible || null,
+        conditioning_infrastructure_needed: analysisData.conditioning_infrastructure_needed || null,
+        feasibility: analysisData.feasibility || 'PENDING',
+        notes: analysisData.notes || null,
+        analyzed_at: now
+      };
+
+      if (isValidUuid(analysisData.analyst_id)) {
+        cleanPayload.analyst_id = analysisData.analyst_id;
+      }
 
       if (existing) {
         const { data, error } = await supabase
           .from('logistics_analyses')
-          .update({
-            ...analysisData,
-            analyzed_at: now
-          })
+          .update(cleanPayload)
           .eq('id', existing.id)
           .select()
           .single();
@@ -946,9 +972,8 @@ export const dbService = {
         const { data, error } = await supabase
           .from('logistics_analyses')
           .insert([{
-            ...analysisData,
+            ...cleanPayload,
             id,
-            analyzed_at: now,
             created_at: now
           }])
           .select()

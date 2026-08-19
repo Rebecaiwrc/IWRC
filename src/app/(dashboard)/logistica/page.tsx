@@ -388,9 +388,9 @@ export default function LogisticsPage() {
 
       setIsModalOpen(false);
       fetchData();
-    } catch (err) { 
-      console.error(err); 
-      alert('Erro ao salvar análise.'); 
+    } catch (err: any) { 
+      console.error('Error saving logistics analysis:', err); 
+      alert(`Erro ao salvar análise: ${err.message || err.details || 'Verifique sua conexão.'}`); 
     } finally { 
       setIsSubmitting(false); 
     }

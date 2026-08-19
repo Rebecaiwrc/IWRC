@@ -592,9 +592,9 @@ export default function SupplierDetailPage() {
 
       setIsLogisticsModalOpen(false);
       await fetchSupplierData();
-    } catch (err) {
-      console.error(err);
-      alert('Erro ao salvar parecer logístico.');
+    } catch (err: any) {
+      console.error('Error saving logistics analysis:', err);
+      alert(`Erro ao salvar parecer logístico: ${err.message || err.details || 'Verifique sua conexão.'}`);
     }
   };
 
