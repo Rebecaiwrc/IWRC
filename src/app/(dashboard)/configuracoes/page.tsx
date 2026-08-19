@@ -223,15 +223,15 @@ export default function SettingsPage() {
             
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-left space-y-2.5">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Nível de Acesso:</span>
+                <span className="text-slate-400">{language === 'pt' ? 'Nível de Acesso:' : 'Access Level:'}</span>
                 <span className="font-bold text-slate-700 dark:text-slate-200">{getRoleLabel(user?.role)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Hub Regional:</span>
+                <span className="text-slate-400">{language === 'pt' ? 'Hub Regional:' : 'Regional Hub:'}</span>
                 <span className="font-bold text-slate-700 dark:text-slate-200">Sorocaba - SP</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Status:</span>
+                <span className="text-slate-400">{language === 'pt' ? 'Status:' : 'Status:'}</span>
                 <span className="text-emerald-600 font-bold flex items-center gap-1">
                   <CheckCircle2 size={12} /> {language === 'pt' ? 'Ativo' : 'Active'}
                 </span>
@@ -277,7 +277,9 @@ export default function SettingsPage() {
           <Card className="!p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-2 pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
               <User size={18} className="text-[#2098D1]" />
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">Dados Pessoais</h2>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                {language === 'pt' ? 'Dados Pessoais' : 'Personal Information'}
+              </h2>
             </div>
 
             {profileSuccessMsg && (
@@ -296,22 +298,26 @@ export default function SettingsPage() {
 
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <Input
-                label="Nome de Exibição"
+                label={language === 'pt' ? 'Nome de Exibição' : 'Display Name'}
                 value={profileName}
                 onChange={e => setProfileName(e.target.value)}
-                placeholder="Seu nome completo"
+                placeholder={language === 'pt' ? 'Seu nome completo' : 'Your full name'}
                 required
               />
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">E-mail Corporativo</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {language === 'pt' ? 'E-mail Corporativo' : 'Corporate Email'}
+                </label>
                 <input
                   type="email"
                   value={user?.email || ''}
                   disabled
                   className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 rounded-xl px-3.5 py-2.5 text-xs outline-none cursor-not-allowed font-mono"
                 />
-                <p className="text-[10px] text-slate-400">O e-mail de login corporativo é gerenciado pelo Super Admin.</p>
+                <p className="text-[10px] text-slate-400">
+                  {language === 'pt' ? 'O e-mail de login corporativo é gerenciado pelo Super Admin.' : 'Corporate login email is managed by Super Admin.'}
+                </p>
               </div>
 
               <div className="flex justify-end pt-2">
@@ -321,7 +327,9 @@ export default function SettingsPage() {
                   disabled={isUpdatingProfile}
                   className="px-5 py-2 text-xs font-bold"
                 >
-                  {isUpdatingProfile ? 'Salvando...' : 'Salvar Alterações'}
+                  {isUpdatingProfile 
+                    ? (language === 'pt' ? 'Salvando...' : 'Saving...') 
+                    : (language === 'pt' ? 'Salvar Alterações' : 'Save Changes')}
                 </Button>
               </div>
             </form>
@@ -332,8 +340,14 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2 pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
               <KeyRound size={18} className="text-[#2098D1]" />
               <div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">Segurança & Alteração de Senha</h2>
-                <p className="text-xs text-slate-400">Para atualizar sua senha, digite a senha atual e confirme a nova senha.</p>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  {language === 'pt' ? 'Segurança & Alteração de Senha' : 'Security & Password Change'}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  {language === 'pt' 
+                    ? 'Para atualizar sua senha, digite a senha atual e confirme a nova senha.' 
+                    : 'To update your password, enter your current password and confirm the new one.'}
+                </p>
               </div>
             </div>
 
@@ -356,14 +370,14 @@ export default function SettingsPage() {
               {/* Current Password */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Senha Atual (Antiga) <span className="text-rose-500">*</span>
+                  {language === 'pt' ? 'Senha Atual (Antiga)' : 'Current Password'} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={e => setCurrentPassword(e.target.value)}
-                    placeholder="Digite sua senha atual"
+                    placeholder={language === 'pt' ? 'Digite sua senha atual' : 'Enter current password'}
                     required
                     className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-[#2098D1] focus:ring-1 focus:ring-[#2098D1] pr-10"
                   />
@@ -380,14 +394,14 @@ export default function SettingsPage() {
               {/* New Password */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Nova Senha <span className="text-rose-500">*</span>
+                  {language === 'pt' ? 'Nova Senha' : 'New Password'} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
                     type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
-                    placeholder="Mínimo de 6 caracteres"
+                    placeholder={language === 'pt' ? 'Mínimo de 6 caracteres' : 'Minimum 6 characters'}
                     required
                     className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-[#2098D1] focus:ring-1 focus:ring-[#2098D1] pr-10"
                   />
@@ -409,7 +423,7 @@ export default function SettingsPage() {
                       />
                     </div>
                     <span className={`text-[10px] font-bold ${strength.color.split(' ')[1]}`}>
-                      Força: {strength.text}
+                      {language === 'pt' ? 'Força:' : 'Strength:'} {strength.text}
                     </span>
                   </div>
                 )}
@@ -418,14 +432,14 @@ export default function SettingsPage() {
               {/* Confirm New Password */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Confirmar Nova Senha <span className="text-rose-500">*</span>
+                  {language === 'pt' ? 'Confirmar Nova Senha' : 'Confirm New Password'} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="Digite novamente a nova senha"
+                    placeholder={language === 'pt' ? 'Digite novamente a nova senha' : 'Re-enter new password'}
                     required
                     className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-[#2098D1] focus:ring-1 focus:ring-[#2098D1] pr-10"
                   />
@@ -438,7 +452,9 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 {confirmPassword && newPassword !== confirmPassword && (
-                  <p className="text-[10px] text-rose-500 font-bold">As senhas digitadas não coincidem.</p>
+                  <p className="text-[10px] text-rose-500 font-bold">
+                    {language === 'pt' ? 'As senhas digitadas não coincidem.' : 'Passwords do not match.'}
+                  </p>
                 )}
               </div>
 
@@ -449,7 +465,9 @@ export default function SettingsPage() {
                   disabled={isUpdatingPassword || (!!confirmPassword && newPassword !== confirmPassword)}
                   className="px-6 py-2.5 text-xs font-bold shadow-lg shadow-[#2098D1]/20"
                 >
-                  {isUpdatingPassword ? 'Atualizando Senha...' : 'Atualizar Minha Senha'}
+                  {isUpdatingPassword 
+                    ? (language === 'pt' ? 'Atualizando Senha...' : 'Updating Password...') 
+                    : (language === 'pt' ? 'Atualizar Minha Senha' : 'Update My Password')}
                 </Button>
               </div>
 

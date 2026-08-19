@@ -3,12 +3,14 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { ForcePasswordChangeModal } from '@/features/auth/components/ForcePasswordChangeModal';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { language } = useLanguage();
   const router = useRouter();
 
   useEffect(() => {
@@ -22,7 +24,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="min-h-screen flex items-center justify-center bg-[#EAF7FA]">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 border-4 border-[#C8EEF5] border-t-[#2098D1] rounded-full animate-spin" />
-          <p className="text-sm font-bold text-[#146482]">Carregando painel iWrc...</p>
+          <p className="text-sm font-bold text-[#146482]">
+            {language === 'pt' ? 'Carregando painel iWrc...' : 'Loading iWrc dashboard...'}
+          </p>
         </div>
       </div>
     );
@@ -39,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[11px] font-bold text-[#146482] uppercase tracking-wider">
-              iWrc Economia Circular • Hub Sorocaba
+              {language === 'pt' ? 'iWrc Economia Circular • Hub Sorocaba' : 'iWrc Circular Economy • Sorocaba Hub'}
             </span>
           </div>
 

@@ -190,13 +190,115 @@ export const translateInteractionType = (type: InteractionType): string => {
   return mapping[type] || type;
 };
 
+// Supplier Type / Segment translator
+export const translateSupplierType = (type?: string | null, lang?: 'pt' | 'en'): string => {
+  if (!type) return lang === 'en' ? 'Industry' : 'Indústria';
+  const currentLang = getActiveLang(lang);
+  if (currentLang === 'pt') return type;
+
+  const mapping: Record<string, string> = {
+    'Indústria': 'Industry',
+    'Comércio': 'Commerce',
+    'Serviços': 'Services',
+    'Logística': 'Logistics',
+    'Agronegócio': 'Agribusiness',
+    'Construção': 'Construction',
+    'Tecnologia': 'Technology',
+    'Educação': 'Education',
+    'Saúde': 'Healthcare',
+    'Alimentos': 'Food & Beverage',
+    'Automotivo': 'Automotive',
+    'Metalúrgica': 'Metallurgy',
+    'Química': 'Chemical',
+    'Têxtil': 'Textile',
+    'Embalagens': 'Packaging',
+    'Outro': 'Other'
+  };
+  return mapping[type] || type;
+};
+
+// Storage form translator
+export const translateStorageForm = (storage?: string | null, lang?: 'pt' | 'en'): string => {
+  if (!storage) return '-';
+  const currentLang = getActiveLang(lang);
+  if (currentLang === 'pt') return storage;
+
+  const mapping: Record<string, string> = {
+    'Sacos / Bags / Caixas': 'Bags / Boxes / Sacks',
+    'Sacos de Lixo': 'Trash Bags',
+    'Big Bags': 'Big Bags',
+    'Caixas / Paletes': 'Boxes / Pallets',
+    'Caixas': 'Boxes',
+    'Paletes': 'Pallets',
+    'Tambores / Bombonas': 'Drums / Barrels',
+    'Tambores': 'Drums',
+    'A Granel': 'In Bulk',
+    'Fardos Prensados': 'Pressed Bales',
+    'Caçamba Estacionária': 'Stationary Dumpster',
+    'Outro': 'Other'
+  };
+  return mapping[storage] || storage;
+};
+
+// Frequency translator
+export const translateFrequency = (freq?: string | null, lang?: 'pt' | 'en'): string => {
+  if (!freq) return '-';
+  const currentLang = getActiveLang(lang);
+  if (currentLang === 'pt') return freq;
+
+  const mapping: Record<string, string> = {
+    '1x por mês': '1x per month',
+    '1x por semana': '1x per week',
+    '2x por mês': '2x per month',
+    'Diário': 'Daily',
+    'Semanal': 'Weekly',
+    'Quinzenal': 'Biweekly',
+    'Mensal': 'Monthly',
+    'Bimestral': 'Bimonthly',
+    'Trimestral': 'Quarterly',
+    'Semestral': 'Semiannual',
+    'Anual': 'Annual',
+    'Esporádico': 'Sporadic',
+    'Sob Demanda': 'On Demand',
+    'Única Vez': 'One-time'
+  };
+  return mapping[freq] || freq;
+};
+
+// Log text dynamic translator
+export const translateLogText = (text: string | null | undefined, lang?: 'pt' | 'en'): string => {
+  if (!text) return '';
+  const currentLang = getActiveLang(lang);
+  if (currentLang === 'pt') return text;
+
+  let translated = text;
+
+  // Replace common action phrases
+  translated = translated.replace(/alterou de\s+(.*?)\s+para\s+(.*)/i, (match, p1, p2) => {
+    return `changed from ${translateProspectingStatus(p1.trim() as any, 'en')} to ${translateProspectingStatus(p2.trim() as any, 'en')}`;
+  });
+  translated = translated.replace(/Lead cadastrado no sistema/gi, 'Lead registered in system');
+  translated = translated.replace(/Cadastrado pelo Comercial/gi, 'Registered by Commercial');
+  translated = translated.replace(/Origem:/gi, 'Source:');
+  translated = translated.replace(/Segmento:\s*Indústria/gi, 'Segment: Industry');
+  translated = translated.replace(/Segmento:\s*Comércio/gi, 'Segment: Commerce');
+  translated = translated.replace(/Segmento:\s*Serviços/gi, 'Segment: Services');
+  translated = translated.replace(/Segmento:/gi, 'Segment:');
+  translated = translated.replace(/Status prospecção:\s*(.*)/gi, (m, p) => `Prospecting Status: ${translateProspectingStatus(p.trim() as any, 'en')}`);
+  translated = translated.replace(/Atualização de Status/gi, 'Status Update');
+  translated = translated.replace(/Parecer logístico registrado/gi, 'Logistics analysis submitted');
+  translated = translated.replace(/Lead retirado da Logística pelo responsável/gi, 'Lead withdrawn from Logistics by owner');
+  translated = translated.replace(/Informações esclarecidas por Compras/gi, 'Information clarified by Commercial');
+
+  return translated;
+};
+
 // Date formatter
 export const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return '-';
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
-    // Format to DD/MM/YYYY
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -213,7 +315,6 @@ export const formatDateTime = (dateTimeString: string | null | undefined): strin
   try {
     const date = new Date(dateTimeString);
     if (isNaN(date.getTime())) return dateTimeString;
-    // Format to DD/MM/YYYY HH:MM
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',

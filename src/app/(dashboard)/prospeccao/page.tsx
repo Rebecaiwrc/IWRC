@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
-import { translateProspectingStatus, formatDate, formatCep, fetchAddressByCep } from '@/lib/utils';
+import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, fetchAddressByCep } from '@/lib/utils';
 import { 
   Plus, 
   MapPin, 
@@ -711,7 +711,9 @@ export default function ProspectingPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between shadow-xs">
               <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total no Funil</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  {language === 'pt' ? 'Total no Funil' : 'Total in Funnel'}
+                </p>
                 <p className="text-xl font-black text-slate-800 dark:text-slate-100">{stats.total}</p>
               </div>
               <div className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-xs">
@@ -721,7 +723,9 @@ export default function ProspectingPage() {
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between shadow-xs">
               <div>
-                <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Qualificados</p>
+                <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                  {language === 'pt' ? 'Qualificados' : 'Qualified'}
+                </p>
                 <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">{stats.qualified}</p>
               </div>
               <div className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center font-bold text-xs">
@@ -731,7 +735,9 @@ export default function ProspectingPage() {
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between shadow-xs">
               <div>
-                <p className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Aguardando Logística</p>
+                <p className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                  {language === 'pt' ? 'Aguardando Logística' : 'Awaiting Logistics'}
+                </p>
                 <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{stats.waitingLogistics}</p>
               </div>
               <div className="h-8 w-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center font-bold text-xs">
@@ -741,7 +747,9 @@ export default function ProspectingPage() {
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between shadow-xs">
               <div>
-                <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Com Doação</p>
+                <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                  {language === 'pt' ? 'Com Doação' : 'With Donation'}
+                </p>
                 <p className="text-xl font-black text-amber-600 dark:text-amber-400">{stats.donationsCount}</p>
               </div>
               <div className="h-8 w-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center font-bold text-xs">
@@ -763,7 +771,7 @@ export default function ProspectingPage() {
                   }`}
                 >
                   <span className={`h-2 w-2 rounded-full ${col.color}`}/>
-                  {col.label}
+                  {translateProspectingStatus(col.key, language)}
                   <span className="text-[10px] opacity-70 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded-full font-bold">
                     {suppliers.filter(s => getLeadStatus(s) === col.key).length}
                   </span>
@@ -772,9 +780,15 @@ export default function ProspectingPage() {
               </React.Fragment>
             ))}
             <span className="text-slate-200 dark:text-slate-700 mx-1">›</span>
-            <span className="flex items-center gap-1 text-indigo-500 font-bold whitespace-nowrap px-2 py-1"><Users size={11}/>Logística analisa</span>
+            <span className="flex items-center gap-1 text-indigo-500 font-bold whitespace-nowrap px-2 py-1">
+              <Users size={11}/>
+              {language === 'pt' ? 'Logística analisa' : 'Logistics reviews'}
+            </span>
             <span className="text-slate-200 dark:text-slate-700 mx-1">›</span>
-            <span className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap px-2 py-1"><CheckCircle size={11}/>Gerador Ativo</span>
+            <span className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap px-2 py-1">
+              <CheckCircle size={11}/>
+              {language === 'pt' ? 'Gerador Ativo' : 'Active Generator'}
+            </span>
           </div>
         </div>
       )}
@@ -965,7 +979,7 @@ export default function ProspectingPage() {
                                 {supplier.name}
                               </p>
                               <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                                {supplier.supplier_type} • {supplier.address?.city || (language === 'pt' ? 'Sem cidade' : 'No city')}
+                                {translateSupplierType(supplier.supplier_type, language)} • {supplier.address?.city || (language === 'pt' ? 'Sem cidade' : 'No city')}
                               </p>
                             </div>
                             <div className="flex items-center gap-1">
@@ -1068,7 +1082,7 @@ export default function ProspectingPage() {
                             </p>
                             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                               <span className="inline-block text-[10px] font-bold text-[#146A88] bg-[#E5F5F8] px-1.5 py-0.2 rounded">
-                                {supplier.supplier_type || (language === 'pt' ? 'Segmento n/d' : 'Segment n/a')}
+                                {translateSupplierType(supplier.supplier_type, language) || (language === 'pt' ? 'Segmento n/d' : 'Segment n/a')}
                               </span>
                               {supplier.attached_documents && supplier.attached_documents.length > 0 && (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#2098D1] bg-[#DDF4F9] px-1.5 py-0.2 rounded border border-[#CCEAF1]">

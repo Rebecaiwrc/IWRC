@@ -23,6 +23,11 @@ import {
   getStageColor, 
   translateStatus, 
   getStatusColor, 
+  translateProspectingStatus,
+  translateSupplierType,
+  translateStorageForm,
+  translateFrequency,
+  translateLogText,
   formatDate, 
   formatCurrency, 
   formatVolume,
@@ -920,7 +925,9 @@ export default function SupplierDetailPage() {
                   <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
                     {language === 'pt' ? 'Segmento' : 'Segment'}
                   </p>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{supplier.supplier_type || (language === 'pt' ? 'Indústria' : 'Industry')}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">
+                    {translateSupplierType(supplier.supplier_type, language)}
+                  </p>
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
@@ -949,7 +956,9 @@ export default function SupplierDetailPage() {
                 <AlertTriangle className="shrink-0 text-amber-500 mt-0.5" size={15} />
                 <div>
                   <span className="font-bold">{language === 'pt' ? 'Atenção / Pendência da Etapa:' : 'Attention / Stage Pending:'}</span>
-                  <p className="font-semibold mt-0.5">{supplier.backlog_reason}</p>
+                  <p className="font-semibold mt-0.5">
+                    {translateProspectingStatus(supplier.backlog_reason as any, language) || supplier.backlog_reason}
+                  </p>
                 </div>
               </div>
             )}
@@ -981,13 +990,17 @@ export default function SupplierDetailPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="p-3 bg-slate-50 text-slate-400 rounded-xl">Endereço ainda não informado.</div>
+                  <div className="p-3 bg-slate-50 text-slate-400 rounded-xl">
+                    {language === 'pt' ? 'Endereço ainda não informado.' : 'Address not provided yet.'}
+                  </div>
                 )}
 
                 {/* Primary Contact */}
                 {primaryContact ? (
                   <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl space-y-1.5">
-                    <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Contato do Lead</p>
+                    <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      {language === 'pt' ? 'Contato do Lead' : 'Lead Contact'}
+                    </p>
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <span className="font-semibold text-slate-900 dark:text-white">{primaryContact.name} {primaryContact.role ? `(${primaryContact.role})` : ''}</span>
                       <span className="text-emerald-600 font-bold flex items-center gap-1"><Phone size={12}/>{primaryContact.whatsapp || primaryContact.phone || '-'}</span>
@@ -1003,15 +1016,15 @@ export default function SupplierDetailPage() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
                   <Truck size={15} className="text-indigo-600" />
-                  Parecer da Análise Logística
+                  {language === 'pt' ? 'Parecer da Análise Logística' : 'Logistics Analysis Report'}
                 </h3>
                 {supplier.current_stage === 'LOGISTICS' ? (
                   <Button size="sm" variant="outline" onClick={handleOpenLogisticsModal} className="text-xs">
-                    {activeLogistics ? 'Editar Parecer' : 'Responder'}
+                    {activeLogistics ? (language === 'pt' ? 'Editar Parecer' : 'Edit Report') : (language === 'pt' ? 'Responder' : 'Respond')}
                   </Button>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-                    <Lock size={10} /> Bloqueado
+                    <Lock size={10} /> {language === 'pt' ? 'Bloqueado' : 'Locked'}
                   </span>
                 )}
               </div>
@@ -1021,60 +1034,84 @@ export default function SupplierDetailPage() {
                   <div className="h-10 w-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                     <Lock size={18} />
                   </div>
-                  <p className="font-bold text-slate-700">Análise Logística Bloqueada</p>
+                  <p className="font-bold text-slate-700">
+                    {language === 'pt' ? 'Análise Logística Bloqueada' : 'Logistics Analysis Locked'}
+                  </p>
                   <p className="text-slate-500 text-[11px] max-w-xs mx-auto">
-                    A análise logística só é liberada para resposta quando este lead for qualificado e avançar para a etapa de <strong>Logística</strong>.
+                    {language === 'pt' 
+                      ? 'A análise logística só é liberada para resposta quando este lead for qualificado e avançar para a etapa de Logística.'
+                      : 'Logistics analysis is only enabled for review once this lead is qualified and advances to the Logistics stage.'}
                   </p>
                 </div>
               ) : activeLogistics ? (
                 <div className="space-y-3 text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/60">
-                      <span className="font-bold text-slate-400 uppercase text-[9px]">Situação / Viabilidade</span>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">
+                        {language === 'pt' ? 'Situação / Viabilidade' : 'Status / Feasibility'}
+                      </span>
                       <div className="mt-1">
                         <Badge variant={activeLogistics.feasibility === 'FEASIBLE' ? 'success' : activeLogistics.feasibility === 'INFEASIBLE' ? 'danger' : 'warning'}>
-                          {translateFeasibility(activeLogistics.feasibility as any)}
+                          {translateFeasibility(activeLogistics.feasibility as any, language)}
                         </Badge>
                       </div>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="font-bold text-slate-400 uppercase text-[9px]">Distância Calculada</span>
-                      <p className="font-black text-slate-800 text-sm mt-0.5">{activeLogistics.distance_km ? `${activeLogistics.distance_km} km` : 'Não calculada'}</p>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">
+                        {language === 'pt' ? 'Distância Calculada' : 'Calculated Distance'}
+                      </span>
+                      <p className="font-black text-slate-800 text-sm mt-0.5">
+                        {activeLogistics.distance_km ? `${activeLogistics.distance_km} km` : (language === 'pt' ? 'Não calculada' : 'Not calculated')}
+                      </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="font-bold text-slate-400 uppercase text-[9px]">Frete Estimado</span>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">
+                        {language === 'pt' ? 'Frete Estimado' : 'Estimated Freight'}
+                      </span>
                       <p className="font-black text-slate-800 text-sm mt-0.5">{formatCurrency(activeLogistics.estimated_cost)}</p>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="font-bold text-slate-400 uppercase text-[9px]">Tipo de Veículo</span>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">
+                        {language === 'pt' ? 'Tipo de Veículo' : 'Vehicle Type'}
+                      </span>
                       <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.transport_type || 'VUC'}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <span className="font-bold text-slate-400 uppercase text-[9px]">Responsável pelo Frete</span>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">
+                        {language === 'pt' ? 'Responsável pelo Frete' : 'Freight Responsible'}
+                      </span>
                       <p className="font-semibold text-slate-800 mt-0.5">{activeLogistics.transport_responsible || '-'}</p>
                     </div>
                     <div>
-                      <span className="font-bold text-slate-400 uppercase text-[9px]">Frequência Recomendada</span>
-                      <p className="font-semibold text-slate-800 mt-0.5">{activeLogistics.recommended_frequency || '-'}</p>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">
+                        {language === 'pt' ? 'Frequência Recomendada' : 'Recommended Frequency'}
+                      </span>
+                      <p className="font-semibold text-slate-800 mt-0.5">
+                        {translateFrequency(activeLogistics.recommended_frequency, language)}
+                      </p>
                     </div>
                   </div>
 
                   {activeLogistics.conditioning_infrastructure_needed && (
                     <div>
-                      <span className="font-bold text-slate-400 uppercase text-[9px]">Infraestrutura de Acondicionamento</span>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">
+                        {language === 'pt' ? 'Infraestrutura de Acondicionamento' : 'Conditioning Infrastructure'}
+                      </span>
                       <p className="font-semibold text-slate-800 mt-0.5">{activeLogistics.conditioning_infrastructure_needed}</p>
                     </div>
                   )}
 
                   {activeLogistics.notes && (
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-150">
-                      <span className="font-bold text-slate-400 uppercase text-[9px]">Observações da Logística</span>
+                      <span className="font-bold text-slate-400 uppercase text-[9px]">
+                        {language === 'pt' ? 'Observações da Logística' : 'Logistics Notes'}
+                      </span>
                       <p className="font-medium text-slate-700 mt-0.5">{activeLogistics.notes}</p>
                     </div>
                   )}
@@ -1082,9 +1119,9 @@ export default function SupplierDetailPage() {
               ) : (
                 <div className="py-8 text-center text-slate-400 text-xs space-y-3">
                   <Truck size={28} className="mx-auto text-slate-300 opacity-60" />
-                  <p>Nenhuma resposta logística registrada ainda.</p>
+                  <p>{language === 'pt' ? 'Nenhuma resposta logística registrada ainda.' : 'No logistics report registered yet.'}</p>
                   <Button size="sm" onClick={handleOpenLogisticsModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                    Responder Análise Logística
+                    {language === 'pt' ? 'Responder Análise Logística' : 'Respond Logistics Analysis'}
                   </Button>
                 </div>
               )}
@@ -1095,10 +1132,10 @@ export default function SupplierDetailPage() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
                   <Scale size={15} className="text-emerald-600" />
-                  Materiais Declarados ({supplier.materials?.length || 0})
+                  {language === 'pt' ? 'Materiais Declarados' : 'Declared Materials'} ({supplier.materials?.length || 0})
                 </h3>
                 <Button size="sm" variant="outline" onClick={() => setIsMaterialModalOpen(true)} className="text-xs gap-1">
-                  <Plus size={12} /> Adicionar
+                  <Plus size={12} /> {language === 'pt' ? 'Adicionar' : 'Add'}
                 </Button>
               </div>
 
@@ -1107,36 +1144,42 @@ export default function SupplierDetailPage() {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                        <th className="px-3 py-2">Material</th>
-                        <th className="px-3 py-2">Volume / Frequência</th>
-                        <th className="px-3 py-2">Modalidade</th>
-                        <th className="px-3 py-2">Armazenamento</th>
+                        <th className="px-3 py-2">{language === 'pt' ? 'Material' : 'Material'}</th>
+                        <th className="px-3 py-2">{language === 'pt' ? 'Volume / Frequência' : 'Volume / Frequency'}</th>
+                        <th className="px-3 py-2">{language === 'pt' ? 'Modalidade' : 'Modality'}</th>
+                        <th className="px-3 py-2">{language === 'pt' ? 'Armazenamento' : 'Storage'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {supplier.materials.map(mat => (
                         <tr key={mat.id}>
                           <td className="px-3 py-2.5 font-bold text-slate-800">{mat.material_name}</td>
-                          <td className="px-3 py-2.5 text-slate-600">{formatVolume(mat.estimated_volume, mat.unit)} • {mat.frequency}</td>
+                          <td className="px-3 py-2.5 text-slate-600">
+                            {formatVolume(mat.estimated_volume, mat.unit)} • {translateFrequency(mat.frequency, language)}
+                          </td>
                           <td className="px-3 py-2.5">
                             {mat.transaction_type === 'purchase' ? (
                               <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-[10px] border border-amber-200">
-                                Compra ({formatCurrency(mat.price_per_kg)}/kg)
+                                {language === 'pt' ? 'Compra' : 'Purchase'} ({formatCurrency(mat.price_per_kg)}/kg)
                               </span>
                             ) : (
                               <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200">
-                                Doação
+                                {language === 'pt' ? 'Doação' : 'Donation'}
                               </span>
                             )}
                           </td>
-                          <td className="px-3 py-2.5 text-slate-500">{mat.storage_form || '-'}</td>
+                          <td className="px-3 py-2.5 text-slate-500">
+                            {translateStorageForm(mat.storage_form, language)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               ) : (
-                <div className="py-8 text-center text-slate-400 text-xs">Nenhum material cadastrado para este lead.</div>
+                <div className="py-8 text-center text-slate-400 text-xs">
+                  {language === 'pt' ? 'Nenhum material cadastrado para este lead.' : 'No materials registered for this lead.'}
+                </div>
               )}
             </Card>
 
@@ -1145,10 +1188,10 @@ export default function SupplierDetailPage() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
                   <FileText size={15} className="text-indigo-600" />
-                  Documentos & Anexos do Lead ({supplier.attached_documents?.length || 0})
+                  {language === 'pt' ? 'Documentos & Anexos do Lead' : 'Lead Documents & Attachments'} ({supplier.attached_documents?.length || 0})
                 </h3>
                 <Button size="sm" variant="outline" onClick={() => setIsDocModalOpen(true)} className="text-xs gap-1">
-                  <Upload size={12} /> Anexar
+                  <Upload size={12} /> {language === 'pt' ? 'Anexar' : 'Attach'}
                 </Button>
               </div>
 
@@ -1161,14 +1204,20 @@ export default function SupplierDetailPage() {
                         <div className="min-w-0">
                           <p className="font-bold text-xs text-slate-800 truncate" title={doc.name}>{doc.name}</p>
                           <span className="text-[9px] uppercase font-semibold text-slate-400">
-                            {doc.type === 'mtr' ? 'MTR' : doc.type === 'donation_letter' ? 'Carta de Doação' : doc.type === 'cnpj_card' ? 'Cartão CNPJ' : 'Anexo'}
+                            {doc.type === 'mtr' 
+                              ? 'MTR' 
+                              : doc.type === 'donation_letter' 
+                                ? (language === 'pt' ? 'Carta de Doação' : 'Donation Letter')
+                                : doc.type === 'cnpj_card' 
+                                  ? (language === 'pt' ? 'Cartão CNPJ' : 'CNPJ / Tax Card') 
+                                  : (language === 'pt' ? 'Anexo' : 'Attachment')}
                           </span>
                         </div>
                       </div>
                       <button
                         onClick={() => handleDownloadDoc(doc)}
                         className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors shrink-0"
-                        title="Baixar / Visualizar"
+                        title={language === 'pt' ? 'Baixar / Visualizar' : 'Download / View'}
                       >
                         <Download size={14} />
                       </button>
@@ -1176,7 +1225,9 @@ export default function SupplierDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-slate-400 text-xs">Nenhum documento anexado pelo Comercial.</div>
+                <div className="py-8 text-center text-slate-400 text-xs">
+                  {language === 'pt' ? 'Nenhum documento anexado pelo Comercial.' : 'No documents attached by Commercial yet.'}
+                </div>
               )}
             </Card>
 
@@ -1191,10 +1242,12 @@ export default function SupplierDetailPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-800 dark:text-white text-sm">
-                    Histórico de Alterações, Auditoria e Logs do Lead
+                    {language === 'pt' ? 'Histórico de Alterações, Auditoria e Logs do Lead' : 'Lead Audit Trail, History & Logs'}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Acompanhe quem criou, quem alterou status ou adicionou informações neste lead.
+                    {language === 'pt' 
+                      ? 'Acompanhe quem criou, quem alterou status ou adicionou informações neste lead.'
+                      : 'Track who created, changed status, or added information to this lead.'}
                   </p>
                 </div>
               </div>
@@ -1206,7 +1259,7 @@ export default function SupplierDetailPage() {
                 className="text-xs gap-1.5"
               >
                 <MessageSquare size={13} />
-                Registrar Contato
+                {language === 'pt' ? 'Registrar Contato' : 'Log Contact'}
               </Button>
             </div>
 
@@ -1219,21 +1272,21 @@ export default function SupplierDetailPage() {
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <span className="font-bold text-xs text-slate-800">
-                      Lead cadastrado no sistema
+                      {language === 'pt' ? 'Lead cadastrado no sistema' : 'Lead registered in system'}
                     </span>
                     <span className="text-[11px] text-slate-400 font-medium">
                       {formatDate(supplier.created_at)}
                     </span>
                   </div>
                   <p className="text-xs text-slate-600">
-                    Cadastrado pelo Comercial: <strong className="text-slate-800">{supplier.responsible?.name || 'Comercial / iWrc'}</strong> ({supplier.responsible?.email || 'contato@iwrc.com.br'}).
+                    {language === 'pt' ? 'Cadastrado pelo Comercial:' : 'Registered by Commercial:'} <strong className="text-slate-800">{supplier.responsible?.name || (language === 'pt' ? 'Comercial / iWrc' : 'Commercial / iWrc')}</strong> ({supplier.responsible?.email || 'contato@iwrc.com.br'}).
                   </p>
                   <div className="flex items-center gap-2 pt-1">
                     <span className="text-[10px] bg-slate-200/70 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
-                      Origem: {supplier.lead_source || 'Prospecção Ativa'}
+                      {language === 'pt' ? 'Origem:' : 'Source:'} {supplier.lead_source || (language === 'pt' ? 'Prospecção Ativa' : 'Active Prospecting')}
                     </span>
                     <span className="text-[10px] bg-slate-200/70 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
-                      Segmento: {supplier.supplier_type || 'Indústria'}
+                      {language === 'pt' ? 'Segmento:' : 'Segment:'} {translateSupplierType(supplier.supplier_type, language)}
                     </span>
                   </div>
                 </div>
@@ -1242,7 +1295,7 @@ export default function SupplierDetailPage() {
               {/* Status History Changes */}
               {supplier.status_history && supplier.status_history.length > 0 && (
                 supplier.status_history.map((hist: any, hIdx: number) => {
-                  const userName = hist.user?.name || 'Usuário';
+                  const userName = hist.user?.name || (language === 'pt' ? 'Usuário' : 'User');
 
                   let targetStatus = '';
                   if (hist.notes && hist.notes.includes('Status prospecção:')) {
@@ -1286,14 +1339,14 @@ export default function SupplierDetailPage() {
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <span className="font-bold text-xs text-indigo-950">
-                            Atualização de Status
+                            {language === 'pt' ? 'Atualização de Status' : 'Status Update'}
                           </span>
                           <span className="text-[11px] text-slate-400 font-medium">
                             {formatDate(hist.created_at)}
                           </span>
                         </div>
                         <p className="text-xs text-slate-700 pt-0.5 leading-relaxed">
-                          <strong className="text-slate-900 font-bold">{userName}</strong> alterou de <strong className="font-bold text-indigo-950 bg-indigo-100/80 px-2 py-0.5 rounded border border-indigo-200">{originStatus}</strong> para <strong className="font-bold text-emerald-950 bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-200">{targetStatus}</strong>
+                          <strong className="text-slate-900 font-bold">{userName}</strong> {language === 'pt' ? 'alterou de' : 'changed from'} <strong className="font-bold text-indigo-950 bg-indigo-100/80 px-2 py-0.5 rounded border border-indigo-200">{translateProspectingStatus(originStatus as any, language) || originStatus}</strong> {language === 'pt' ? 'para' : 'to'} <strong className="font-bold text-emerald-950 bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-200">{translateProspectingStatus(targetStatus as any, language) || targetStatus}</strong>
                         </p>
                       </div>
                     </div>
@@ -1311,7 +1364,7 @@ export default function SupplierDetailPage() {
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <span className="font-bold text-xs text-emerald-950">
-                          Contato / Interação ({translateInteractionType(inter.type as any)})
+                          {language === 'pt' ? 'Contato / Interação' : 'Contact / Interaction'} ({translateInteractionType(inter.type as any)})
                         </span>
                         <span className="text-[11px] text-slate-400 font-medium">
                           {inter.interaction_date} {inter.interaction_time || ''}

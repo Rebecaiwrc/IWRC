@@ -6,7 +6,7 @@ import { Supplier, Collection, Receipt, SupplierTask, SupplierInteraction } from
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { formatDate, formatVolume } from '@/lib/utils';
+import { formatDate, formatVolume, translateLogText } from '@/lib/utils';
 import Link from 'next/link';
 import { 
   Building2, 
@@ -35,9 +35,11 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const s = await dbService.getSuppliers();
-      const c = await dbService.getCollections();
-      const r = await dbService.getReceipts();
+      const [s, c, r] = await Promise.all([
+        dbService.getSuppliers(),
+        dbService.getCollections(),
+        dbService.getReceipts()
+      ]);
       setSuppliers(s);
       setCollections(c);
       setReceipts(r);
@@ -61,15 +63,17 @@ export default function DashboardPage() {
     );
   }
 
-  // Calculate stats
+  // Operational Funnel / Pipeline Calculations
   const totalSuppliers = suppliers.length;
-  const prospectingCount = suppliers.filter(s => s.current_stage === 'PROSPECTING').length;
+  const prospectingCount = suppliers.filter(s => !s.current_stage || s.current_stage === 'PROSPECTING').length;
   const qualificationCount = suppliers.filter(s => s.current_stage === 'QUALIFICATION').length;
   const logisticsCount = suppliers.filter(s => s.current_stage === 'LOGISTICS').length;
-  const activeCount = suppliers.filter(s => s.current_stage === 'OPERATION').length;
+  const activeCount = suppliers.filter(s => s.current_stage === 'OPERATION' || (s as any).status === 'APPROVED').length;
   
+  // Scheduled / In Progress Collections
   const pendingCollections = collections.filter(c => c.status === 'SCHEDULED' || c.status === 'IN_TRANSIT').length;
-  
+
+  // Processed Volume from Receipts
   let totalWeight = 0;
   receipts.forEach(r => {
     r.items?.forEach(i => {
@@ -119,12 +123,12 @@ export default function DashboardPage() {
   };
 
   const stagesList = [
-    { key: 'PROSPECTING', label: 'Prospecção Comercial', count: prospectingCount, color: 'bg-slate-400' },
-    { key: 'QUALIFICATION', label: 'Qualificação', count: qualificationCount, color: 'bg-[#2098D1]' },
-    { key: 'LOGISTICS', label: 'Análise Logística', count: logisticsCount, color: 'bg-amber-500' },
-    { key: 'DOCUMENTATION', label: 'Documentação / MTR', count: suppliers.filter(s => s.current_stage === 'DOCUMENTATION').length, color: 'bg-sky-400' },
-    { key: 'COLLECTION', label: 'Em Coleta', count: suppliers.filter(s => s.current_stage === 'COLLECTION').length, color: 'bg-indigo-400' },
-    { key: 'OPERATION', label: 'Geradores Homologados', count: activeCount, color: 'bg-[#9ECE42]' }
+    { key: 'PROSPECTING', label: language === 'pt' ? 'Prospecção Comercial' : 'Commercial Prospecting', count: prospectingCount, color: 'bg-slate-400' },
+    { key: 'QUALIFICATION', label: language === 'pt' ? 'Qualificação' : 'Qualification', count: qualificationCount, color: 'bg-[#2098D1]' },
+    { key: 'LOGISTICS', label: language === 'pt' ? 'Análise Logística' : 'Logistics Analysis', count: logisticsCount, color: 'bg-amber-500' },
+    { key: 'DOCUMENTATION', label: language === 'pt' ? 'Documentação / MTR' : 'Documentation / MTR', count: suppliers.filter(s => s.current_stage === 'DOCUMENTATION').length, color: 'bg-sky-400' },
+    { key: 'COLLECTION', label: language === 'pt' ? 'Em Coleta' : 'In Collection', count: suppliers.filter(s => s.current_stage === 'COLLECTION').length, color: 'bg-indigo-400' },
+    { key: 'OPERATION', label: language === 'pt' ? 'Geradores Homologados' : 'Approved Generators', count: activeCount, color: 'bg-[#9ECE42]' }
   ];
 
   return (
@@ -217,7 +221,7 @@ export default function DashboardPage() {
           <Card>
             <h3 className="font-bold text-[#0D2439] text-sm uppercase tracking-wider flex items-center gap-2 mb-6">
               <TrendingUp size={16} className="text-[#2098D1]" />
-              Funil Operacional de Circularidade
+              {language === 'pt' ? 'Funil Operacional de Circularidade' : 'Circular Operational Funnel'}
             </h3>
             
             <div className="space-y-4">
@@ -245,25 +249,25 @@ export default function DashboardPage() {
           <Card>
             <h3 className="font-bold text-[#0D2439] text-sm uppercase tracking-wider flex items-center gap-2 mb-4">
               <ClipboardList size={16} className="text-[#2098D1]" />
-              Tarefas & Pendências da Equipe ({pendingTasks.length})
+              {language === 'pt' ? 'Tarefas & Pendências da Equipe' : 'Team Tasks & Pending Items'} ({pendingTasks.length})
             </h3>
             
             {pendingTasks.length === 0 ? (
               <div className="py-8 text-center text-slate-400 text-sm">
-                Nenhuma pendência ativa no momento. Operação em dia!
+                {language === 'pt' ? 'Nenhuma pendência ativa no momento. Operação em dia!' : 'No pending items at this time. Operations up to date!'}
               </div>
             ) : (
               <div className="divide-y divide-[#EBF5F8]">
                 {pendingTasks.map((task) => (
                   <div key={task.id} className="py-3 flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <p className="text-sm font-bold text-[#0D2439] leading-snug">{task.description}</p>
+                      <p className="text-sm font-bold text-[#0D2439] leading-snug">{translateLogText(task.description, language)}</p>
                       <div className="flex items-center gap-2 text-xs text-slate-400">
                         <span className="font-bold text-[#2098D1]">{task.supplierName}</span>
                         {task.due_date && (
                           <>
                             <span>•</span>
-                            <span>Prazo: {formatDate(task.due_date)}</span>
+                            <span>{language === 'pt' ? 'Prazo:' : 'Due:'} {formatDate(task.due_date)}</span>
                           </>
                         )}
                       </div>
@@ -273,7 +277,7 @@ export default function DashboardPage() {
                       className="inline-flex items-center gap-1 text-xs text-[#2098D1] hover:text-white hover:bg-[#2098D1] border border-[#CCEAF1] px-3 py-1.5 rounded-full transition-all font-bold cursor-pointer"
                     >
                       <CheckCircle2 size={12} />
-                      Concluir
+                      {language === 'pt' ? 'Concluir' : 'Complete'}
                     </button>
                   </div>
                 ))}
@@ -287,12 +291,12 @@ export default function DashboardPage() {
           <Card className="h-full flex flex-col">
             <h3 className="font-bold text-[#0D2439] text-sm uppercase tracking-wider flex items-center gap-2 mb-6 shrink-0">
               <Sparkles size={16} className="text-[#2098D1]" />
-              Atividades Recentes
+              {language === 'pt' ? 'Atividades Recentes' : 'Recent Activities'}
             </h3>
 
             {recentInteractions.length === 0 ? (
               <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-sm">
-                Nenhuma interação registrada recentemente.
+                {language === 'pt' ? 'Nenhuma interação registrada recentemente.' : 'No recent interactions logged.'}
               </div>
             ) : (
               <div className="flex-1 space-y-5 overflow-y-auto">
@@ -313,7 +317,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       <p className="text-xs text-[#486D82] line-clamp-2 leading-relaxed">
-                        {act.description}
+                        {translateLogText(act.description, language)}
                       </p>
                     </div>
                   </div>
@@ -323,7 +327,7 @@ export default function DashboardPage() {
             
             <div className="pt-4 border-t border-[#E5F4F7] mt-5 text-center shrink-0">
               <Link href="/fornecedores" className="inline-flex items-center gap-1 text-xs text-[#2098D1] hover:underline font-bold">
-                Ver todos os geradores
+                {language === 'pt' ? 'Ver todos os geradores' : 'View all generators'}
                 <ArrowRight size={12} />
               </Link>
             </div>
