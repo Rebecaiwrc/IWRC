@@ -83,42 +83,32 @@ export default function SuperAdminPanelPage() {
     }
   };
 
-  // Generate Automated System Email Content
+  // Generate Inspiration-Styled iWRC Email Content
   const generateEmailData = (name: string, email: string, password?: string, role?: UserRole) => {
     const roleName = getRoleLabel(role);
     const loginUrl = 'https://iwrc.vercel.app/login';
+    const logoUrl = 'https://iwrc.vercel.app/logo.png';
     const pwd = password ? password : '[Senha Pessoal Já Cadastrada / Padrão]';
-    const transactionId = `SYS-AUTH-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-    const generatedDate = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
-    const subject = `[IWRC ERP] Notificação do Sistema: Credenciais de Acesso - ${name}`;
+    const subject = `Seu acesso ao sistema iWRC foi criado com sucesso - ${name}`;
 
-    const plainText = `[NOTIFICAÇÃO AUTOMÁTICA DO SISTEMA IWRC ERP]
+    const plainText = `Olá, ${name}!
 
-Prezado(a) ${name},
+Seu acesso ao sistema iWRC foi criado com sucesso.
+Abaixo estão suas credenciais para acesso:
 
-Informamos que sua conta corporativa foi provisionada no Sistema Integrado IWRC (Gerenciamento de Fornecedores & Resíduos).
+E-mail de acesso: ${email}
+Senha temporária: ${pwd}
+(Recomendamos alterar sua senha após o primeiro acesso)
+Perfil / Cargo: ${roleName}
 
-Utilize as credenciais abaixo para efetuar seu acesso:
+Acessar o sistema: ${loginUrl}
 
-==================================================
-🌐 Link de Acesso: ${loginUrl}
-📧 E-mail de Login: ${email}
-🔑 Senha Provisória: ${pwd}
-💼 Perfil / Cargo: ${roleName}
-📅 Data de Emissão: ${generatedDate}
-🆔 Ref. Transação: #${transactionId}
-==================================================
+Em caso de dúvidas ou dificuldades de acesso, entre em contato com o suporte:
+support@iwrc.world | +55 (11) 96467-1234
 
-🔒 POLÍTICA DE SEGURANÇA:
-No seu primeiro acesso, o sistema exigirá obrigatoriamente o cadastro de uma nova senha pessoal definitiva de sua escolha.
-
-Acesse o sistema diretamente em:
-${loginUrl}
-
---------------------------------------------------
-Esta é uma mensagem gerada automaticamente pelos servidores do Sistema IWRC.
-Por favor, não responda a este e-mail.`;
+Advancing Material Recovery and Recycling through Collaboration with the Informal Waste Sector
+© 2026 iWRC. Todos os direitos reservados.`;
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -127,25 +117,72 @@ Por favor, não responda a este e-mail.`;
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 30px 10px;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 20px 10px 40px 10px;">
     <tr>
       <td align="center">
-        <!-- Main Card Container -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0,0,0,0.06);">
-          
-          <!-- System Header Banner -->
+        
+        <!-- Top Hint Bar -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; margin-bottom: 12px;">
           <tr>
-            <td style="background: linear-gradient(135deg, #0D2439 0%, #153857 100%); padding: 30px 24px; text-align: center; border-bottom: 4px solid #2098D1;">
+            <td align="center" style="font-size: 11px; color: #64748b;">
+              Caso não visualize este e-mail corretamente, <a href="${loginUrl}" style="color: #0284c7; text-decoration: underline; font-weight: 600;">clique aqui</a> para abrir no navegador.
+            </td>
+          </tr>
+        </table>
+
+        <!-- Main Card Container -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.04);">
+          
+          <!-- Top Header with Logo & Abstract Wave Graphic -->
+          <tr>
+            <td style="padding: 32px 32px 16px 32px; background: #ffffff;">
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td align="center">
-                    <span style="display: inline-block; background-color: rgba(158, 206, 66, 0.15); border: 1px solid #9ECE42; color: #9ECE42; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">
-                      ● Notificação Automática do Sistema
-                    </span>
-                    <h1 style="color: #ffffff; font-size: 26px; font-weight: 900; margin: 0; letter-spacing: 1px; font-family: 'Segoe UI', Arial, sans-serif;">IWRC ERP</h1>
-                    <p style="color: #cbd5e1; font-size: 12px; font-weight: 600; margin: 6px 0 0 0; text-transform: uppercase; letter-spacing: 1px;">
-                      Plataforma de Gestão Integrada de Resíduos e Fornecedores
+                  <td valign="top" style="width: 55%;">
+                    <table border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td>
+                          <!-- iWRC Logo Presentation -->
+                          <div style="display: inline-block;">
+                            <span style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 34px; font-weight: 900; color: #0284C7; letter-spacing: -0.5px;">iW</span><span style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 34px; font-weight: 900; color: #0369A1; letter-spacing: -0.5px;">rc</span>
+                            <div style="font-size: 11px; font-weight: 700; color: #64748B; letter-spacing: 0.8px; margin-top: -2px;">
+                              The Human Side of Recycling
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td valign="top" align="right" style="width: 45%;">
+                    <!-- Wave Graphical Accents -->
+                    <div style="width: 140px; height: 75px; background: linear-gradient(135deg, #38bdf8 0%, #0284c7 60%, #0369a1 100%); border-radius: 40px 10px 40px 10px; opacity: 0.85; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                      <div style="color: rgba(255,255,255,0.25); font-size: 40px; font-weight: 900;">♻</div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Greeting Header -->
+          <tr>
+            <td style="padding: 16px 32px 24px 32px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td valign="top" style="width: 56px;">
+                    <!-- User Avatar Circle -->
+                    <div style="width: 48px; height: 48px; border-radius: 24px; background-color: #f0f9ff; border: 2px solid #bae6fd; text-align: center; line-height: 46px; font-size: 20px; color: #0284c7;">
+                      👤
+                    </div>
+                  </td>
+                  <td valign="middle" style="padding-left: 12px;">
+                    <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #0284c7;">
+                      Olá, <span style="color: #0f172a;">${name}!</span>
+                    </h2>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; color: #475569; line-height: 1.4;">
+                      Seu acesso ao sistema <strong>iWRC</strong> foi criado com sucesso.<br/>
+                      Abaixo estão suas credenciais para acesso:
                     </p>
                   </td>
                 </tr>
@@ -153,95 +190,154 @@ Por favor, não responda a este e-mail.`;
             </td>
           </tr>
 
-          <!-- System Message Body -->
+          <!-- Credentials Box Container -->
           <tr>
-            <td style="padding: 32px 28px;">
-              
-              <p style="font-size: 15px; color: #334155; line-height: 1.6; margin-top: 0;">
-                Prezado(a) <strong>${name}</strong>,
-              </p>
-              
-              <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
-                Informamos que sua conta de acesso corporativo foi provisionada com sucesso no <strong>Sistema IWRC ERP</strong>. A partir de agora, você possui acesso ao módulo operacional correspondente à sua função.
-              </p>
+            <td style="padding: 0 32px 24px 32px;">
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 18px; padding: 22px 24px;">
+                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <!-- Left: Credentials items -->
+                    <td valign="middle" style="width: 60%;">
+                      
+                      <!-- Item 1: Email -->
+                      <table border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 18px;">
+                        <tr>
+                          <td valign="top" style="width: 36px;">
+                            <div style="width: 30px; height: 30px; border-radius: 15px; background-color: #e0f2fe; text-align: center; line-height: 28px; font-size: 14px;">
+                              ✉️
+                            </div>
+                          </td>
+                          <td valign="middle" style="padding-left: 8px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #0284c7;">
+                              E-mail de acesso
+                            </div>
+                            <div style="font-size: 13px; font-weight: 800; color: #0f172a; font-family: monospace;">
+                              ${email}
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
 
-              <!-- Credentials Structured Box -->
-              <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 5px solid #2098D1; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size: 13px;">
-                  <tr>
-                    <td colspan="2" style="padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
-                      <span style="font-size: 11px; font-weight: 800; color: #0D2439; text-transform: uppercase; letter-spacing: 1px;">
-                        🔑 Credenciais de Autenticação
-                      </span>
+                      <!-- Item 2: Password -->
+                      <table border="0" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td valign="top" style="width: 36px;">
+                            <div style="width: 30px; height: 30px; border-radius: 15px; background-color: #e0f2fe; text-align: center; line-height: 28px; font-size: 14px;">
+                              🔒
+                            </div>
+                          </td>
+                          <td valign="middle" style="padding-left: 8px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #0284c7;">
+                              Senha temporária
+                            </div>
+                            <div style="font-size: 14px; font-weight: 800; color: #0f172a; font-family: Consolas, monospace; background: #e2e8f0; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 2px;">
+                              ${pwd}
+                            </div>
+                            <div style="font-size: 10px; color: #64748b; margin-top: 4px; line-height: 1.3;">
+                              (Recomendamos alterar sua senha após o primeiro acesso)
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+
                     </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 0 6px 0; color: #64748b; font-weight: 600; width: 140px;">Ambiente:</td>
-                    <td style="padding: 10px 0 6px 0; color: #0f172a; font-weight: 700;">Produção (Oficial)</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Link de Login:</td>
-                    <td style="padding: 6px 0;"><a href="${loginUrl}" style="color: #2098D1; font-weight: 800; text-decoration: underline;">${loginUrl}</a></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #64748b; font-weight: 600;">E-mail do Usuário:</td>
-                    <td style="padding: 6px 0; font-weight: 800; color: #0f172a; font-family: monospace; font-size: 14px;">${email}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Senha Provisória:</td>
-                    <td style="padding: 6px 0;">
-                      <span style="font-family: Consolas, Monaco, monospace; font-size: 15px; font-weight: 900; color: #0D2439; background: #e2e8f0; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-block;">
-                        ${pwd}
-                      </span>
+
+                    <!-- Right: Large Cyan Security Lock Illustration -->
+                    <td valign="middle" align="center" style="width: 40%; border-left: 1px dashed #cbd5e1; padding-left: 16px;">
+                      <div style="width: 90px; height: 90px; border-radius: 45px; background: radial-gradient(circle, #e0f2fe 0%, #f0fdfa 100%); border: 2px dashed #38bdf8; display: flex; align-items: center; justify-content: center; text-align: center; margin: 0 auto; line-height: 86px; font-size: 38px;">
+                        🔐
+                      </div>
                     </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0 10px 0; color: #64748b; font-weight: 600;">Módulo / Função:</td>
-                    <td style="padding: 6px 0 10px 0; font-weight: 700; color: #0D2439;">${roleName}</td>
                   </tr>
                 </table>
               </div>
+            </td>
+          </tr>
 
-              <!-- CTA Button -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 28px 0;">
+          <!-- Call to Action Button -->
+          <tr>
+            <td align="center" style="padding: 6px 32px 28px 32px;">
+              <table border="0" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td align="center">
-                    <a href="${loginUrl}" target="_blank" style="display: inline-block; background-color: #2098D1; color: #ffffff; font-size: 15px; font-weight: 800; padding: 14px 38px; text-decoration: none; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(32, 152, 209, 0.35);">
-                      Acessar o Painel IWRC →
+                  <td align="center" style="border-radius: 28px; background-color: #0d9488;">
+                    <a href="${loginUrl}" target="_blank" style="font-size: 14px; font-weight: 800; color: #ffffff; text-decoration: none; padding: 14px 44px; border-radius: 28px; display: inline-block; letter-spacing: 0.3px; background: linear-gradient(135deg, #0e7490 0%, #0d9488 100%); box-shadow: 0 4px 14px rgba(14, 116, 144, 0.3);">
+                      Acessar o sistema &nbsp;→
                     </a>
                   </td>
                 </tr>
               </table>
-
-              <!-- Security Policy Notice -->
-              <div style="background-color: #fffbeb; border: 1px solid #fef08a; border-radius: 10px; padding: 14px 18px; margin-top: 24px;">
-                <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td style="font-size: 12px; color: #854d0e; line-height: 1.5;">
-                      🔒 <strong>Diretriz de Segurança da Informação:</strong><br/>
-                      Por conformidade com os protocolos de segurança do IWRC, esta senha provisória deverá ser obrigatoriamente redefinida para uma senha pessoal no seu primeiro acesso.
-                    </td>
-                  </tr>
-                </table>
-              </div>
-
             </td>
           </tr>
 
-          <!-- System Footer -->
+          <!-- Subtle Divider with Logo Mark -->
           <tr>
-            <td style="background-color: #f8fafc; padding: 20px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-              <p style="margin: 0 0 4px 0;">
-                <strong>Sistema Integrado IWRC</strong> • Gerenciamento Inteligente de Resíduos e Fornecedores
+            <td align="center" style="padding: 0 32px 20px 32px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="border-top: 1px solid #f1f5f9;"></td>
+                  <td align="center" style="width: 40px; padding: 0 10px; font-size: 18px; color: #0284c7; font-weight: 900;">
+                    <span style="display: inline-block; width: 24px; height: 24px; border-radius: 12px; background: #e0f2fe; line-height: 24px; font-size: 12px; font-weight: 900; color: #0369a1;">W</span>
+                  </td>
+                  <td style="border-top: 1px solid #f1f5f9;"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Support Contact Section -->
+          <tr>
+            <td align="center" style="padding: 0 32px 30px 32px;">
+              <p style="margin: 0 0 10px 0; font-size: 11px; color: #64748b; font-weight: 500;">
+                Em caso de dúvidas ou dificuldades de acesso, entre em contato com o suporte:
               </p>
-              <p style="margin: 0; font-size: 10px; color: #cbd5e1;">
-                Este é um e-mail de sistema gerado automaticamente. Por favor, não responda diretamente a esta mensagem.<br/>
-                ID da Transação: #${transactionId} • Data: ${generatedDate}
-              </p>
+              <table border="0" cellspacing="0" cellpadding="0" style="font-size: 12px; font-weight: 700; color: #0284c7;">
+                <tr>
+                  <td style="padding-right: 14px;">
+                    ✉️ <a href="mailto:support@iwrc.world" style="color: #0284c7; text-decoration: none;">support@iwrc.world</a>
+                  </td>
+                  <td style="border-left: 1px solid #cbd5e1; padding-left: 14px; color: #475569;">
+                    📞 <span style="color: #0f172a;">+55 (11) 96467-1234</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
         </table>
+
+        <!-- Bottom Informational Bar & Social Links -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; margin-top: 16px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 18px 24px;">
+          <tr>
+            <td valign="middle" style="width: 55%; font-size: 11px; color: #475569; line-height: 1.4;">
+              <table border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td valign="middle" style="width: 32px; font-size: 22px; color: #0d9488;">
+                    ♻️
+                  </td>
+                  <td valign="middle" style="padding-left: 8px; font-weight: 600; color: #334155; font-size: 11px;">
+                    Advancing Material Recovery and Recycling through Collaboration with the Informal Waste Sector
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td valign="middle" align="right" style="width: 45%; border-left: 1px solid #f1f5f9; padding-left: 16px;">
+              <span style="font-size: 11px; font-weight: 700; color: #0284c7; margin-right: 8px;">Siga o iWRC</span>
+              <span style="font-size: 15px; letter-spacing: 4px;">
+                📸 💼 🎥 🌐
+              </span>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Copyright -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; margin-top: 14px;">
+          <tr>
+            <td align="center" style="font-size: 10px; color: #94a3b8;">
+              © 2026 <strong>iWRC</strong>. Todos os direitos reservados.
+            </td>
+          </tr>
+        </table>
+
       </td>
     </tr>
   </table>
@@ -979,81 +1075,136 @@ Por favor, não responda a este e-mail.`;
                   </div>
                 </div>
 
-                {/* Email Visual Preview (Sistema Automático) */}
+                {/* Email Visual Preview (Inspirado no Modelo iWRC) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkles size={13} className="text-[#2098D1]" />
-                      Layout do E-mail do Sistema (Visual Oficial):
+                      <Sparkles size={13} className="text-[#0284C7]" />
+                      Layout do E-mail iWRC:
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">
                       {emailData.subject}
                     </span>
                   </div>
 
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-5 bg-slate-50/50 dark:bg-slate-950/50 max-h-72 overflow-y-auto space-y-4 shadow-xs">
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-[#F8FAFC] dark:bg-slate-950/60 max-h-80 overflow-y-auto space-y-4 shadow-sm">
                     
-                    {/* Header Banner Mockup */}
-                    <div className="bg-gradient-to-r from-[#0D2439] to-[#163D61] text-white p-4 rounded-xl text-center border-b-4 border-[#2098D1] shadow-xs space-y-1">
-                      <span className="inline-block bg-[#9ECE42]/20 text-[#9ECE42] border border-[#9ECE42]/40 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">
-                        ● Notificação Automática do Sistema
-                      </span>
-                      <h4 className="font-black text-lg text-white tracking-wider">IWRC ERP</h4>
-                      <p className="text-[10px] text-slate-300 font-medium">Plataforma de Gestão Integrada de Resíduos e Fornecedores</p>
+                    {/* Top Link Hint */}
+                    <div className="text-center text-[10px] text-slate-400">
+                      Caso não visualize este e-mail corretamente, <span className="text-[#0284c7] underline font-semibold">clique aqui</span> para abrir no navegador.
                     </div>
 
-                    {/* Body Text */}
-                    <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3 text-xs text-slate-700 dark:text-slate-300">
-                      <p className="font-semibold text-slate-900 dark:text-white">
-                        Prezado(a) <strong>{emailModalData.name}</strong>,
-                      </p>
-                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-[11px]">
-                        Informamos que sua conta corporativa foi provisionada no <strong>Sistema IWRC ERP</strong>. Abaixo encontram-se seus parâmetros institucionais de autenticação:
-                      </p>
+                    {/* Main White Card Mockup */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 space-y-5 shadow-xs">
+                      
+                      {/* Logo Header + Abstract Graphic */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-2xl font-black text-[#0284C7] tracking-tight">
+                            iW<span className="text-[#0369A1]">rc</span>
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 tracking-wider">
+                            The Human Side of Recycling
+                          </div>
+                        </div>
 
-                      {/* Credentials Box */}
-                      <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 border-l-4 border-l-[#2098D1] space-y-1.5 text-[11px]">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-semibold">Ambiente:</span>
-                          <span className="font-bold text-slate-900 dark:text-white">Produção (Oficial)</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-semibold">Link de Login:</span>
-                          <span className="font-bold text-[#2098D1]">https://iwrc.vercel.app/login</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-semibold">E-mail:</span>
-                          <span className="font-mono font-bold text-slate-900 dark:text-white">{emailModalData.email}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-500 font-semibold">Senha Provisória:</span>
-                          <span className="font-mono font-black text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">
-                            {emailModalData.password || '[Senha Pessoal Já Cadastrada]'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-semibold">Módulo / Função:</span>
-                          <span className="font-bold text-slate-800 dark:text-slate-200">{getRoleLabel(emailModalData.role)}</span>
+                        <div className="w-24 h-12 rounded-2xl bg-gradient-to-r from-sky-400 to-cyan-600 flex items-center justify-center text-white/30 text-2xl font-black">
+                          ♻
                         </div>
                       </div>
 
-                      {/* CTA Button in Mockup */}
-                      <div className="text-center pt-2">
-                        <span className="inline-block bg-[#2098D1] text-white font-black text-xs px-6 py-2 rounded-lg shadow-sm">
-                          ACESSAR O PAINEL IWRC →
+                      {/* Greeting Header */}
+                      <div className="flex items-start gap-3 pt-2">
+                        <div className="w-10 h-10 rounded-full bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-lg text-sky-600 shrink-0">
+                          👤
+                        </div>
+                        <div>
+                          <h4 className="text-base font-extrabold text-[#0284c7]">
+                            Olá, <span className="text-slate-900 dark:text-white">{emailModalData.name}!</span>
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-0.5 leading-snug">
+                            Seu acesso ao sistema <strong>iWRC</strong> foi criado com sucesso.<br/>
+                            Abaixo estão suas credenciais para acesso:
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Credentials Box */}
+                      <div className="bg-slate-50 dark:bg-slate-950/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                        <div className="sm:col-span-7 space-y-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-xs">
+                              ✉️
+                            </div>
+                            <div>
+                              <div className="text-[10px] font-bold text-[#0284c7] uppercase">E-mail de acesso</div>
+                              <div className="text-xs font-bold text-slate-900 dark:text-white font-mono">{emailModalData.email}</div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-xs mt-0.5">
+                              🔒
+                            </div>
+                            <div>
+                              <div className="text-[10px] font-bold text-[#0284c7] uppercase">Senha temporária</div>
+                              <div className="text-xs font-black text-slate-900 dark:text-white font-mono bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded inline-block mt-0.5">
+                                {emailModalData.password || '[Senha Pessoal Já Cadastrada]'}
+                              </div>
+                              <div className="text-[9px] text-slate-400 mt-1">
+                                (Recomendamos alterar sua senha após o primeiro acesso)
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="sm:col-span-5 flex justify-center border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-800 pt-2 sm:pt-0 sm:pl-3">
+                          <div className="w-16 h-16 rounded-full bg-radial from-sky-100 to-cyan-50 dark:from-sky-950 border-2 border-dashed border-sky-400 flex items-center justify-center text-2xl">
+                            🔐
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CTA Button */}
+                      <div className="text-center pt-1">
+                        <span className="inline-block bg-gradient-to-r from-[#0e7490] to-[#0d9488] text-white font-bold text-xs px-8 py-2.5 rounded-full shadow-sm">
+                          Acessar o sistema &nbsp;→
                         </span>
                       </div>
 
-                      {/* Security Warning */}
-                      <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-900/50 text-[10px] text-amber-800 dark:text-amber-300 font-medium">
-                        🔒 <strong>Aviso de Segurança:</strong> No primeiro acesso, o sistema exigirá obrigatoriamente a troca da senha provisória por uma nova senha pessoal definitiva.
+                      {/* Divider with W */}
+                      <div className="flex items-center gap-3 pt-2">
+                        <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800"></div>
+                        <div className="w-6 h-6 rounded-full bg-sky-50 dark:bg-sky-950 text-[#0284c7] font-black text-[11px] flex items-center justify-center">
+                          W
+                        </div>
+                        <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800"></div>
                       </div>
+
+                      {/* Support Section */}
+                      <div className="text-center space-y-1">
+                        <p className="text-[10px] text-slate-400">
+                          Em caso de dúvidas ou dificuldades de acesso, entre em contato com o suporte:
+                        </p>
+                        <div className="text-[11px] font-bold text-[#0284c7] flex items-center justify-center gap-3">
+                          <span>✉️ support@iwrc.world</span>
+                          <span className="text-slate-300">|</span>
+                          <span className="text-slate-700 dark:text-slate-300">📞 +55 (11) 96467-1234</span>
+                        </div>
+                      </div>
+
                     </div>
 
-                    {/* Footer in Mockup */}
-                    <div className="text-center text-[9px] text-slate-400 space-y-0.5 border-t border-slate-200 dark:border-slate-800 pt-2">
-                      <p><strong>Sistema Integrado IWRC</strong> • Gerenciamento Inteligente de Resíduos e Fornecedores</p>
-                      <p>Este é um e-mail automático gerado pelos servidores do IWRC. Não responda a esta mensagem.</p>
+                    {/* Bottom Card Mockup */}
+                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 p-3 flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-2 max-w-xs">
+                        <span className="text-lg">♻️</span>
+                        <span className="font-medium text-[9px] leading-tight">Advancing Material Recovery and Recycling through Collaboration with the Informal Waste Sector</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-[#0284c7] block">Siga o iWRC</span>
+                        <span className="text-xs tracking-widest opacity-80">📸 💼 🎥 🌐</span>
+                      </div>
                     </div>
 
                   </div>
