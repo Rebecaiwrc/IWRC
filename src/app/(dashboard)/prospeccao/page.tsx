@@ -411,11 +411,10 @@ export default function ProspectingPage() {
       return item;
     }));
 
-    // Auto-open materials modal ONLY if materials were not filled yet
-    const hasMaterials = s.materials && s.materials.length > 0;
-    if (newStatus === 'QUALIFIED' && !hasMaterials) {
+    // Auto-open materials modal whenever moving to QUALIFIED or WAITING_LOGISTICS
+    if (newStatus === 'QUALIFIED') {
       openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, false);
-    } else if (newStatus === 'WAITING_LOGISTICS' && !hasMaterials) {
+    } else if (newStatus === 'WAITING_LOGISTICS') {
       openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, true);
     }
 
@@ -457,7 +456,12 @@ export default function ProspectingPage() {
     if (!activeMaterialSupplier || !currentUser) return;
     setIsSubmitting(true);
     try {
-      // 1. Parallel save materials
+      // 1. Delete previous materials if any to avoid duplication
+      if (activeMaterialSupplier.materials && activeMaterialSupplier.materials.length > 0) {
+        await Promise.all(activeMaterialSupplier.materials.map(m => dbService.deleteSupplierMaterial(m.id)));
+      }
+
+      // 2. Parallel save materials
       const materialPromises = materials.map(mat => {
         const finalName = mat.material_name === 'Outro' 
           ? (mat.custom_material_name?.trim() || 'Material Diversos') 
@@ -470,23 +474,23 @@ export default function ProspectingPage() {
           material_name: finalName, 
           category: finalName,
           estimated_volume: Number(mat.estimated_volume) || 0, 
-          unit: mat.unit, 
-          frequency: mat.frequency,
+          unit: mat.unit || 'kg', 
+          frequency: mat.frequency || '1x por mês',
           transaction_type: mat.transaction_type,
           price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
-          storage_form: mat.storage_form, 
+          storage_form: mat.storage_form || null, 
           notes: null
         });
       });
 
       await Promise.all(materialPromises);
 
-      // 2. Save all attached files
+      // 3. Save all attached files
       if (attachedFiles.length > 0) {
         await dbService.addSupplierDocuments(activeMaterialSupplier.id, attachedFiles);
       }
 
-      // 3. If sending to logistics
+      // 4. If sending to logistics
       if (isSendingToLogistics && activeMaterialSupplier.prospecting_status !== 'WAITING_LOGISTICS') {
         await updateStatus(activeMaterialSupplier.id, 'WAITING_LOGISTICS');
       }
@@ -1201,50 +1205,48 @@ export default function ProspectingPage() {
                           </div>
                         )}
 
-                        {/* Materials Section: Hidden on Novo Lead */}
-                        {!isNewLeadCol && (
-                          supplier.materials && supplier.materials.length > 0 ? (
-                            <div className="text-[10px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-100 dark:border-slate-800 space-y-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                                  {language === 'pt' ? 'Materiais Identificados' : 'Identified Materials'}
-                                </span>
-                                <span className="text-[9px] font-bold text-slate-500">
-                                  {supplier.materials.length} {language === 'pt' ? 'item(ns)' : 'item(s)'}
+                        {/* Materials Section: Available on ALL stages */}
+                        {supplier.materials && supplier.materials.length > 0 ? (
+                          <div className="text-[10px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-100 dark:border-slate-800 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                {language === 'pt' ? 'Materiais Identificados' : 'Identified Materials'}
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-500">
+                                {supplier.materials.length} {language === 'pt' ? 'item(ns)' : 'item(s)'}
+                              </span>
+                            </div>
+                            {supplier.materials.slice(0, 2).map((m, i) => (
+                              <div key={i} className="flex items-center justify-between gap-1">
+                                <span className="truncate font-medium">• {translateMaterialName(m.material_name, language)}</span>
+                                <span className={`text-[9px] font-bold px-1 rounded shrink-0 ${
+                                  m.transaction_type === 'donation' ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50' : 'text-amber-700 bg-amber-50 dark:bg-amber-950/50'
+                                }`}>
+                                  {m.transaction_type === 'donation' ? (language === 'pt' ? 'Doação' : 'Donation') : (language === 'pt' ? 'Compra' : 'Purchase')}
                                 </span>
                               </div>
-                              {supplier.materials.slice(0, 2).map((m, i) => (
-                                <div key={i} className="flex items-center justify-between gap-1">
-                                  <span className="truncate font-medium">• {translateMaterialName(m.material_name, language)}</span>
-                                  <span className={`text-[9px] font-bold px-1 rounded shrink-0 ${
-                                    m.transaction_type === 'donation' ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'
-                                  }`}>
-                                    {m.transaction_type === 'donation' ? (language === 'pt' ? 'Doação' : 'Donation') : (language === 'pt' ? 'Compra' : 'Purchase')}
-                                  </span>
-                                </div>
-                              ))}
-                              <button
-                                onClick={() => openMaterialsModal(supplier, false)}
-                                className="text-[9px] font-bold text-[#2098D1] hover:underline pt-0.5 block cursor-pointer"
-                              >
-                                + {language === 'pt' ? 'Gerenciar / Editar Materiais' : 'Manage / Edit Materials'}
-                              </button>
-                            </div>
-                          ) : (
+                            ))}
                             <button
                               onClick={() => openMaterialsModal(supplier, false)}
-                              className={`w-full py-2 text-[10px] font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs ${
-                                isLogCol 
-                                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-2 border-dashed border-amber-300 hover:bg-amber-100'
-                                  : 'text-slate-600 hover:text-[#2098D1] border border-dashed border-slate-300 hover:border-[#2098D1] bg-slate-50 hover:bg-[#E5F5F8]/50'
-                              }`}
+                              className="text-[9px] font-bold text-[#2098D1] hover:underline pt-0.5 block cursor-pointer"
                             >
-                              <PackagePlus size={13} className={isLogCol ? 'text-amber-600' : 'text-slate-400'} />
-                              {isLogCol 
-                                ? (language === 'pt' ? '⚠️ Preencher Materiais Disponíveis' : '⚠️ Fill Available Materials')
-                                : (language === 'pt' ? 'Preencher Materiais Disponíveis' : 'Fill Available Materials')}
+                              + {language === 'pt' ? 'Gerenciar / Editar Materiais' : 'Manage / Edit Materials'}
                             </button>
-                          )
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => openMaterialsModal(supplier, false)}
+                            className={`w-full py-2 text-[10px] font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs ${
+                              isLogCol 
+                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-2 border-dashed border-amber-300 hover:bg-amber-100'
+                                : 'text-slate-600 dark:text-slate-300 hover:text-[#2098D1] border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#2098D1] bg-slate-50 dark:bg-slate-900/60 hover:bg-[#E5F5F8]/50'
+                            }`}
+                          >
+                            <PackagePlus size={13} className={isLogCol ? 'text-amber-600' : 'text-slate-400'} />
+                            {isLogCol 
+                              ? (language === 'pt' ? '⚠️ Preencher Materiais Disponíveis' : '⚠️ Fill Available Materials')
+                              : (language === 'pt' ? 'Preencher Materiais Disponíveis' : 'Fill Available Materials')}
+                          </button>
                         )}
 
                         {/* Status change dropdown & Logistics controls */}

@@ -65,7 +65,8 @@ import {
   CalendarCheck,
   MessageSquare,
   GitBranch,
-  Lock
+  Lock,
+  PackagePlus
 } from 'lucide-react';
 import {
   DOC_CHECKLIST,
@@ -74,6 +75,50 @@ import {
   frequencyOptions,
   feasibilityOptions
 } from '@/app/(dashboard)/logistica/page';
+
+const MATERIAL_OPTIONS = [
+  'Papelão', 
+  'Papel Branco Sigiloso', 
+  'Papel Misto', 
+  'Plástico Filme',
+  'Plástico Rígido', 
+  'PET', 
+  'Alumínio', 
+  'Ferro/Aço', 
+  'Cobre',
+  'Vidro', 
+  'Eletrônicos (REEE)', 
+  'Orgânicos', 
+  'Recicláveis em geral', 
+  'Outro'
+];
+
+const STORAGE_OPTIONS = ['Container', 'Big Bag', 'Sacos de Lixo', 'Caçamba', 'Lixeira', 'Prensa / Enfardado', 'Granel / Solto', 'Outro'];
+const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico'];
+
+interface MaterialLine {
+  id: string; 
+  material_name: string;
+  custom_material_name?: string;
+  storage_form: string;
+  frequency: string; 
+  transaction_type: 'donation' | 'purchase';
+  price_per_kg: string; 
+  estimated_volume: string; 
+  unit: string;
+}
+
+const newLine = (): MaterialLine => ({
+  id: Math.random().toString(36).slice(2),
+  material_name: '', 
+  custom_material_name: '',
+  storage_form: '', 
+  frequency: '',
+  transaction_type: 'donation', 
+  price_per_kg: '', 
+  estimated_volume: '', 
+  unit: 'kg'
+});
 
 export default function SupplierDetailPage() {
   const params = useParams();
@@ -155,17 +200,16 @@ export default function SupplierDetailPage() {
     due_date: ''
   });
 
-  const [newMaterial, setNewMaterial] = useState({
-    material_name: '',
-    category: '',
-    estimated_volume: '',
-    unit: 'kg',
-    frequency: '',
-    transaction_type: 'donation' as 'purchase' | 'donation',
-    price_per_kg: '',
-    storage_form: '',
-    notes: ''
-  });
+  const [materialsForm, setMaterialsForm] = useState<MaterialLine[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{
+    id: string;
+    name: string;
+    size: string;
+    file_data: string;
+    type: 'mtr' | 'donation_letter' | 'partnership_agreement' | 'env_license' | 'cnpj_card' | 'other';
+    notes: string;
+  }[]>([]);
+  const [isSavingMaterials, setIsSavingMaterials] = useState(false);
 
   const [newCollection, setNewCollection] = useState({
     scheduled_date: '',
@@ -427,37 +471,118 @@ export default function SupplierDetailPage() {
     }
   };
 
-  const handleAddMaterial = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMaterial.material_name || !newMaterial.estimated_volume) return;
+  const openFullMaterialsModal = () => {
+    if (supplier?.materials && supplier.materials.length > 0) {
+      setMaterialsForm(supplier.materials.map(m => {
+        const isStandard = MATERIAL_OPTIONS.includes(m.material_name);
+        return {
+          id: m.id,
+          material_name: isStandard ? m.material_name : 'Outro',
+          custom_material_name: isStandard ? '' : m.material_name,
+          storage_form: m.storage_form || 'Sacos de Lixo',
+          frequency: m.frequency || '1x por mês',
+          transaction_type: m.transaction_type || 'donation',
+          price_per_kg: m.price_per_kg ? String(m.price_per_kg) : '',
+          estimated_volume: m.estimated_volume ? String(m.estimated_volume) : '',
+          unit: m.unit || 'kg'
+        };
+      }));
+    } else {
+      setMaterialsForm([newLine()]);
+    }
+    setAttachedFiles([]);
+    setIsMaterialModalOpen(true);
+  };
+
+  const updMat = (id: string, field: keyof MaterialLine, val: string) =>
+    setMaterialsForm(p => p.map(m => m.id === id ? { ...m, [field]: val } : m));
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      const sizeStr = file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+        : (file.size / 1024).toFixed(0) + ' KB';
+
+      let inferredType: 'mtr' | 'donation_letter' | 'partnership_agreement' | 'env_license' | 'cnpj_card' | 'other' = 'other';
+      const lower = file.name.toLowerCase();
+      if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
+      else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
+      else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) inferredType = 'partnership_agreement';
+      else if (lower.includes('licenca') || lower.includes('licença')) inferredType = 'env_license';
+      else if (lower.includes('cnpj')) inferredType = 'cnpj_card';
+
+      reader.onload = () => {
+        setAttachedFiles(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(2, 9),
+            name: file.name,
+            size: sizeStr,
+            file_data: reader.result as string,
+            type: inferredType,
+            notes: ''
+          }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
+  const handleSaveFullMaterials = async () => {
+    if (!supplier) return;
+    setIsSavingMaterials(true);
     try {
-      await dbService.addSupplierMaterial({
-        supplier_id: supplier.id,
-        material_name: newMaterial.material_name,
-        category: newMaterial.category,
-        estimated_volume: Number(newMaterial.estimated_volume),
-        unit: newMaterial.unit,
-        frequency: newMaterial.frequency,
-        transaction_type: newMaterial.transaction_type,
-        price_per_kg: Number(newMaterial.price_per_kg) || 0,
-        storage_form: newMaterial.storage_form || null,
-        notes: newMaterial.notes || null
+      // 1. Delete previous materials to ensure clean sync
+      if (supplier.materials && supplier.materials.length > 0) {
+        await Promise.all(supplier.materials.map(m => dbService.deleteSupplierMaterial(m.id)));
+      }
+
+      // 2. Insert new materials list
+      const materialPromises = materialsForm.map(mat => {
+        const finalName = mat.material_name === 'Outro' 
+          ? (mat.custom_material_name?.trim() || 'Material Diversos') 
+          : mat.material_name;
+
+        if (!finalName) return Promise.resolve(null);
+
+        return dbService.addSupplierMaterial({
+          supplier_id: supplier.id,
+          material_name: finalName,
+          category: finalName,
+          estimated_volume: Number(mat.estimated_volume) || 0,
+          unit: mat.unit || 'kg',
+          frequency: mat.frequency || '1x por mês',
+          transaction_type: mat.transaction_type,
+          price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
+          storage_form: mat.storage_form || null,
+          notes: null
+        });
       });
-      setNewMaterial({
-        material_name: 'Recicláveis em geral',
-        category: 'Recicláveis em geral',
-        estimated_volume: '',
-        unit: 'kg',
-        frequency: 'monthly',
-        transaction_type: 'donation',
-        price_per_kg: '0',
-        storage_form: '',
-        notes: ''
-      });
+
+      await Promise.all(materialPromises);
+
+      // 3. Save attached documents if any
+      if (attachedFiles.length > 0) {
+        await dbService.addSupplierDocuments(supplier.id, attachedFiles);
+      }
+
       setIsMaterialModalOpen(false);
-      fetchSupplierData();
+      await fetchSupplierData();
     } catch (err) {
-      console.error(err);
+      console.error('Error saving materials:', err);
+      alert('Erro ao salvar materiais.');
+    } finally {
+      setIsSavingMaterials(false);
     }
   };
 
@@ -1187,8 +1312,8 @@ export default function SupplierDetailPage() {
                   <Scale size={15} className="text-emerald-600" />
                   {language === 'pt' ? 'Materiais Declarados' : 'Declared Materials'} ({supplier.materials?.length || 0})
                 </h3>
-                <Button size="sm" variant="outline" onClick={() => setIsMaterialModalOpen(true)} className="text-xs gap-1">
-                  <Plus size={12} /> {language === 'pt' ? 'Adicionar' : 'Add'}
+                <Button size="sm" variant="outline" onClick={openFullMaterialsModal} className="text-xs gap-1">
+                  <Plus size={12} /> {language === 'pt' ? 'Gerenciar / Adicionar' : 'Manage / Add'}
                 </Button>
               </div>
 
@@ -1795,9 +1920,9 @@ export default function SupplierDetailPage() {
                     {language === 'pt' ? 'Materiais Declarados' : 'Declared Materials'}
                   </h3>
                   {canUserModifySupplier() && (
-                    <Button size="sm" className="gap-1.5" onClick={() => setIsMaterialModalOpen(true)}>
+                    <Button size="sm" className="gap-1.5" onClick={openFullMaterialsModal}>
                       <Plus size={14} />
-                      {language === 'pt' ? 'Adicionar Material' : 'Add Material'}
+                      {language === 'pt' ? 'Gerenciar / Adicionar Material' : 'Manage / Add Material'}
                     </Button>
                   )}
                 </div>
@@ -2266,50 +2391,268 @@ export default function SupplierDetailPage() {
         </div>
       </Modal>
 
-      {/* Modal: Adicionar Material */}
-      <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={language === 'pt' ? 'Adicionar Material Declarado' : 'Add Declared Material'} size="md">
-        <form onSubmit={handleAddMaterial} className="space-y-4">
-          <Input
-            label={language === 'pt' ? 'Nome do Material *' : 'Material Name *'}
-            value={newMaterial.material_name}
-            onChange={e => setNewMaterial(p => ({ ...p, material_name: e.target.value }))}
-            placeholder={language === 'pt' ? 'Ex: Papelão Ondulado, Plástico Filme...' : 'E.g. Corrugated Cardboard, Plastic Film...'}
-            required
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label={language === 'pt' ? 'Volume Estimado *' : 'Estimated Volume *'}
-              type="number"
-              value={newMaterial.estimated_volume}
-              onChange={e => setNewMaterial(p => ({ ...p, estimated_volume: e.target.value }))}
-              placeholder="500"
-              required
-            />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {language === 'pt' ? 'Unidade' : 'Unit'}
-              </label>
-              <select
-                value={newMaterial.unit}
-                onChange={e => setNewMaterial(p => ({ ...p, unit: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none font-medium"
-              >
-                <option value="kg">kg</option>
-                <option value="ton">ton</option>
-                <option value="un">un</option>
-                <option value="m³">m³</option>
-              </select>
-            </div>
+      {/* Modal: Materiais Disponíveis & Gestão Completa */}
+      <Modal 
+        isOpen={isMaterialModalOpen} 
+        onClose={() => setIsMaterialModalOpen(false)} 
+        title={`${language === 'pt' ? 'Materiais Disponíveis' : 'Available Materials'} — ${supplier.name}`} 
+        size="xl"
+      >
+        <div className="space-y-5">
+          <div className="flex items-start gap-3 p-3 rounded-xl text-xs bg-emerald-50 border border-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300">
+            <FileText size={15} className="shrink-0 mt-0.5" />
+            <p>
+              {language === 'pt' 
+                ? 'Preencha os materiais identificados no contato comercial. Essas informações acompanharão o lead até a aprovação.'
+                : 'Fill in the materials identified during commercial contact. This information will follow the lead until final approval.'}
+            </p>
           </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                {language === 'pt' ? 'Materiais do Lead' : 'Lead Materials'}
+              </h4>
+              <button 
+                type="button"
+                onClick={() => setMaterialsForm(p => [...p, newLine()])}
+                className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              >
+                <PackagePlus size={13} /> {language === 'pt' ? 'Adicionar Material' : 'Add Material'}
+              </button>
+            </div>
+
+            {materialsForm.map((mat, idx) => (
+              <div key={mat.id} className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3 bg-slate-50/60 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{`Material #${idx + 1}`}</span>
+                  {materialsForm.length > 1 && (
+                    <button 
+                      type="button"
+                      onClick={() => setMaterialsForm(p => p.filter(m => m.id !== mat.id))}
+                      className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
+                      title={language === 'pt' ? 'Remover material' : 'Remove material'}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      {language === 'pt' ? 'Tipo de Material / Categoria *' : 'Material Type / Category *'}
+                    </label>
+                    <select 
+                      value={mat.material_name} 
+                      onChange={e => updMat(mat.id, 'material_name', e.target.value)}
+                      className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione o material...' : 'Select material...'}</option>
+                      {MATERIAL_OPTIONS.map(o => <option key={o} value={o}>{translateMaterialName(o, language)}</option>)}
+                    </select>
+                    {mat.material_name === 'Outro' && (
+                      <input
+                        type="text"
+                        placeholder={language === 'pt' ? 'Digite o nome do material personalizado...' : 'Enter custom material name...'}
+                        value={mat.custom_material_name || ''}
+                        onChange={e => updMat(mat.id, 'custom_material_name', e.target.value)}
+                        className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-emerald-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      {language === 'pt' ? 'Armazenamento no Local' : 'On-site Storage'}
+                    </label>
+                    <select 
+                      value={mat.storage_form} 
+                      onChange={e => updMat(mat.id, 'storage_form', e.target.value)}
+                      className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione o acondicionamento...' : 'Select storage type...'}</option>
+                      {STORAGE_OPTIONS.map(o => <option key={o} value={o}>{translateStorageForm(o, language)}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      {language === 'pt' ? 'Frequência Estimada' : 'Estimated Frequency'}
+                    </label>
+                    <select 
+                      value={mat.frequency} 
+                      onChange={e => updMat(mat.id, 'frequency', e.target.value)}
+                      className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione a frequência...' : 'Select frequency...'}</option>
+                      {FREQUENCY_OPTIONS.map(o => <option key={o} value={o}>{translateFrequency(o, language)}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        {language === 'pt' ? 'Volume Estimado' : 'Estimated Volume'}
+                      </label>
+                      <input 
+                        type="number" 
+                        value={mat.estimated_volume} 
+                        placeholder="Ex: 500"
+                        onChange={e => updMat(mat.id, 'estimated_volume', e.target.value)}
+                        className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div className="w-24 flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        {language === 'pt' ? 'Unidade' : 'Unit'}
+                      </label>
+                      <select 
+                        value={mat.unit} 
+                        onChange={e => updMat(mat.id, 'unit', e.target.value)}
+                        className="px-2 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                      >
+                        <option value="kg">kg</option>
+                        <option value="ton">ton</option>
+                        <option value="un">un</option>
+                        <option value="m³">m³</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      {language === 'pt' ? 'Modalidade Comercial *' : 'Commercial Modality *'}
+                    </label>
+                    <div className="flex gap-2">
+                      {(['donation', 'purchase'] as const).map(type => (
+                        <label 
+                          key={type} 
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                            mat.transaction_type === type
+                              ? (type === 'donation' ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300' : 'border-amber-400 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300')
+                              : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300'
+                          }`}
+                        >
+                          <input 
+                            type="radio" 
+                            className="sr-only" 
+                            checked={mat.transaction_type === type}
+                            onChange={() => updMat(mat.id, 'transaction_type', type)}
+                          />
+                          {type === 'donation' ? (language === 'pt' ? '🤝 Doação' : '🤝 Donation') : (language === 'pt' ? '💰 Compra' : '💰 Purchase')}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {mat.transaction_type === 'purchase' && (
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        {language === 'pt' ? 'Preço Estimado por kg (R$)' : 'Estimated Price per kg (R$)'}
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={mat.price_per_kg} 
+                        placeholder="Ex: 0.50"
+                        onChange={e => updMat(mat.id, 'price_per_kg', e.target.value)}
+                        className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Multi-file Attachments from PC */}
+          <div className="p-4 bg-[#F0F9FB] dark:bg-slate-900 border border-[#CCEAF1] dark:border-slate-800 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#0E2439] dark:text-slate-100">
+                <Upload size={15} className="text-[#2098D1]" />
+                <span>{language === 'pt' ? 'Anexar Documentos do Computador' : 'Attach Documents from Computer'}</span>
+              </div>
+              <label className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 hover:bg-[#E5F5F8] text-[#2098D1] border border-[#CCEAF1] dark:border-slate-700 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs">
+                <Plus size={13} />
+                <span>{language === 'pt' ? 'Buscar no PC' : 'Browse PC'}</span>
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+              </label>
+            </div>
+
+            <p className="text-[11px] text-[#4F7891] dark:text-slate-400">
+              {language === 'pt'
+                ? 'Selecione um ou vários arquivos (MTR, Carta de Doação, Termo de Parceria, Licenças, PDF, imagens ou planilhas). Eles ficarão salvos permanentemente na ficha deste lead em todas as etapas.'
+                : 'Select one or multiple files (MTR, Donation Letter, Agreement, Licenses, PDF, images or spreadsheets).'}
+            </p>
+
+            {/* Attached Files List */}
+            {attachedFiles.length > 0 ? (
+              <div className="space-y-2 pt-1">
+                {attachedFiles.map(file => (
+                  <div key={file.id} className="p-2.5 bg-white dark:bg-slate-800 border border-[#CCEAF1] dark:border-slate-700 rounded-xl flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-7 w-7 rounded-lg bg-[#E5F5F8] dark:bg-slate-900 text-[#2098D1] flex items-center justify-center font-bold text-xs shrink-0">
+                        <FileCheck size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[#0E2439] dark:text-white truncate max-w-[200px] sm:max-w-xs">{file.name}</p>
+                        <span className="text-[10px] text-slate-400">{file.size}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={file.type}
+                        onChange={e => {
+                          const newType = e.target.value as any;
+                          setAttachedFiles(prev => prev.map(f => f.id === file.id ? { ...f, type: newType } : f));
+                        }}
+                        className="px-2 py-1 text-[11px] font-bold bg-[#F7FCFD] dark:bg-slate-900 border border-[#CCEAF1] dark:border-slate-700 rounded-lg outline-none cursor-pointer"
+                      >
+                        <option value="mtr">MTR (Manifesto)</option>
+                        <option value="donation_letter">Carta de Doação</option>
+                        <option value="partnership_agreement">Termo de Parceria</option>
+                        <option value="env_license">Licença Ambiental</option>
+                        <option value="cnpj_card">Cartão CNPJ</option>
+                        <option value="other">Outro Documento</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(file.id)}
+                        className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors"
+                        title={language === 'pt' ? 'Remover anexo' : 'Remove attachment'}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-3 border border-dashed border-[#CCEAF1] dark:border-slate-700 rounded-xl text-center text-xs text-slate-400">
+                {language === 'pt' 
+                  ? 'Nenhum arquivo anexado ainda. Clique em "Buscar no PC" para selecionar arquivos.'
+                  : 'No files attached yet. Click "Browse PC" to select files.'}
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <Button type="button" variant="outline" onClick={() => setIsMaterialModalOpen(false)}>
               {language === 'pt' ? 'Cancelar' : 'Cancel'}
             </Button>
-            <Button type="submit">
-              {language === 'pt' ? 'Salvar Material' : 'Save Material'}
+            <Button type="button" onClick={handleSaveFullMaterials} disabled={isSavingMaterials}>
+              {isSavingMaterials ? (language === 'pt' ? 'Salvando...' : 'Saving...') : (language === 'pt' ? 'Salvar Materiais' : 'Save Materials')}
             </Button>
           </div>
-        </form>
+        </div>
       </Modal>
 
       {/* Modal: Agendar Coleta */}
