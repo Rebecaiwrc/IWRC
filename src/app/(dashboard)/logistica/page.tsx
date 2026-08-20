@@ -290,22 +290,29 @@ export default function LogisticsPage() {
     return true;
   });
   
-  // 2. Scheduling: Suppliers awaiting 1st collection OR active suppliers within 3 days of their next recurring collection date
+  // 2. Scheduling: Suppliers awaiting collection scheduling (have NO upcoming scheduled collection)
   const schedulingQueue = allSuppliers
     .filter(s => isResponsibleForSupplier(s))
     .filter(s => {
+      // If supplier ALREADY has an upcoming scheduled collection, it has already been scheduled and must NOT appear in this pending queue
+      const scheduledCols = (s.collections || []).filter(c => c.status === 'SCHEDULED');
+      if (scheduledCols.length > 0) {
+        return false;
+      }
+
       // 1. Initial 1st collection pending
-      const isInitialPending = s.current_stage === 'COLLECTION' || 
-        (s.backlog_reason?.toLowerCase().includes('agendamento')) ||
+      const isInitialPending = 
+        (s.current_stage === 'COLLECTION' && (!s.collections || s.collections.length === 0)) || 
+        (s.backlog_reason?.toLowerCase().includes('agendamento') && (!s.collections || s.collections.length === 0)) ||
         (s.logistics_analyses?.[0]?.feasibility === 'FEASIBLE' && (!s.collections || s.collections.length === 0));
       
       if (isInitialPending) return true;
 
-      // 2. Active operation: check if within 3 days of next collection cycle
+      // 2. Active operation: check if within 3 days of next collection cycle and not yet scheduled
       if (s.current_stage === 'OPERATION') {
         const activeLog = s.logistics_analyses?.[0];
         const freq = activeLog?.recommended_frequency || 'Mensal';
-        if (freq.toLowerCase().includes('demanda')) return false;
+        if (freq.toLowerCase().includes('demanda') || freq.toLowerCase().includes('única') || freq.toLowerCase().includes('unica')) return false;
 
         // Find the latest scheduled collection date
         const allColDates = (s.collections || [])
@@ -316,14 +323,8 @@ export default function LogisticsPage() {
         const latestDateStr = allColDates[0];
         if (!latestDateStr) return true;
 
-        const latestColDate = new Date(latestDateStr + 'T00:00:00');
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        // If already scheduled for a future date, it has already been scheduled and must NOT appear now
-        if (latestColDate.getTime() > today.getTime()) {
-          return false;
-        }
 
         // Calculate next due date
         const nextDue = getNextCollectionDate(latestDateStr, freq);
