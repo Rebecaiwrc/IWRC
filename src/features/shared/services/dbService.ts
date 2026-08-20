@@ -1166,6 +1166,60 @@ export const dbService = {
     return allCol.find(c => c.id === collectionId)!;
   },
 
+  async updateCollection(
+    id: string,
+    collectionData: Partial<Collection>,
+    items?: Partial<CollectionItem>[]
+  ): Promise<Collection> {
+    const now = new Date().toISOString();
+
+    if (isSupabaseConfigured && supabase) {
+      const { error: cErr } = await supabase
+        .from('collections')
+        .update(collectionData)
+        .eq('id', id);
+      if (cErr) throw cErr;
+
+      if (items && items.length > 0) {
+        await supabase.from('collection_items').delete().eq('collection_id', id);
+        const itemsToInsert = items.map(item => ({
+          ...item,
+          id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+          collection_id: id
+        }));
+        await supabase.from('collection_items').insert(itemsToInsert);
+      }
+
+      const all = await this.getCollections();
+      return all.find(c => c.id === id)!;
+    }
+
+    const collections = getLocalData<Collection>('collections', mockCollections);
+    const index = collections.findIndex(c => c.id === id);
+    if (index !== -1) {
+      collections[index] = { ...collections[index], ...collectionData };
+      saveLocalData('collections', collections);
+    }
+
+    if (items && items.length > 0) {
+      let collectionItems = getLocalData<CollectionItem>('collectionItems', mockCollectionItems);
+      collectionItems = collectionItems.filter(ci => ci.collection_id !== id);
+      items.forEach(item => {
+        collectionItems.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+          collection_id: id,
+          material_name: item.material_name || '',
+          estimated_volume: Number(item.estimated_volume) || 0,
+          unit: item.unit || 'kg'
+        });
+      });
+      saveLocalData('collectionItems', collectionItems);
+    }
+
+    const all = await this.getCollections();
+    return all.find(c => c.id === id)!;
+  },
+
   async updateCollectionStatus(
     id: string,
     status: CollectionStatus,

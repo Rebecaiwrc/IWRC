@@ -544,7 +544,7 @@ export default function LogisticsPage() {
         } else {
           newStage = 'DOCUMENTATION';
           newStatus = 'APPROVED';
-          backlogReason = 'Aprovado pela Logística. Pronto para documentação e agendamento.';
+          backlogReason = null;
         }
       } else if (analysisForm.feasibility === 'INFEASIBLE') {
         newStage = 'LOGISTICS';

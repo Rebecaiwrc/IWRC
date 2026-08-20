@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
-import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, fetchAddressByCep, getLogisticsSlaInfo, translateMaterialName } from '@/lib/utils';
+import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, fetchAddressByCep, getLogisticsSlaInfo, translateMaterialName, translateFrequency } from '@/lib/utils';
 import { 
   Plus, 
   MapPin, 
@@ -101,7 +101,7 @@ const LEAD_SOURCE_OPTIONS = [
 ];
 
 const STORAGE_OPTIONS = ['Container', 'Big Bag', 'Sacos de Lixo', 'Caçamba', 'Lixeira', 'Prensa / Enfardado', 'Granel / Solto', 'Outro'];
-const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico'];
+const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico', 'Entrega única'];
 
 interface MaterialLine {
   id: string; 
@@ -1607,7 +1607,7 @@ export default function ProspectingPage() {
                         className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
                       >
                         <option value="">Selecione a frequência...</option>
-                        {FREQUENCY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                        {FREQUENCY_OPTIONS.map(o => <option key={o} value={o}>{translateFrequency(o, language)}</option>)}
                       </select>
                     </div>
 

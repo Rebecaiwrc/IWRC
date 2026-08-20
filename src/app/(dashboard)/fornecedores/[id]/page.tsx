@@ -8,7 +8,8 @@ import {
   Profile, 
   SupplierStage,
   SupplierStatus,
-  AttachedDocument
+  AttachedDocument,
+  Collection
 } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -66,7 +67,9 @@ import {
   MessageSquare,
   GitBranch,
   Lock,
-  PackagePlus
+  PackagePlus,
+  Edit2,
+  Pencil
 } from 'lucide-react';
 import {
   DOC_CHECKLIST,
@@ -94,7 +97,7 @@ const MATERIAL_OPTIONS = [
 ];
 
 const STORAGE_OPTIONS = ['Container', 'Big Bag', 'Sacos de Lixo', 'Caçamba', 'Lixeira', 'Prensa / Enfardado', 'Granel / Solto', 'Outro'];
-const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico'];
+const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico', 'Entrega única'];
 
 interface MaterialLine {
   id: string; 
@@ -211,6 +214,7 @@ export default function SupplierDetailPage() {
   }[]>([]);
   const [isSavingMaterials, setIsSavingMaterials] = useState(false);
 
+  const [editingCollectionId, setEditingCollectionId] = useState<string | null>(null);
   const [newCollection, setNewCollection] = useState({
     scheduled_date: '',
     driver_name: '',
@@ -218,8 +222,24 @@ export default function SupplierDetailPage() {
     notes: '',
     material_name: '',
     estimated_volume: '',
-    unit: 'kg'
+    unit: 'kg',
+    custom_unit: ''
   });
+
+  const hasRealPendingAlert = (s: Supplier | null) => {
+    if (!s || !s.backlog_reason) return false;
+    const reason = s.backlog_reason.trim().toLowerCase();
+    if (['qualified', 'new_lead', 'first_contact', 'presentation_sent', 'waiting_logistics'].includes(reason)) {
+      return false;
+    }
+    if (reason.includes('aprovado') || reason.includes('pronto para')) {
+      return false;
+    }
+    if (s.current_status === 'APPROVED' && !reason.includes('inviável') && !reason.includes('pendência')) {
+      return false;
+    }
+    return true;
+  };
 
   const fetchSupplierData = async () => {
     try {
@@ -698,7 +718,7 @@ export default function SupplierDetailPage() {
         } else {
           newStage = 'DOCUMENTATION';
           newStatus = 'APPROVED';
-          backlogReason = 'Aprovado pela Logística. Pronto para documentação e agendamento.';
+          backlogReason = null;
         }
       } else if (logisticsForm.feasibility === 'INFEASIBLE') {
         newStage = 'LOGISTICS';
@@ -882,46 +902,104 @@ export default function SupplierDetailPage() {
     }
   };
 
-  const handleAddCollection = async (e: React.FormEvent) => {
+  const openCreateCollectionModal = () => {
+    setEditingCollectionId(null);
+    setNewCollection({
+      scheduled_date: '',
+      driver_name: '',
+      carrier_name: '',
+      notes: '',
+      material_name: supplier?.materials?.[0]?.material_name || '',
+      estimated_volume: supplier?.materials?.[0]?.estimated_volume ? String(supplier.materials[0].estimated_volume) : '',
+      unit: supplier?.materials?.[0]?.unit || 'kg',
+      custom_unit: ''
+    });
+    setIsCollectionModalOpen(true);
+  };
+
+  const openEditCollectionModal = (col: Collection) => {
+    setEditingCollectionId(col.id);
+    const firstItem = col.items?.[0];
+    const stdUnits = ['kg', 'toneladas', 'ton', 'un', 'm³'];
+    const isStd = firstItem?.unit ? stdUnits.includes(firstItem.unit) : true;
+
+    setNewCollection({
+      scheduled_date: col.scheduled_date ? col.scheduled_date.split('T')[0] : '',
+      driver_name: col.driver_name || '',
+      carrier_name: col.carrier_name || '',
+      notes: col.notes || '',
+      material_name: firstItem?.material_name || '',
+      estimated_volume: firstItem?.estimated_volume ? String(firstItem.estimated_volume) : '',
+      unit: isStd ? (firstItem?.unit === 'ton' ? 'toneladas' : (firstItem?.unit || 'kg')) : 'Outros',
+      custom_unit: isStd ? '' : (firstItem?.unit || '')
+    });
+    setIsCollectionModalOpen(true);
+  };
+
+  const handleAddOrUpdateCollection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCollection.scheduled_date || !newCollection.material_name || !newCollection.estimated_volume) return;
+
+    const finalUnit = newCollection.unit === 'Outros'
+      ? (newCollection.custom_unit.trim() || 'un')
+      : newCollection.unit;
+
     try {
-      await dbService.createCollection(
-        {
-          supplier_id: supplier.id,
-          scheduled_date: newCollection.scheduled_date,
-          driver_name: newCollection.driver_name || null,
-          carrier_name: newCollection.carrier_name || null,
-          notes: newCollection.notes || null,
-          status: 'SCHEDULED'
-        },
-        [
+      if (editingCollectionId) {
+        await dbService.updateCollection(
+          editingCollectionId,
           {
-            material_name: newCollection.material_name,
-            estimated_volume: Number(newCollection.estimated_volume),
-            unit: newCollection.unit
-          }
-        ]
-      );
+            scheduled_date: newCollection.scheduled_date,
+            driver_name: newCollection.driver_name || null,
+            carrier_name: newCollection.carrier_name || null,
+            notes: newCollection.notes || null
+          },
+          [
+            {
+              material_name: newCollection.material_name,
+              estimated_volume: Number(newCollection.estimated_volume),
+              unit: finalUnit
+            }
+          ]
+        );
+      } else {
+        await dbService.createCollection(
+          {
+            supplier_id: supplier.id,
+            scheduled_date: newCollection.scheduled_date,
+            driver_name: newCollection.driver_name || null,
+            carrier_name: newCollection.carrier_name || null,
+            notes: newCollection.notes || null,
+            status: 'SCHEDULED'
+          },
+          [
+            {
+              material_name: newCollection.material_name,
+              estimated_volume: Number(newCollection.estimated_volume),
+              unit: finalUnit
+            }
+          ]
+        );
 
-      // Update supplier stage to OPERATION / APPROVED and clear backlog_reason
-      await dbService.updateSupplier(supplier.id, {
-        current_stage: 'OPERATION',
-        current_status: 'APPROVED',
-        last_collection_date: newCollection.scheduled_date,
-        first_collection_date: supplier.first_collection_date || newCollection.scheduled_date,
-        backlog_reason: null
-      });
+        // Update supplier stage to OPERATION / APPROVED and clear backlog_reason
+        await dbService.updateSupplier(supplier.id, {
+          current_stage: 'OPERATION',
+          current_status: 'APPROVED',
+          last_collection_date: newCollection.scheduled_date,
+          first_collection_date: supplier.first_collection_date || newCollection.scheduled_date,
+          backlog_reason: null
+        });
 
-      await dbService.addSupplierStatusHistory({
-        supplier_id: supplier.id,
-        old_stage: supplier.current_stage,
-        new_stage: 'OPERATION',
-        old_status: supplier.current_status,
-        new_status: 'APPROVED',
-        user_id: currentUser?.id || 'usr-rebeca-buy',
-        notes: `Coleta agendada para ${formatDate(newCollection.scheduled_date)}. Gerador passa a constar como Ativo.`
-      });
+        await dbService.addSupplierStatusHistory({
+          supplier_id: supplier.id,
+          old_stage: supplier.current_stage,
+          new_stage: 'OPERATION',
+          old_status: supplier.current_status,
+          new_status: 'APPROVED',
+          user_id: currentUser?.id || 'usr-rebeca-buy',
+          notes: `Coleta agendada para ${formatDate(newCollection.scheduled_date)}. Gerador passa a constar como Ativo.`
+        });
+      }
 
       setNewCollection({
         scheduled_date: '',
@@ -930,12 +1008,15 @@ export default function SupplierDetailPage() {
         notes: '',
         material_name: '',
         estimated_volume: '',
-        unit: 'kg'
+        unit: 'kg',
+        custom_unit: ''
       });
+      setEditingCollectionId(null);
       setIsCollectionModalOpen(false);
       fetchSupplierData();
     } catch (err) {
       console.error(err);
+      alert('Erro ao salvar coleta.');
     }
   };
 
@@ -1129,7 +1210,7 @@ export default function SupplierDetailPage() {
             </div>
 
             {/* Backlog Reason */}
-            {supplier.backlog_reason && (
+            {hasRealPendingAlert(supplier) && (
               <div className="mt-4 flex items-start gap-3 bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-xs text-amber-800">
                 <AlertTriangle className="shrink-0 text-amber-500 mt-0.5" size={15} />
                 <div>
@@ -1326,6 +1407,9 @@ export default function SupplierDetailPage() {
                         <th className="px-3 py-2">{language === 'pt' ? 'Volume / Frequência' : 'Volume / Frequency'}</th>
                         <th className="px-3 py-2">{language === 'pt' ? 'Modalidade' : 'Modality'}</th>
                         <th className="px-3 py-2">{language === 'pt' ? 'Armazenamento' : 'Storage'}</th>
+                        {canUserModifySupplier() && (
+                          <th className="px-3 py-2 text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1349,6 +1433,26 @@ export default function SupplierDetailPage() {
                           <td className="px-3 py-2.5 text-slate-500">
                             {translateStorageForm(mat.storage_form, language)}
                           </td>
+                          {canUserModifySupplier() && (
+                            <td className="px-3 py-2.5 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={openFullMaterialsModal}
+                                  className="text-slate-400 hover:text-[#2098D1] p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                                  title={language === 'pt' ? 'Editar Material' : 'Edit Material'}
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMaterial(mat.id)}
+                                  className="text-slate-400 hover:text-rose-500 p-1 rounded hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title={language === 'pt' ? 'Excluir Material' : 'Delete Material'}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -1723,7 +1827,7 @@ export default function SupplierDetailPage() {
                   </div>
                 </div>
               )
-            ) : supplier.backlog_reason && (
+            ) : hasRealPendingAlert(supplier) && (
               <div className="mt-6 flex items-start gap-3 bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-amber-800">
                 <AlertTriangle className="shrink-0 text-amber-500 mt-0.5" size={16} />
                 <div className="space-y-1">
@@ -1961,13 +2065,23 @@ export default function SupplierDetailPage() {
                             <td className="px-4 py-3 text-slate-500">{translateStorageForm(mat.storage_form, language)}</td>
                             {canUserModifySupplier() && (
                               <td className="px-4 py-3 text-right">
-                                <button
-                                  onClick={() => handleDeleteMaterial(mat.id)}
-                                  className="text-slate-400 hover:text-rose-500 p-1.5 rounded transition-colors cursor-pointer"
-                                  title={language === 'pt' ? 'Excluir Material' : 'Delete Material'}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={openFullMaterialsModal}
+                                    className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-semibold text-xs"
+                                    title={language === 'pt' ? 'Editar Material' : 'Edit Material'}
+                                  >
+                                    <Edit2 size={15} />
+                                    <span>{language === 'pt' ? 'Editar' : 'Edit'}</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteMaterial(mat.id)}
+                                    className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                    title={language === 'pt' ? 'Excluir Material' : 'Delete Material'}
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </div>
                               </td>
                             )}
                           </tr>
@@ -2141,7 +2255,7 @@ export default function SupplierDetailPage() {
                     <Calendar size={16} className="text-emerald-600" />
                     {language === 'pt' ? 'Histórico de Coletas Programadas' : 'Scheduled Collections History'}
                   </h3>
-                  <Button size="sm" className="gap-1.5" onClick={() => setIsCollectionModalOpen(true)}>
+                  <Button size="sm" className="gap-1.5" onClick={openCreateCollectionModal}>
                     <Plus size={14} />
                     {language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection'}
                   </Button>
@@ -2153,26 +2267,62 @@ export default function SupplierDetailPage() {
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           <th className="px-4 py-3">{language === 'pt' ? 'Data Agendada' : 'Scheduled Date'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Material' : 'Material'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Volume Estimado' : 'Estimated Volume'}</th>
                           <th className="px-4 py-3">{language === 'pt' ? 'Situação' : 'Status'}</th>
-                          <th className="px-4 py-3">{language === 'pt' ? 'Motorista' : 'Driver'}</th>
-                          <th className="px-4 py-3">{language === 'pt' ? 'Transportadora' : 'Carrier'}</th>
+                          <th className="px-4 py-3">{language === 'pt' ? 'Motorista / Veículo' : 'Driver / Vehicle'}</th>
                           <th className="px-4 py-3">{language === 'pt' ? 'Notas' : 'Notes'}</th>
+                          {canUserModifySupplier() && (
+                            <th className="px-4 py-3 text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {supplier.collections.map(col => (
-                          <tr key={col.id} className="hover:bg-slate-50/50">
-                            <td className="px-4 py-3 font-bold text-slate-800">{formatDate(col.scheduled_date)}</td>
-                            <td className="px-4 py-3">
-                              <Badge variant={col.status === 'COMPLETED' ? 'success' : 'warning'}>
-                                {col.status === 'COMPLETED' ? (language === 'pt' ? 'Realizada' : 'Completed') : (language === 'pt' ? 'Agendada' : 'Scheduled')}
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-slate-600">{col.driver_name || '-'}</td>
-                            <td className="px-4 py-3 text-slate-600">{col.carrier_name || '-'}</td>
-                            <td className="px-4 py-3 text-slate-500">{col.notes || '-'}</td>
-                          </tr>
-                        ))}
+                        {supplier.collections.map(col => {
+                          const firstItem = col.items?.[0];
+                          const volDisplay = firstItem 
+                            ? `${firstItem.estimated_volume} ${firstItem.unit || 'kg'}`
+                            : '-';
+                          const matDisplay = firstItem?.material_name 
+                            ? translateMaterialName(firstItem.material_name, language)
+                            : (col.notes?.split('•')?.[0]?.trim() || '-');
+
+                          return (
+                            <tr key={col.id} className="hover:bg-slate-50/50">
+                              <td className="px-4 py-3 font-bold text-slate-800">{formatDate(col.scheduled_date)}</td>
+                              <td className="px-4 py-3 font-semibold text-slate-700">{matDisplay}</td>
+                              <td className="px-4 py-3 font-black text-slate-900 bg-slate-50/80 rounded px-2 py-0.5 font-mono">
+                                {volDisplay}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge variant={col.status === 'COMPLETED' ? 'success' : 'warning'}>
+                                  {col.status === 'COMPLETED' ? (language === 'pt' ? 'Realizada' : 'Completed') : (language === 'pt' ? 'Agendada' : 'Scheduled')}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">
+                                <div className="space-y-0.5">
+                                  <p className="font-medium text-slate-800">{col.driver_name || '-'}</p>
+                                  {col.carrier_name && <p className="text-[10px] text-slate-400">{col.carrier_name}</p>}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-slate-500 max-w-xs truncate">{col.notes || '-'}</td>
+                              {canUserModifySupplier() && (
+                                <td className="px-4 py-3 text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      onClick={() => openEditCollectionModal(col)}
+                                      className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-bold text-xs"
+                                      title={language === 'pt' ? 'Editar Coleta' : 'Edit Collection'}
+                                    >
+                                      <Edit2 size={14} />
+                                      <span>{language === 'pt' ? 'Editar' : 'Edit'}</span>
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -2655,9 +2805,18 @@ export default function SupplierDetailPage() {
         </div>
       </Modal>
 
-      {/* Modal: Agendar Coleta */}
-      <Modal isOpen={isCollectionModalOpen} onClose={() => setIsCollectionModalOpen(false)} title={language === 'pt' ? 'Agendar Coleta de Materiais' : 'Schedule Material Collection'} size="md">
-        <form onSubmit={handleAddCollection} className="space-y-4">
+      {/* Modal: Agendar / Editar Coleta */}
+      <Modal 
+        isOpen={isCollectionModalOpen} 
+        onClose={() => { setIsCollectionModalOpen(false); setEditingCollectionId(null); }} 
+        title={
+          editingCollectionId 
+            ? (language === 'pt' ? 'Editar Coleta Programada' : 'Edit Scheduled Collection')
+            : (language === 'pt' ? 'Agendar Coleta de Materiais' : 'Schedule Material Collection')
+        } 
+        size="md"
+      >
+        <form onSubmit={handleAddOrUpdateCollection} className="space-y-4">
           <Input
             label={language === 'pt' ? 'Data Programada *' : 'Scheduled Date *'}
             type="date"
@@ -2672,28 +2831,71 @@ export default function SupplierDetailPage() {
             placeholder={language === 'pt' ? 'Ex: Papelão e Sucata' : 'E.g. Cardboard and Scrap'}
             required
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-4">
+              <Input
+                label={language === 'pt' ? 'Volume Estimado *' : 'Estimated Volume *'}
+                type="number"
+                value={newCollection.estimated_volume}
+                onChange={e => setNewCollection(p => ({ ...p, estimated_volume: e.target.value }))}
+                placeholder="1000"
+                required
+              />
+            </div>
+            <div className="sm:col-span-4 flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Unidade *' : 'Unit *'}
+              </label>
+              <select
+                value={newCollection.unit}
+                onChange={e => setNewCollection(p => ({ ...p, unit: e.target.value }))}
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none font-medium h-[42px]"
+              >
+                <option value="kg">kg</option>
+                <option value="toneladas">{language === 'pt' ? 'toneladas' : 'tons'}</option>
+                <option value="un">un</option>
+                <option value="m³">m³</option>
+                <option value="Outros">{language === 'pt' ? 'Outros' : 'Others'}</option>
+              </select>
+            </div>
+            <div className="sm:col-span-4">
+              <Input
+                label={language === 'pt' ? 'Motorista' : 'Driver'}
+                value={newCollection.driver_name}
+                onChange={e => setNewCollection(p => ({ ...p, driver_name: e.target.value }))}
+                placeholder={language === 'pt' ? 'Ex: José Silva' : 'E.g. John Doe'}
+              />
+            </div>
+          </div>
+          {newCollection.unit === 'Outros' && (
             <Input
-              label={language === 'pt' ? 'Volume Estimado *' : 'Estimated Volume *'}
-              type="number"
-              value={newCollection.estimated_volume}
-              onChange={e => setNewCollection(p => ({ ...p, estimated_volume: e.target.value }))}
-              placeholder="1000"
+              label={language === 'pt' ? 'Especifique a Unidade de Medida *' : 'Specify Unit of Measure *'}
+              value={newCollection.custom_unit}
+              onChange={e => setNewCollection(p => ({ ...p, custom_unit: e.target.value }))}
+              placeholder={language === 'pt' ? 'Ex: Bags, Tambores, Caixas...' : 'E.g. Bags, Drums, Boxes...'}
               required
             />
-            <Input
-              label={language === 'pt' ? 'Motorista' : 'Driver'}
-              value={newCollection.driver_name}
-              onChange={e => setNewCollection(p => ({ ...p, driver_name: e.target.value }))}
-              placeholder={language === 'pt' ? 'Ex: José Silva' : 'E.g. John Doe'}
-            />
-          </div>
+          )}
+          <Input
+            label={language === 'pt' ? 'Transportadora / Veículo' : 'Carrier / Vehicle'}
+            value={newCollection.carrier_name}
+            onChange={e => setNewCollection(p => ({ ...p, carrier_name: e.target.value }))}
+            placeholder={language === 'pt' ? 'Ex: Terceirizado da iWrc, Caminhão Toco...' : 'E.g. iWrc 3rd party, Box truck...'}
+          />
+          <Input
+            label={language === 'pt' ? 'Observações' : 'Notes'}
+            value={newCollection.notes}
+            onChange={e => setNewCollection(p => ({ ...p, notes: e.target.value }))}
+            placeholder={language === 'pt' ? 'Instruções de acesso, contato local...' : 'Access notes, on-site contact...'}
+          />
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <Button type="button" variant="outline" onClick={() => setIsCollectionModalOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => { setIsCollectionModalOpen(false); setEditingCollectionId(null); }}>
               {language === 'pt' ? 'Cancelar' : 'Cancel'}
             </Button>
             <Button type="submit">
-              {language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection'}
+              {editingCollectionId 
+                ? (language === 'pt' ? 'Salvar Alterações' : 'Save Changes')
+                : (language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection')}
             </Button>
           </div>
         </form>

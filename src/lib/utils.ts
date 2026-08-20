@@ -400,7 +400,10 @@ export const translateFrequency = (freq?: string | null, lang?: 'pt' | 'en'): st
     'Anual': 'Annual',
     'Esporádico': 'Sporadic',
     'Sob Demanda': 'On Demand',
-    'Única Vez': 'One-time'
+    'Única Vez': 'One-time',
+    'Entrega única': 'Single delivery',
+    'Entrega Única': 'Single delivery',
+    'Entrega única (sem recorrência)': 'Single delivery (one-off)'
   };
   return mapping[freq] || freq;
 };
