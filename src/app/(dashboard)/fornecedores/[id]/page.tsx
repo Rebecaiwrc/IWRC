@@ -1737,20 +1737,20 @@ export default function SupplierDetailPage() {
                     </>
                   )}
 
-                  {/* Realizar Agendamento */}
-                  {canUserModifySupplier() && (
+                  {/* Encaminhar para Logística (se ainda não tiver coletas e não estiver em agendamento) */}
+                  {canUserModifySupplier() && (!supplier.collections || supplier.collections.length === 0) && supplier.current_stage !== 'OPERATION' && supplier.current_stage !== 'COLLECTION' && (
                     <Button 
                       size="sm" 
                       className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-bold" 
                       onClick={handleReleaseForScheduling}
                     >
                       <CalendarCheck size={14} />
-                      {language === 'pt' ? 'Realizar Agendamento' : 'Schedule Collection'}
+                      {language === 'pt' ? 'Liberar p/ Agendamento' : 'Release for Scheduling'}
                     </Button>
                   )}
 
                   {(currentUser?.role === 'ADMIN' || (currentUser?.role === 'BUYER' && canUserModifySupplier()) || currentUser?.role === 'LOGISTICS') && (
-                    <Button size="sm" className="gap-1.5 bg-[#2098D1] hover:bg-[#1883B5]" onClick={() => setIsCollectionModalOpen(true)}>
+                    <Button size="sm" className="gap-1.5 bg-[#2098D1] hover:bg-[#1883B5]" onClick={openCreateCollectionModal}>
                       <Calendar size={14} />
                       {language === 'pt' ? 'Agendar Coleta' : 'Book Collection'}
                     </Button>

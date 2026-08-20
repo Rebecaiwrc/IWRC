@@ -469,55 +469,95 @@ export default function SuppliersPage() {
 
                       {/* Stage & Status / Situação */}
                       <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1 items-start">
-                          {supplier.current_stage === 'OPERATION' && supplier.current_status === 'APPROVED' ? (
-                            <Badge variant="success">✓ {language === 'pt' ? 'Ativo' : 'Active'}</Badge>
-                          ) : supplier.current_stage === 'COLLECTION' || supplier.backlog_reason?.toLowerCase().includes('agendamento') ? (
-                            <Badge variant="warning">📅 {language === 'pt' ? 'Aguardando agendamento da coleta' : 'Awaiting collection scheduling'}</Badge>
-                          ) : supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' ? (
-                            <>
-                              <Badge variant="purple">⚠️ {language === 'pt' ? 'Precisa de Informação' : 'Needs Information'}</Badge>
-                              {supplier.backlog_reason && (
-                                <span className="text-[10px] text-amber-700 font-medium line-clamp-1 max-w-[200px]" title={supplier.backlog_reason}>
-                                  {supplier.backlog_reason}
-                                </span>
+                        {(() => {
+                          const scheduledCols = (supplier.collections || []).filter(c => c.status === 'SCHEDULED');
+                          const nextCol = scheduledCols.length > 0 
+                            ? [...scheduledCols].sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())[0]
+                            : null;
+
+                          return (
+                            <div className="flex flex-col gap-1 items-start">
+                              {nextCol ? (
+                                <>
+                                  <Badge variant="emerald">
+                                    📅 {language === 'pt' ? 'Coleta Agendada' : 'Collection Scheduled'}
+                                  </Badge>
+                                  <span className="text-[10px] text-emerald-700 font-bold">
+                                    {formatDate(nextCol.scheduled_date)}
+                                  </span>
+                                </>
+                              ) : supplier.current_stage === 'OPERATION' && supplier.current_status === 'APPROVED' ? (
+                                <Badge variant="success">✓ {language === 'pt' ? 'Ativo' : 'Active'}</Badge>
+                              ) : supplier.current_stage === 'COLLECTION' || (supplier.backlog_reason && supplier.backlog_reason.toLowerCase().includes('agendamento')) ? (
+                                <Badge variant="warning">📅 {language === 'pt' ? 'Aguardando agendamento da coleta' : 'Awaiting collection scheduling'}</Badge>
+                              ) : supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' ? (
+                                <>
+                                  <Badge variant="purple">⚠️ {language === 'pt' ? 'Precisa de Informação' : 'Needs Information'}</Badge>
+                                  {supplier.backlog_reason && (
+                                    <span className="text-[10px] text-amber-700 font-medium line-clamp-1 max-w-[200px]" title={supplier.backlog_reason}>
+                                      {supplier.backlog_reason}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <Badge variant={getStageColor(supplier.current_stage)}>
+                                    {translateStage(supplier.current_stage, language)}
+                                  </Badge>
+                                  {supplier.backlog_reason && (
+                                    <span className="text-[10px] text-slate-500 font-medium line-clamp-1 max-w-[180px]" title={supplier.backlog_reason}>
+                                      {supplier.backlog_reason}
+                                    </span>
+                                  )}
+                                </>
                               )}
-                            </>
-                          ) : (
-                            <>
-                              <Badge variant={getStageColor(supplier.current_stage)}>
-                                {translateStage(supplier.current_stage, language)}
-                              </Badge>
-                              {supplier.backlog_reason && (
-                                <span className="text-[10px] text-slate-500 font-medium line-clamp-1 max-w-[180px]" title={supplier.backlog_reason}>
-                                  {supplier.backlog_reason}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* Última Coleta & Recorrência */}
                       <td className="px-6 py-4">
-                        {supplier.last_collection_date ? (
-                          <div className="flex flex-col text-xs">
-                            <span className="font-bold text-slate-800 flex items-center gap-1">
-                              📅 {formatDate(supplier.last_collection_date)}
-                            </span>
-                            {(() => {
-                              const freq = supplier.logistics_analyses?.[0]?.recommended_frequency || 'Mensal';
-                              const nextDate = getNextCollectionDate(supplier.last_collection_date, freq);
-                              return (
+                        {(() => {
+                          const scheduledCols = (supplier.collections || []).filter(c => c.status === 'SCHEDULED');
+                          const nextCol = scheduledCols.length > 0 
+                            ? [...scheduledCols].sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())[0]
+                            : null;
+
+                          if (nextCol) {
+                            return (
+                              <div className="flex flex-col text-xs">
+                                <span className="font-bold text-slate-800 flex items-center gap-1">
+                                  📅 {formatDate(nextCol.scheduled_date)}
+                                </span>
+                                <span className="text-[10px] text-emerald-700 font-semibold mt-0.5">
+                                  {language === 'pt' ? 'Programada' : 'Scheduled'}
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          if (supplier.last_collection_date) {
+                            const freq = supplier.logistics_analyses?.[0]?.recommended_frequency || 'Mensal';
+                            const nextDate = getNextCollectionDate(supplier.last_collection_date, freq);
+                            return (
+                              <div className="flex flex-col text-xs">
+                                <span className="font-bold text-slate-800 flex items-center gap-1">
+                                  📅 {formatDate(supplier.last_collection_date)}
+                                </span>
                                 <span className="text-[10px] text-indigo-700 font-semibold mt-0.5" title={`Recorrência: ${freq}`}>
                                   {language === 'pt' ? 'Próx:' : 'Next:'} {formatDate(nextDate.toISOString())} ({translateFrequency(freq, language)})
                                 </span>
-                              );
-                            })()}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 text-xs italic">{language === 'pt' ? 'Aguardando 1ª coleta' : 'Awaiting 1st collection'}</span>
-                        )}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <span className="text-slate-400 text-xs italic">
+                              {language === 'pt' ? 'Aguardando 1ª coleta' : 'Awaiting 1st collection'}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* MTR status */}
