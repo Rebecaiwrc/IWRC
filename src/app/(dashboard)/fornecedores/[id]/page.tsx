@@ -109,6 +109,7 @@ interface MaterialLine {
   price_per_kg: string; 
   estimated_volume: string; 
   unit: string;
+  created_at?: string;
 }
 
 const newLine = (): MaterialLine => ({
@@ -504,7 +505,8 @@ export default function SupplierDetailPage() {
           transaction_type: m.transaction_type || 'donation',
           price_per_kg: m.price_per_kg ? String(m.price_per_kg) : '',
           estimated_volume: m.estimated_volume ? String(m.estimated_volume) : '',
-          unit: m.unit || 'kg'
+          unit: m.unit || 'kg',
+          created_at: m.created_at
         };
       }));
     } else {
@@ -567,13 +569,15 @@ export default function SupplierDetailPage() {
         await Promise.all(supplier.materials.map(m => dbService.deleteSupplierMaterial(m.id)));
       }
 
-      // 2. Insert new materials list
-      const materialPromises = materialsForm.map(mat => {
+      // 2. Insert new materials list preserving created_at
+      const materialPromises = materialsForm.map((mat, idx) => {
         const finalName = mat.material_name === 'Outro' 
           ? (mat.custom_material_name?.trim() || 'Material Diversos') 
           : mat.material_name;
 
         if (!finalName) return Promise.resolve(null);
+
+        const origCreatedAt = mat.created_at || new Date(Date.now() + idx * 1000).toISOString();
 
         return dbService.addSupplierMaterial({
           supplier_id: supplier.id,
@@ -585,7 +589,8 @@ export default function SupplierDetailPage() {
           transaction_type: mat.transaction_type,
           price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
           storage_form: mat.storage_form || null,
-          notes: null
+          notes: null,
+          created_at: origCreatedAt
         });
       });
 

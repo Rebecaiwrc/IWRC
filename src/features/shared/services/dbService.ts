@@ -155,7 +155,7 @@ export const dbService = {
           interactions:supplier_interactions(*),
           tasks:supplier_tasks(*),
           logistics_analyses:logistics_analyses(*),
-          collections:collections(*),
+          collections:collections(*, items:collection_items(*)),
           receipts:receipts(*)
         `)
         .order('created_at', { ascending: false });
@@ -190,12 +190,15 @@ export const dbService = {
           prospecting_status: pStatus,
           sent_to_logistics_at: sentLogAt,
           logistics_deadline: logDeadline,
-          materials: s.materials || [],
+          materials: (s.materials || []).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
           contacts: s.contacts || [],
           interactions: s.interactions || [],
           tasks: s.tasks || [],
           logistics_analyses: s.logistics_analyses || [],
-          collections: s.collections || [],
+          collections: (s.collections || []).map((col: any) => ({
+            ...col,
+            items: col.items || []
+          })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
           receipts: s.receipts || []
         };
       });
@@ -240,7 +243,7 @@ export const dbService = {
           interactions:supplier_interactions(*),
           tasks:supplier_tasks(*),
           logistics_analyses:logistics_analyses(*),
-          collections:collections(*),
+          collections:collections(*, items:collection_items(*)),
           receipts:receipts(*),
           status_history:supplier_status_history(*, user:profiles(id, name, email, role))
         `)
@@ -276,7 +279,7 @@ export const dbService = {
         prospecting_status: pStatus,
         sent_to_logistics_at: sentLogAt,
         logistics_deadline: logDeadline,
-        materials: data.materials || [],
+        materials: (data.materials || []).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
         contacts: data.contacts || [],
         interactions: (data.interactions || []).map((i: any) => ({
           ...i,
@@ -284,7 +287,10 @@ export const dbService = {
         })),
         tasks: data.tasks || [],
         logistics_analyses: data.logistics_analyses || [],
-        collections: data.collections || [],
+        collections: (data.collections || []).map((col: any) => ({
+          ...col,
+          items: col.items || []
+        })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
         receipts: data.receipts || [],
         status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       };
@@ -699,7 +705,7 @@ export const dbService = {
         .insert([{
           ...materialData,
           id,
-          created_at: now
+          created_at: materialData.created_at || now
         }])
         .select()
         .single();
@@ -720,7 +726,7 @@ export const dbService = {
       price_per_kg: Number(materialData.price_per_kg) || 0,
       storage_form: materialData.storage_form || null,
       notes: materialData.notes || null,
-      created_at: now
+      created_at: materialData.created_at || now
     };
     materials.push(newMaterial);
     saveLocalData('materials', materials);
