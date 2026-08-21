@@ -2737,7 +2737,7 @@ export default function SupplierDetailPage() {
               label={language === 'pt' ? 'Responsável Interno' : 'Internal Responsible'}
               value={editSupplier.internal_responsible_id}
               onChange={e => setEditSupplier(p => ({ ...p, internal_responsible_id: e.target.value }))}
-              options={profiles.map(p => ({ value: p.id, label: p.name }))}
+              options={profiles.filter(p => p.role !== 'SUPER_ADMIN').map(p => ({ value: p.id, label: p.name }))}
             />
           </div>
 

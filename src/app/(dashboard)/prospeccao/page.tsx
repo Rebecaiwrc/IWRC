@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
-import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, fetchAddressByCep, getLogisticsSlaInfo, translateMaterialName, translateFrequency } from '@/lib/utils';
+import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, formatCnpj, fetchAddressByCep, getLogisticsSlaInfo, translateMaterialName, translateFrequency } from '@/lib/utils';
 import { 
   Plus, 
   MapPin, 
@@ -246,10 +246,21 @@ export const getLeadStatus = (s: Partial<Supplier>): ProspectingStatus => {
   return 'NEW_LEAD';
 };
 
+const COMPACT_MATERIAL_OPTIONS = [
+  'Papelão',
+  'Papel',
+  'Plástico',
+  'Eletrônicos',
+  'Recicláveis em geral',
+  'Outro'
+];
+
 const MATERIAL_OPTIONS = [
   'Papelão', 
+  'Papel',
   'Papel Branco Sigiloso', 
   'Papel Misto', 
+  'Plástico',
   'Plástico Filme',
   'Plástico Rígido', 
   'PET', 
@@ -257,6 +268,7 @@ const MATERIAL_OPTIONS = [
   'Ferro/Aço', 
   'Cobre',
   'Vidro', 
+  'Eletrônicos',
   'Eletrônicos (REEE)', 
   'Orgânicos', 
   'Recicláveis em geral', 
@@ -353,8 +365,10 @@ export default function ProspectingPage() {
     });
   };
 
-  // Filters State
+  // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
+  const [segmentFilter, setSegmentFilter] = useState('');
+  const [leadSourceFilter, setLeadSourceFilter] = useState('');
   const [responsibleFilter, setResponsibleFilter] = useState('');
   const [materialFilter, setMaterialFilter] = useState('');
   const [modalityFilter, setModalityFilter] = useState<'ALL' | 'donation' | 'purchase'>('ALL');
@@ -381,6 +395,7 @@ export default function ProspectingPage() {
   const [form, setForm] = useState({
     name: '', 
     trade_name: '', 
+    document: '',
     segment: '',
     custom_segment: '',
     lead_source: '',
@@ -760,7 +775,7 @@ export default function ProspectingPage() {
         { 
           name: form.name, 
           trade_name: form.trade_name || form.name, 
-          document: '', 
+          document: form.document || '', 
           supplier_type: finalSegment, 
           lead_source: finalLeadSource, 
           internal_responsible_id: form.internal_responsible_id || currentUser?.id || undefined
@@ -797,6 +812,7 @@ export default function ProspectingPage() {
       setForm({ 
         name: '', 
         trade_name: '', 
+        document: '',
         segment: 'Indústria', 
         custom_segment: '',
         lead_source: 'Busca própria', 
@@ -2130,13 +2146,23 @@ export default function ProspectingPage() {
               {language === 'pt' ? 'Empresa & Segmento' : 'Company & Segment'}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2">
+              <div>
                 <Input 
                   label={language === 'pt' ? 'Razão Social / Nome *' : 'Company Name / Lead Name *'}
                   value={form.name} 
                   onChange={e => setForm(p => ({ ...p, name: e.target.value }))} 
                   placeholder={language === 'pt' ? 'Ex: Metalúrgica SP Ltda' : 'e.g. Acme Recycling Corp'}
                   required
+                />
+              </div>
+
+              <div>
+                <Input 
+                  label={language === 'pt' ? 'CNPJ da Empresa' : 'Company CNPJ / Tax ID'}
+                  value={form.document} 
+                  onChange={e => setForm(p => ({ ...p, document: formatCnpj(e.target.value) }))} 
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
                 />
               </div>
               
@@ -2287,7 +2313,7 @@ export default function ProspectingPage() {
                   className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
                 >
                   <option value="">{language === 'pt' ? 'Selecione o responsável...' : 'Select responsible...'}</option>
-                  {profiles.map(p => (
+                  {profiles.filter(p => p.role !== 'SUPER_ADMIN').map(p => (
                     <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
                   ))}
                 </select>

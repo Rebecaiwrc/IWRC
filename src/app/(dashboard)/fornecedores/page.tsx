@@ -725,7 +725,7 @@ export default function SuppliersPage() {
                   className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
                 >
                   <option value="">{language === 'pt' ? 'Selecione o responsável...' : 'Select responsible...'}</option>
-                  {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {profiles.filter(p => p.role !== 'SUPER_ADMIN').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
             </div>
