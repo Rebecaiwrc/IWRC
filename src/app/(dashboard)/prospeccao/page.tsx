@@ -694,9 +694,9 @@ export default function ProspectingPage() {
       setActiveMaterialSupplier(null);
       setAttachedFiles([]);
       await fetchData();
-    } catch (err) { 
+    } catch (err: any) { 
       console.error(err); 
-      alert('Erro ao salvar materiais.'); 
+      alert('Erro ao salvar materiais: ' + (err?.message || 'Verifique as informações e tente novamente.')); 
     } finally { 
       setIsSubmitting(false); 
     }

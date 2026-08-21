@@ -696,20 +696,46 @@ export const dbService = {
 
   // Supplier Materials
   async addSupplierMaterial(materialData: Partial<SupplierMaterial>): Promise<SupplierMaterial> {
-    const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+    const id = (materialData.id && isValidUuid(materialData.id))
+      ? materialData.id
+      : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15));
     const now = new Date().toISOString();
 
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+      const payload: any = {
+        ...materialData,
+        id,
+        created_at: materialData.created_at || now
+      };
+
+      let { data, error } = await supabase
         .from('supplier_materials')
-        .insert([{
-          ...materialData,
-          id,
-          created_at: materialData.created_at || now
-        }])
+        .insert([payload])
         .select()
         .single();
-      if (error) throw error;
+
+      // If database is missing the newly added storage provision columns, retry without them
+      if (error && (error.message?.includes('column') || error.code === '42703' || error.code === 'PGRST204')) {
+        const safePayload: any = { ...payload };
+        delete safePayload.needs_storage_provision;
+        delete safePayload.storage_provision_type;
+        delete safePayload.storage_provision_quantity;
+        delete safePayload.storage_provision_custom_type;
+
+        const retry = await supabase
+          .from('supplier_materials')
+          .insert([safePayload])
+          .select()
+          .single();
+
+        data = retry.data;
+        error = retry.error;
+      }
+
+      if (error) {
+        console.error('Erro ao inserir material no Supabase:', error);
+        throw error;
+      }
       return data;
     }
 
@@ -739,8 +765,10 @@ export const dbService = {
 
   async deleteSupplierMaterial(id: string): Promise<void> {
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.from('supplier_materials').delete().eq('id', id);
-      if (error) throw error;
+      if (isValidUuid(id)) {
+        const { error } = await supabase.from('supplier_materials').delete().eq('id', id);
+        if (error) console.error('Aviso ao deletar material no Supabase:', error);
+      }
       return;
     }
 
@@ -1020,6 +1048,8 @@ export const dbService = {
         conditioning_infrastructure_needed: analysisData.conditioning_infrastructure_needed || null,
         feasibility: analysisData.feasibility || 'PENDING',
         notes: analysisData.notes || null,
+        storage_provision_cost: analysisData.storage_provision_cost !== undefined ? (Number(analysisData.storage_provision_cost) || null) : null,
+        storage_provision_delivery_date: analysisData.storage_provision_delivery_date || null,
         analyzed_at: now
       };
 
@@ -1028,17 +1058,31 @@ export const dbService = {
       }
 
       if (existing) {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('logistics_analyses')
           .update(cleanPayload)
           .eq('id', existing.id)
           .select()
           .single();
+
+        if (error && (error.message?.includes('column') || error.code === '42703' || error.code === 'PGRST204')) {
+          delete cleanPayload.storage_provision_cost;
+          delete cleanPayload.storage_provision_delivery_date;
+          const retry = await supabase
+            .from('logistics_analyses')
+            .update(cleanPayload)
+            .eq('id', existing.id)
+            .select()
+            .single();
+          data = retry.data;
+          error = retry.error;
+        }
+
         if (error) throw error;
         return data;
       } else {
         const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('logistics_analyses')
           .insert([{
             ...cleanPayload,
@@ -1047,6 +1091,23 @@ export const dbService = {
           }])
           .select()
           .single();
+
+        if (error && (error.message?.includes('column') || error.code === '42703' || error.code === 'PGRST204')) {
+          delete cleanPayload.storage_provision_cost;
+          delete cleanPayload.storage_provision_delivery_date;
+          const retry = await supabase
+            .from('logistics_analyses')
+            .insert([{
+              ...cleanPayload,
+              id,
+              created_at: now
+            }])
+            .select()
+            .single();
+          data = retry.data;
+          error = retry.error;
+        }
+
         if (error) throw error;
         return data;
       }

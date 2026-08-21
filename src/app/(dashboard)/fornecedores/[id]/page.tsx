@@ -806,9 +806,9 @@ export default function SupplierDetailPage() {
 
       setIsMaterialModalOpen(false);
       await fetchSupplierData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving materials:', err);
-      alert('Erro ao salvar materiais.');
+      alert('Erro ao salvar materiais: ' + (err?.message || 'Verifique as informações e tente novamente.'));
     } finally {
       setIsSavingMaterials(false);
     }
