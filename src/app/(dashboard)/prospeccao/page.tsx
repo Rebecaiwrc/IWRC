@@ -742,10 +742,33 @@ export default function ProspectingPage() {
           ]);
         } else {
           // Case B: Hub Delivery with storage container needs -> Sent to Logistics specifically for storage container quotation
-          await updateStatus(activeMaterialSupplier.id, 'WAITING_LOGISTICS');
+          const now = new Date().toISOString();
+          const deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
+          setSuppliers(prev => prev.map(s => {
+            if (s.id === activeMaterialSupplier.id) {
+              return {
+                ...s,
+                current_stage: 'LOGISTICS',
+                current_status: 'PENDING',
+                prospecting_status: 'WAITING_LOGISTICS',
+                transport_responsible: 'Fornecedor (entrega no Hub)',
+                sent_to_logistics_at: now,
+                logistics_deadline: deadline
+              };
+            }
+            return s;
+          }));
+
           await Promise.all([
             dbService.updateSupplier(activeMaterialSupplier.id, {
-              transport_responsible: 'Fornecedor (entrega no Hub)'
+              current_stage: 'LOGISTICS',
+              current_status: 'PENDING',
+              prospecting_status: 'WAITING_LOGISTICS',
+              transport_responsible: 'Fornecedor (entrega no Hub)',
+              sent_to_logistics_at: now,
+              logistics_deadline: deadline,
+              backlog_reason: null
             }),
             dbService.createOrUpdateLogisticsAnalysis({
               supplier_id: activeMaterialSupplier.id,
@@ -755,6 +778,15 @@ export default function ProspectingPage() {
               distance_km: null,
               feasibility: 'PENDING',
               notes: 'Entrega direta pelo gerador no Hub — Necessita cotação e organização de fornecimento de meios de armazenamento'
+            }),
+            dbService.addSupplierStatusHistory({
+              supplier_id: activeMaterialSupplier.id,
+              old_stage: activeMaterialSupplier.current_stage,
+              new_stage: 'LOGISTICS',
+              old_status: activeMaterialSupplier.current_status,
+              new_status: 'PENDING',
+              user_id: currentUser?.id,
+              notes: 'Enviado para análise e cotação de meios de armazenamento pela Logística (Entrega no Hub)'
             })
           ]);
         }

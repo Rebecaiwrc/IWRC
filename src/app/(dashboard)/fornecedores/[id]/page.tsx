@@ -835,12 +835,18 @@ export default function SupplierDetailPage() {
           ]);
         } else {
           // Needs storage provision -> Send to Logistics specifically for storage container quotation
+          const now = new Date().toISOString();
+          const deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
           await Promise.all([
             dbService.updateSupplier(supplier.id, {
               current_stage: isProspecting ? 'LOGISTICS' : supplier.current_stage,
               current_status: isProspecting ? 'PENDING' : supplier.current_status,
               prospecting_status: isProspecting ? 'WAITING_LOGISTICS' : supplier.prospecting_status,
-              transport_responsible: 'Fornecedor (entrega no Hub)'
+              transport_responsible: 'Fornecedor (entrega no Hub)',
+              sent_to_logistics_at: now,
+              logistics_deadline: deadline,
+              backlog_reason: null
             }),
             dbService.createOrUpdateLogisticsAnalysis({
               supplier_id: supplier.id,

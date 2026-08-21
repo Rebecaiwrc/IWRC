@@ -277,17 +277,22 @@ export default function LogisticsPage() {
       const isSelfDelivery = 
         act?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
         act?.transport_type === 'Entrega Própria (Gerador)' ||
-        s.transport_responsible === 'Fornecedor (entrega no Hub)';
+        s.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+        (s as any).self_delivery === true;
 
-      const needsStorage = s.materials?.some(m => m.needs_storage_provision);
+      const needsStorage = s.materials?.some(m => Boolean(m.needs_storage_provision));
       if (isSelfDelivery && !needsStorage) return false;
+
+      const isLogisticsStage = s.current_stage === 'LOGISTICS' || s.prospecting_status === 'WAITING_LOGISTICS';
+      if (!isLogisticsStage) return false;
 
       const isCompleted = Boolean(
         act && 
         act.feasibility && 
-        (act.feasibility === 'FEASIBLE' || act.feasibility === 'NEED_INFO' || act.feasibility === 'INFEASIBLE')
+        (act.feasibility === 'FEASIBLE' || act.feasibility === 'NEED_INFO' || act.feasibility === 'INFEASIBLE') &&
+        s.current_stage !== 'LOGISTICS' && s.prospecting_status !== 'WAITING_LOGISTICS'
       );
-      return s.current_stage === 'LOGISTICS' && !isCompleted;
+      return !isCompleted;
     });
 
   const overdueQueueCount = queue.filter(s => getLogisticsSlaInfo(s, 5, language)?.isOverdue).length;
