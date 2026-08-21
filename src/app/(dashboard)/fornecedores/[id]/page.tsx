@@ -3083,7 +3083,6 @@ export default function SupplierDetailPage() {
                         onChange={e => updMat(mat.id, 'custom_storage_form', e.target.value)}
                         className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-[#2098D1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
                         required
-                        autoFocus
                       />
                     )}
                   </div>
@@ -3108,7 +3107,6 @@ export default function SupplierDetailPage() {
                         onChange={e => updMat(mat.id, 'custom_frequency', e.target.value)}
                         className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-[#2098D1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
                         required
-                        autoFocus
                       />
                     )}
                   </div>
@@ -3431,13 +3429,27 @@ export default function SupplierDetailPage() {
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <Button type="button" variant="outline" onClick={() => setIsMaterialModalOpen(false)}>
-              {language === 'pt' ? 'Cancelar' : 'Cancel'}
-            </Button>
-            <Button type="button" onClick={handleSaveFullMaterials} disabled={isSavingMaterials}>
-              {isSavingMaterials ? (language === 'pt' ? 'Salvando...' : 'Saving...') : (language === 'pt' ? 'Salvar Materiais' : 'Save Materials')}
-            </Button>
+          {/* Sticky Action Footer */}
+          <div className="sticky bottom-0 -mx-6 -mb-6 p-4 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xs border-t border-[#CCEAF1] dark:border-slate-800 rounded-b-3xl flex flex-col sm:flex-row items-center justify-between gap-3 z-20 shadow-md">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <span className="px-2.5 py-1 bg-[#EBF7FA] dark:bg-slate-850 text-[#2098D1] border border-[#CCEAF1] dark:border-slate-750 rounded-full">
+                📦 {materialsForm.length} {materialsForm.length === 1 ? (language === 'pt' ? 'material adicionado' : 'material added') : (language === 'pt' ? 'materiais adicionados' : 'materials added')}
+              </span>
+              {needsStorageProvision && storageProvisions.length > 0 && (
+                <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-full">
+                  {storageProvisions.length} {storageProvisions.length === 1 ? (language === 'pt' ? 'recipiente solicitado' : 'container requested') : (language === 'pt' ? 'recipientes solicitados' : 'containers requested')}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+              <Button type="button" variant="outline" onClick={() => setIsMaterialModalOpen(false)}>
+                {language === 'pt' ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button type="button" onClick={handleSaveFullMaterials} disabled={isSavingMaterials}>
+                {isSavingMaterials ? (language === 'pt' ? 'Salvando...' : 'Saving...') : (language === 'pt' ? 'Salvar Materiais' : 'Save Materials')}
+              </Button>
+            </div>
           </div>
         </div>
       </Modal>

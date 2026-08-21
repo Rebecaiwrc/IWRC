@@ -1981,7 +1981,6 @@ export default function ProspectingPage() {
                           onChange={e => updMat(mat.id, 'custom_storage_form', e.target.value)}
                           className="mt-1 px-3 py-1.5 text-xs bg-white border border-[#2098D1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
                           required
-                          autoFocus
                         />
                       )}
                     </div>
@@ -2004,7 +2003,6 @@ export default function ProspectingPage() {
                           onChange={e => updMat(mat.id, 'custom_frequency', e.target.value)}
                           className="mt-1 px-3 py-1.5 text-xs bg-white border border-[#2098D1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
                           required
-                          autoFocus
                         />
                       )}
                     </div>
@@ -2315,33 +2313,47 @@ export default function ProspectingPage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-              <Button variant="outline" onClick={() => setActiveMaterialSupplier(null)}>Cancelar</Button>
-              <Button 
-                onClick={handleSaveMaterialsAndLogistics} 
-                isLoading={isSubmitting} 
-                className={`gap-2 ${isHubDelivery && (!needsStorageProvision || storageProvisions.length === 0) ? '!bg-emerald-600 hover:!bg-emerald-700 text-white' : ((isSendingToLogistics || (isHubDelivery && needsStorageProvision && storageProvisions.length > 0)) ? '!bg-indigo-600 hover:!bg-indigo-700' : '')}`}
-              >
-                {isHubDelivery ? (
-                  (needsStorageProvision && storageProvisions.length > 0) ? (
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-0 -mx-6 -mb-6 p-4 bg-white/95 backdrop-blur-xs border-t border-[#CCEAF1] rounded-b-3xl flex flex-col sm:flex-row items-center justify-between gap-3 z-20 shadow-md">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                <span className="px-2.5 py-1 bg-[#EBF7FA] text-[#2098D1] border border-[#CCEAF1] rounded-full">
+                  📦 {materials.length} {materials.length === 1 ? 'material adicionado' : 'materiais adicionados'}
+                </span>
+                {needsStorageProvision && storageProvisions.length > 0 && (
+                  <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full">
+                    {storageProvisions.length} {storageProvisions.length === 1 ? 'recipiente solicitado' : 'recipientes solicitados'}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                <Button variant="outline" onClick={() => setActiveMaterialSupplier(null)}>Cancelar</Button>
+                <Button 
+                  onClick={handleSaveMaterialsAndLogistics} 
+                  isLoading={isSubmitting} 
+                  className={`gap-2 ${isHubDelivery && (!needsStorageProvision || storageProvisions.length === 0) ? '!bg-emerald-600 hover:!bg-emerald-700 text-white' : ((isSendingToLogistics || (isHubDelivery && needsStorageProvision && storageProvisions.length > 0)) ? '!bg-indigo-600 hover:!bg-indigo-700' : '')}`}
+                >
+                  {isHubDelivery ? (
+                    (needsStorageProvision && storageProvisions.length > 0) ? (
+                      <>
+                        <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística (Cotação Armazenamento)' : 'Send to Logistics (Storage Quotation)'}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Geradores' : 'Confirm and Send to Generators'}
+                      </>
+                    )
+                  ) : isSendingToLogistics ? (
                     <>
-                      <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística (Cotação Armazenamento)' : 'Send to Logistics (Storage Quotation)'}
+                      <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística' : 'Confirm and Send to Logistics'}
                     </>
                   ) : (
                     <>
-                      <CheckCircle size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Geradores' : 'Confirm and Send to Generators'}
+                      <FileCheck size={14}/>{language === 'pt' ? 'Salvar Materiais' : 'Save Materials'}
                     </>
-                  )
-                ) : isSendingToLogistics ? (
-                  <>
-                    <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística' : 'Confirm and Send to Logistics'}
-                  </>
-                ) : (
-                  <>
-                    <FileCheck size={14}/>{language === 'pt' ? 'Salvar Materiais' : 'Save Materials'}
-                  </>
-                )}
-              </Button>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </Modal>
