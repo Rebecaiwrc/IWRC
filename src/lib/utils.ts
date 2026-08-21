@@ -403,7 +403,9 @@ export const translateFrequency = (freq?: string | null, lang?: 'pt' | 'en'): st
     'Única Vez': 'One-time',
     'Entrega única': 'Single delivery',
     'Entrega Única': 'Single delivery',
-    'Entrega única (sem recorrência)': 'Single delivery (one-off)'
+    'Entrega única (sem recorrência)': 'Single delivery (one-off)',
+    'Outro': 'Other',
+    'Outros': 'Others'
   };
   return mapping[freq] || freq;
 };

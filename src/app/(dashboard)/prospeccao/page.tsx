@@ -293,7 +293,7 @@ const LEAD_SOURCE_OPTIONS = [
 ];
 
 const STORAGE_OPTIONS = ['Container', 'Big Bag', 'Sacos de Lixo', 'Caçamba', 'Lixeira', 'Prensa / Enfardado', 'Granel / Solto', 'Outro'];
-const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico', 'Entrega única'];
+const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico', 'Entrega única', 'Outros'];
 
 interface MaterialLine {
   id: string; 
@@ -302,6 +302,7 @@ interface MaterialLine {
   storage_form: string;
   custom_storage_form?: string;
   frequency: string; 
+  custom_frequency?: string;
   transaction_type: 'donation' | 'purchase';
   price_per_kg: string; 
   estimated_volume: string; 
@@ -319,6 +320,7 @@ const newLine = (): MaterialLine => ({
   storage_form: '', 
   custom_storage_form: '',
   frequency: '',
+  custom_frequency: '',
   transaction_type: 'donation', 
   price_per_kg: '', 
   estimated_volume: '', 
@@ -532,13 +534,16 @@ export default function ProspectingPage() {
         const isStandard = MATERIAL_OPTIONS.includes(m.material_name);
         const isStandardStorage = STORAGE_OPTIONS.includes(m.storage_form || '');
         const customStorage = isStandardStorage ? '' : (m.storage_form?.replace(/^Outro:\s*/, '') || m.storage_form || '');
+        const isStandardFreq = FREQUENCY_OPTIONS.filter(f => f !== 'Outros' && f !== 'Outro').includes(m.frequency || '');
+        const customFreq = isStandardFreq ? '' : (m.frequency?.replace(/^Outro:\s*/, '') || m.frequency || '');
         return {
           id: m.id, 
           material_name: isStandard ? m.material_name : 'Outro', 
           custom_material_name: isStandard ? '' : m.material_name,
           storage_form: isStandardStorage ? (m.storage_form || 'Sacos de Lixo') : (m.storage_form ? 'Outro' : 'Sacos de Lixo'),
           custom_storage_form: customStorage,
-          frequency: m.frequency || '1x por mês', 
+          frequency: isStandardFreq ? (m.frequency || '1x por mês') : (m.frequency ? 'Outros' : '1x por mês'),
+          custom_frequency: customFreq,
           transaction_type: m.transaction_type,
           price_per_kg: m.price_per_kg ? String(m.price_per_kg) : '',
           estimated_volume: m.estimated_volume ? String(m.estimated_volume) : '', 
@@ -747,6 +752,10 @@ export default function ProspectingPage() {
           ? (mat.custom_storage_form?.trim() ? `Outro: ${mat.custom_storage_form.trim()}` : 'Outro')
           : (mat.storage_form || null);
 
+        const finalFrequency = (mat.frequency === 'Outros' || mat.frequency === 'Outro')
+          ? (mat.custom_frequency?.trim() ? `Outro: ${mat.custom_frequency.trim()}` : 'Outros')
+          : (mat.frequency || undefined);
+
         const prov = hasStorageNeed ? (storageProvisions[idx] || storageProvisions[0]) : null;
 
         return dbService.addSupplierMaterial({
@@ -755,7 +764,7 @@ export default function ProspectingPage() {
           category: finalName,
           estimated_volume: Number(mat.estimated_volume) || 0, 
           unit: mat.unit || 'kg', 
-          frequency: mat.frequency || '1x por mês',
+          frequency: finalFrequency,
           transaction_type: mat.transaction_type,
           price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
           storage_form: finalStorage, 
@@ -1987,6 +1996,17 @@ export default function ProspectingPage() {
                         <option value="">Selecione a frequência...</option>
                         {FREQUENCY_OPTIONS.map(o => <option key={o} value={o}>{translateFrequency(o, language)}</option>)}
                       </select>
+                      {(mat.frequency === 'Outros' || mat.frequency === 'Outro') && (
+                        <input
+                          type="text"
+                          placeholder={language === 'pt' ? 'Especifique a frequência (ex: a cada 2 semanas)...' : 'Specify frequency (e.g. every 2 weeks)...'}
+                          value={mat.custom_frequency || ''}
+                          onChange={e => updMat(mat.id, 'custom_frequency', e.target.value)}
+                          className="mt-1 px-3 py-1.5 text-xs bg-white border border-[#2098D1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
+                          required
+                          autoFocus
+                        />
+                      )}
                     </div>
 
                     <div className="flex gap-2">
