@@ -66,35 +66,22 @@ export const getLeadStatus = (s: Partial<Supplier>): ProspectingStatus => {
   return 'NEW_LEAD';
 };
 
-export const MAIN_MATERIAL_OPTIONS = [
+const MATERIAL_OPTIONS = [
   'Papelão', 
-  'Papel', 
-  'Plástico', 
-  'Eletrônicos', 
-  'Recicláveis em geral'
-];
-
-export const ADDITIONAL_MATERIAL_OPTIONS = [
   'Papel Branco Sigiloso', 
   'Papel Misto', 
-  'Plástico Filme', 
+  'Plástico Filme',
   'Plástico Rígido', 
   'PET', 
   'Alumínio', 
   'Ferro/Aço', 
-  'Cobre', 
+  'Cobre',
   'Vidro', 
   'Eletrônicos (REEE)', 
-  'Orgânicos'
-];
-
-export const DETAILED_MATERIAL_OPTIONS = [
-  ...MAIN_MATERIAL_OPTIONS,
-  ...ADDITIONAL_MATERIAL_OPTIONS,
+  'Orgânicos', 
+  'Recicláveis em geral', 
   'Outro'
 ];
-
-const MATERIAL_OPTIONS = DETAILED_MATERIAL_OPTIONS;
 
 const SEGMENT_OPTIONS = [
   { value: 'Indústria', label: 'Indústria' },
@@ -130,7 +117,6 @@ interface MaterialLine {
   storage_provision_type?: string;
   storage_provision_quantity?: string;
   storage_provision_custom_type?: string;
-  showMoreMaterials?: boolean;
 }
 
 const newLine = (): MaterialLine => ({
@@ -146,8 +132,7 @@ const newLine = (): MaterialLine => ({
   needs_storage_provision: false,
   storage_provision_type: 'Bag',
   storage_provision_quantity: '',
-  storage_provision_custom_type: '',
-  showMoreMaterials: false
+  storage_provision_custom_type: ''
 });
 
 export default function ProspectingPage() {
@@ -296,8 +281,7 @@ export default function ProspectingPage() {
 
     if (supplier.materials && supplier.materials.length > 0) {
       setMaterials(supplier.materials.map(m => {
-        const isStandard = DETAILED_MATERIAL_OPTIONS.includes(m.material_name);
-        const isMain = MAIN_MATERIAL_OPTIONS.includes(m.material_name);
+        const isStandard = MATERIAL_OPTIONS.includes(m.material_name);
         return {
           id: m.id, 
           material_name: isStandard ? m.material_name : 'Outro', 
@@ -311,8 +295,7 @@ export default function ProspectingPage() {
           needs_storage_provision: m.needs_storage_provision || false,
           storage_provision_type: m.storage_provision_type || 'Bag',
           storage_provision_quantity: m.storage_provision_quantity ? String(m.storage_provision_quantity) : '',
-          storage_provision_custom_type: m.storage_provision_custom_type || '',
-          showMoreMaterials: !isMain && isStandard
+          storage_provision_custom_type: m.storage_provision_custom_type || ''
         };
       }));
     } else { 
@@ -1599,100 +1582,23 @@ export default function ProspectingPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="col-span-1 md:col-span-2 flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-700">
-                          {language === 'pt' ? 'Tipo de Material / Categoria *' : 'Material Type / Category *'}
-                        </label>
-                        {mat.material_name && (
-                          <span className="text-[11px] font-semibold text-slate-500">
-                            {language === 'pt' ? 'Selecionado:' : 'Selected:'}{' '}
-                            <strong className="text-[#2098D1]">
-                              {mat.material_name === 'Outro' ? (mat.custom_material_name || 'Outro') : translateMaterialName(mat.material_name, language)}
-                            </strong>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Material Option Pills */}
-                      <div className="flex flex-wrap gap-1.5 p-2.5 bg-white border border-[#CCEAF1] rounded-xl">
-                        {/* Main options */}
-                        {MAIN_MATERIAL_OPTIONS.map(opt => {
-                          const isSelected = mat.material_name === opt;
-                          return (
-                            <button
-                              key={opt}
-                              type="button"
-                              onClick={() => updMat(mat.id, 'material_name', opt)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-                                isSelected
-                                  ? 'bg-[#2098D1] text-white border-[#2098D1] shadow-xs'
-                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-[#2098D1]/60 hover:bg-[#E5F5F8]'
-                              }`}
-                            >
-                              {translateMaterialName(opt, language)}
-                            </button>
-                          );
-                        })}
-
-                        {/* Extended options shown when expanded */}
-                        {mat.showMoreMaterials && ADDITIONAL_MATERIAL_OPTIONS.map(opt => {
-                          const isSelected = mat.material_name === opt;
-                          return (
-                            <button
-                              key={opt}
-                              type="button"
-                              onClick={() => updMat(mat.id, 'material_name', opt)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border animate-in fade-in duration-150 ${
-                                isSelected
-                                  ? 'bg-[#2098D1] text-white border-[#2098D1] shadow-xs'
-                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-[#2098D1]/60 hover:bg-[#E5F5F8]'
-                              }`}
-                            >
-                              {translateMaterialName(opt, language)}
-                            </button>
-                          );
-                        })}
-
-                        {/* Outro Option */}
-                        <button
-                          type="button"
-                          onClick={() => updMat(mat.id, 'material_name', 'Outro')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-                            mat.material_name === 'Outro'
-                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50'
-                          }`}
-                        >
-                          {language === 'pt' ? '✏️ Outro' : '✏️ Other'}
-                        </button>
-
-                        {/* Expand / Collapse Button */}
-                        <button
-                          type="button"
-                          onClick={() => updMat(mat.id, 'showMoreMaterials' as any, !mat.showMoreMaterials as any)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#2098D1] bg-[#F0F9FB] border border-[#CCEAF1] hover:bg-[#E5F5F8] transition-all cursor-pointer flex items-center gap-1"
-                        >
-                          {mat.showMoreMaterials ? (
-                            <span>{language === 'pt' ? '▲ Menos opções' : '▲ Fewer options'}</span>
-                          ) : (
-                            <>
-                              <span>{language === 'pt' ? '+ Ver mais opções' : '+ Show more options'}</span>
-                              <span className="text-[10px] text-slate-400 font-normal">({ADDITIONAL_MATERIAL_OPTIONS.length})</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-600">Tipo de Material / Categoria *</label>
+                      <select 
+                        value={mat.material_name} 
+                        onChange={e => updMat(mat.id, 'material_name', e.target.value)}
+                        className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                      >
+                        <option value="">Selecione o material...</option>
+                        {MATERIAL_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
                       {mat.material_name === 'Outro' && (
                         <input
                           type="text"
-                          placeholder={language === 'pt' ? 'Digite o nome do material personalizado...' : 'Enter custom material name...'}
+                          placeholder="Digite o nome do material personalizado..."
                           value={mat.custom_material_name || ''}
                           onChange={e => updMat(mat.id, 'custom_material_name', e.target.value)}
-                          className="mt-1 px-3 py-2 text-xs bg-white border border-emerald-400 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                          required
-                          autoFocus
+                          className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       )}
                     </div>
