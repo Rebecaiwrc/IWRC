@@ -813,23 +813,46 @@ export default function SupplierDetailPage() {
 
       // 4. Update Hub delivery / self-delivery status if configured
       if (isHubDelivery) {
+        const hasStorageNeed = materialsForm.some(m => m.needs_storage_provision);
         const isProspecting = ['PROSPECTING', 'QUALIFICATION', 'LOGISTICS'].includes(supplier.current_stage || '');
-        await Promise.all([
-          dbService.updateSupplier(supplier.id, {
-            current_stage: isProspecting ? 'OPERATION' : supplier.current_stage,
-            current_status: isProspecting ? 'APPROVED' : supplier.current_status,
-            transport_responsible: 'Fornecedor (entrega no Hub)'
-          }),
-          dbService.createOrUpdateLogisticsAnalysis({
-            supplier_id: supplier.id,
-            transport_responsible: 'Fornecedor (entrega no Hub)',
-            transport_type: 'Entrega Própria (Gerador)',
-            estimated_cost: 0,
-            distance_km: null,
-            feasibility: 'FEASIBLE',
-            notes: 'Entrega direta realizada pelo próprio gerador no Hub (dispensa cotação de frete e agendamento de coleta)'
-          })
-        ]);
+
+        if (!hasStorageNeed) {
+          await Promise.all([
+            dbService.updateSupplier(supplier.id, {
+              current_stage: isProspecting ? 'OPERATION' : supplier.current_stage,
+              current_status: isProspecting ? 'APPROVED' : supplier.current_status,
+              transport_responsible: 'Fornecedor (entrega no Hub)'
+            }),
+            dbService.createOrUpdateLogisticsAnalysis({
+              supplier_id: supplier.id,
+              transport_responsible: 'Fornecedor (entrega no Hub)',
+              transport_type: 'Entrega Própria (Gerador)',
+              estimated_cost: 0,
+              distance_km: null,
+              feasibility: 'FEASIBLE',
+              notes: 'Entrega direta realizada pelo próprio gerador no Hub (sem necessidade de recipientes nem cotação de frete)'
+            })
+          ]);
+        } else {
+          // Needs storage provision -> Send to Logistics specifically for storage container quotation
+          await Promise.all([
+            dbService.updateSupplier(supplier.id, {
+              current_stage: isProspecting ? 'LOGISTICS' : supplier.current_stage,
+              current_status: isProspecting ? 'PENDING' : supplier.current_status,
+              prospecting_status: isProspecting ? 'WAITING_LOGISTICS' : supplier.prospecting_status,
+              transport_responsible: 'Fornecedor (entrega no Hub)'
+            }),
+            dbService.createOrUpdateLogisticsAnalysis({
+              supplier_id: supplier.id,
+              transport_responsible: 'Fornecedor (entrega no Hub)',
+              transport_type: 'Entrega Própria (Gerador)',
+              estimated_cost: 0,
+              distance_km: null,
+              feasibility: 'PENDING',
+              notes: 'Entrega direta pelo gerador no Hub — Necessita cotação e organização de fornecimento de meios de armazenamento'
+            })
+          ]);
+        }
       }
 
       setIsMaterialModalOpen(false);
@@ -3102,7 +3125,9 @@ export default function SupplierDetailPage() {
                 </label>
                 <p className="text-[11px] text-sky-700 dark:text-slate-400 mt-0.5">
                   {isHubDelivery
-                    ? (language === 'pt' ? '✓ Gerador fará entrega própria no Hub. Lead vai direto para Geradores ativos, sem necessidade de agendamento de coleta.' : '✓ Supplier self-delivers to Hub. Goes straight to active Generators without collection scheduling.')
+                    ? (materialsForm.some(m => m.needs_storage_provision)
+                        ? (language === 'pt' ? '✓ Gerador fará entrega no Hub, mas necessita de recipientes. Será enviado para a Logística cotar e organizar a entrega dos meios de armazenamento.' : '✓ Supplier self-delivers, but needs containers. Sent to Logistics to quote and arrange container delivery.')
+                        : (language === 'pt' ? '✓ Gerador fará entrega própria no Hub e NÃO necessita de recipientes. Lead vai direto para Geradores ativos, sem ação logística.' : '✓ Supplier self-delivers with no container needs. Moves straight to active Generators.'))
                     : (language === 'pt' ? 'iWrc ou parceiro logístico realizará a coleta e transporte (necessita agendamento).' : 'iWrc or logistics partner will collect/transport (scheduling required).')}
                 </p>
               </div>

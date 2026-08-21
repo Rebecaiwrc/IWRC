@@ -300,11 +300,10 @@ export default function LogisticsPage() {
     return true;
   });
   
-  // 2. Scheduling: Suppliers awaiting collection scheduling (have NO upcoming scheduled collection)
+  // 2. Scheduling: Suppliers awaiting collection scheduling or storage container delivery scheduling
   const schedulingQueue = allSuppliers
     .filter(s => isResponsibleForSupplier(s))
     .filter(s => {
-      // If supplier delivered by generator themselves (Fornecedor entrega no Hub), iWrc does NOT collect! It must NEVER appear in Agendamento de Coletas!
       const activeLog = s.logistics_analyses?.[0];
       const isSelfDelivery = 
         activeLog?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
@@ -316,17 +315,28 @@ export default function LogisticsPage() {
         s.transport_responsible === 'Fornecedor (entrega no Hub)' ||
         (s as any).self_delivery === true;
 
-      if (isSelfDelivery) {
+      const needsStorage = s.materials?.some(m => m.needs_storage_provision);
+
+      // If supplier delivers to Hub and DOES NOT need storage containers, iWrc does not collect or deliver containers
+      if (isSelfDelivery && !needsStorage) {
         return false;
       }
 
-      // If supplier ALREADY has an upcoming scheduled collection, it has already been scheduled and must NOT appear in this pending queue
+      // If supplier ALREADY has an upcoming scheduled collection or container delivery, it has already been scheduled
       const scheduledCols = (s.collections || []).filter(c => c.status === 'SCHEDULED');
       if (scheduledCols.length > 0) {
         return false;
       }
 
-      // 1. Initial 1st collection pending
+      // Special Case: Self-Delivery with Storage Provision Need
+      // Appears in scheduling queue once Logistics approves feasibility, specifically to schedule the container delivery!
+      if (isSelfDelivery && needsStorage) {
+        const isFeasible = activeLog?.feasibility === 'FEASIBLE';
+        const hasNoScheduledCols = !s.collections || s.collections.length === 0;
+        return isFeasible && hasNoScheduledCols;
+      }
+
+      // 1. Initial 1st collection pending (standard flow)
       const isInitialPending = 
         (s.current_stage === 'COLLECTION' && (!s.collections || s.collections.length === 0)) || 
         (s.backlog_reason?.toLowerCase().includes('agendamento') && (!s.collections || s.collections.length === 0)) ||
@@ -620,7 +630,6 @@ export default function LogisticsPage() {
         type: 'internal_obs',
         description: `Logística concluiu análise. Decisão: ${translateFeasibility(analysisForm.feasibility as any)}. Notas: ${analysisForm.notes || '-'}`
       });
-
       setIsModalOpen(false);
       fetchData();
     } catch (err: any) { 
@@ -637,16 +646,29 @@ export default function LogisticsPage() {
     const initialFreq = supplier.logistics_analyses?.[0]?.recommended_frequency || 'Mensal';
     const isStdFreq = frequencyOptions.some(o => o.value === initialFreq && o.value !== 'Outros');
 
+    const isSelfDeliveryWithStorage = Boolean(
+      (
+        supplier.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+        supplier.logistics_analyses?.[0]?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+        supplier.logistics_analyses?.[0]?.transport_type === 'Entrega Própria (Gerador)'
+      ) && supplier.materials?.some(m => m.needs_storage_provision)
+    );
+
+    const containerSummary = (supplier.materials || [])
+      .filter(m => m.needs_storage_provision)
+      .map(m => `${m.storage_provision_quantity || 1}x ${m.storage_provision_type === 'Outros' ? (m.storage_provision_custom_type || 'Recipiente') : (m.storage_provision_type || 'Bag')}`)
+      .join(', ');
+
     setScheduleForm({
       scheduled_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      frequency: isStdFreq ? initialFreq : 'Outros',
+      frequency: isSelfDeliveryWithStorage ? 'Entrega única' : (isStdFreq ? initialFreq : 'Outros'),
       custom_frequency: isStdFreq ? '' : initialFreq,
-      material_name: mainMaterial ? mainMaterial.material_name : '',
-      estimated_volume: mainMaterial ? mainMaterial.estimated_volume.toString() : '',
-      unit: mainMaterial?.unit || 'kg',
+      material_name: isSelfDeliveryWithStorage ? (containerSummary || 'Meios de Armazenamento (Recipientes)') : (mainMaterial ? mainMaterial.material_name : ''),
+      estimated_volume: isSelfDeliveryWithStorage ? '1' : (mainMaterial ? mainMaterial.estimated_volume.toString() : ''),
+      unit: isSelfDeliveryWithStorage ? 'un' : (mainMaterial?.unit || 'kg'),
       driver_name: '',
-      carrier_name: supplier.logistics_analyses?.[0]?.transport_responsible || 'Terceirizado da iWrc',
-      notes: ''
+      carrier_name: isSelfDeliveryWithStorage ? 'iWrc / Logística' : (supplier.logistics_analyses?.[0]?.transport_responsible || 'Terceirizado da iWrc'),
+      notes: isSelfDeliveryWithStorage ? `Entrega de meios de armazenamento: ${containerSummary || 'Bags/Caçambas/Contêineres'}` : ''
     });
     setIsScheduleModalOpen(true);
   };
@@ -654,6 +676,20 @@ export default function LogisticsPage() {
   const handleSaveSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!schedulingSupplier) return;
+
+    const isSelfDeliveryWithStorage = Boolean(
+      (
+        schedulingSupplier.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+        schedulingSupplier.logistics_analyses?.[0]?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+        schedulingSupplier.logistics_analyses?.[0]?.transport_type === 'Entrega Própria (Gerador)'
+      ) && schedulingSupplier.materials?.some(m => m.needs_storage_provision)
+    );
+
+    const containerSummary = (schedulingSupplier.materials || [])
+      .filter(m => m.needs_storage_provision)
+      .map(m => `${m.storage_provision_quantity || 1}x ${m.storage_provision_type === 'Outros' ? (m.storage_provision_custom_type || 'Recipiente') : (m.storage_provision_type || 'Bag')}`)
+      .join(', ');
+
     try {
       await dbService.createCollection(
         {
@@ -661,7 +697,7 @@ export default function LogisticsPage() {
           scheduled_date: scheduleForm.scheduled_date,
           driver_name: scheduleForm.driver_name || null,
           carrier_name: scheduleForm.carrier_name || null,
-          notes: scheduleForm.notes || null,
+          notes: scheduleForm.notes || (isSelfDeliveryWithStorage ? `Entrega de meios de armazenamento: ${containerSummary}` : null),
           status: 'SCHEDULED'
         },
         [
@@ -673,7 +709,7 @@ export default function LogisticsPage() {
         ]
       );
 
-      // Update supplier status and last collection date
+      // Update supplier status and last collection / delivery date
       await dbService.updateSupplier(schedulingSupplier.id, {
         current_stage: 'OPERATION',
         current_status: 'APPROVED',
@@ -682,7 +718,7 @@ export default function LogisticsPage() {
         backlog_reason: null
       });
 
-      // Update logistics analysis frequency
+      // Update logistics analysis frequency & storage provision delivery date
       const existingLog = schedulingSupplier.logistics_analyses?.[0];
       if (existingLog) {
         await dbService.saveLogisticsAnalysis({
@@ -693,6 +729,8 @@ export default function LogisticsPage() {
           recommended_frequency: scheduleForm.frequency,
           transport_responsible: existingLog.transport_responsible,
           conditioning_infrastructure_needed: existingLog.conditioning_infrastructure_needed,
+          storage_provision_cost: existingLog.storage_provision_cost,
+          storage_provision_delivery_date: isSelfDeliveryWithStorage ? scheduleForm.scheduled_date : existingLog.storage_provision_delivery_date,
           feasibility: existingLog.feasibility,
           notes: existingLog.notes,
           analyst_id: existingLog.analyst_id,
@@ -707,22 +745,27 @@ export default function LogisticsPage() {
         old_status: schedulingSupplier.current_status,
         new_status: 'APPROVED',
         user_id: currentUser?.id || 'usr-logistics',
-        notes: `Coleta agendada para ${formatDate(scheduleForm.scheduled_date)} (Recorrência: ${scheduleForm.frequency}). Motorista: ${scheduleForm.driver_name || '-'}, Transportadora: ${scheduleForm.carrier_name || '-'}`
+        notes: isSelfDeliveryWithStorage
+          ? `Entrega de meios de armazenamento (${containerSummary || 'Recipientes'}) agendada para ${formatDate(scheduleForm.scheduled_date)}. Responsável: ${scheduleForm.driver_name || '-'}, Veículo: ${scheduleForm.carrier_name || '-'}`
+          : `Coleta agendada para ${formatDate(scheduleForm.scheduled_date)} (Recorrência: ${scheduleForm.frequency}). Motorista: ${scheduleForm.driver_name || '-'}, Transportadora: ${scheduleForm.carrier_name || '-'}`
       });
 
       await dbService.addSupplierInteraction({
         supplier_id: schedulingSupplier.id,
         user_id: currentUser?.id || 'usr-logistics',
         type: 'internal_obs',
-        description: `Coleta operacional agendada para ${formatDate(scheduleForm.scheduled_date)} (${scheduleForm.material_name}, ${scheduleForm.estimated_volume}${scheduleForm.unit}, Recorrência: ${scheduleForm.frequency}).`
+        description: isSelfDeliveryWithStorage
+          ? `Entrega de meios de armazenamento (${containerSummary || 'Recipientes'}) programada para ${formatDate(scheduleForm.scheduled_date)}.`
+          : `Coleta operacional agendada para ${formatDate(scheduleForm.scheduled_date)} (${scheduleForm.material_name}, ${scheduleForm.estimated_volume}${scheduleForm.unit}, Recorrência: ${scheduleForm.frequency}).`
       });
 
       setIsScheduleModalOpen(false);
+      setSchedulingSupplier(null);
       await fetchData();
-      alert('Coleta agendada com sucesso! Gerador agora está Ativo.');
-    } catch (err) {
+      alert(isSelfDeliveryWithStorage ? 'Entrega de recipientes agendada com sucesso! Gerador agora está Ativo.' : 'Coleta agendada com sucesso! Gerador agora está Ativo.');
+    } catch (err: any) {
       console.error(err);
-      alert('Erro ao agendar coleta.');
+      alert(`Erro ao salvar agendamento: ${err.message || err.details || 'Tente novamente.'}`);
     }
   };
 
@@ -1077,6 +1120,14 @@ export default function LogisticsPage() {
                       ? getNextCollectionDate(supplier.last_collection_date!, freq)
                       : null;
 
+                    const isSelfDeliveryWithStorage = Boolean(
+                      (
+                        supplier.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+                        activeLog?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+                        activeLog?.transport_type === 'Entrega Própria (Gerador)'
+                      ) && supplier.materials?.some(m => m.needs_storage_provision)
+                    );
+
                     return (
                       <tr key={supplier.id} className="hover:bg-slate-50/60 transition-colors">
                         <td className="px-6 py-4">
@@ -1098,13 +1149,18 @@ export default function LogisticsPage() {
                             {supplier.materials && supplier.materials.length > 0 ? supplier.materials.map((m, i) => (
                               <span key={i} className="text-xs font-semibold text-slate-700">
                                 • {translateMaterialName(m.material_name, language)} ({formatVolume(m.estimated_volume, m.unit)})
+                                {m.needs_storage_provision && (
+                                  <span className="ml-1 text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                                    📦 {m.storage_provision_quantity || 1}x {m.storage_provision_type === 'Outros' ? (m.storage_provision_custom_type || 'Recipiente') : (m.storage_provision_type || 'Bag')}
+                                  </span>
+                                )}
                               </span>
                             )) : <span className="text-xs text-slate-400">{language === 'pt' ? 'Nenhum' : 'None'}</span>}
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <span className="inline-block px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-200">
-                            🔄 {freq}
+                            {isSelfDeliveryWithStorage ? '📦 Entrega única' : `🔄 ${freq}`}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -1114,11 +1170,19 @@ export default function LogisticsPage() {
                               <span className="text-[10px] text-slate-400">{language === 'pt' ? 'Última realizada' : 'Last completed'}</span>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-400 italic">{language === 'pt' ? 'Nenhuma (1ª coleta)' : 'None (1st collection)'}</span>
+                            <span className="text-xs text-slate-400 italic">
+                              {isSelfDeliveryWithStorage 
+                                ? (language === 'pt' ? 'Aguardando entrega de recipientes' : 'Awaiting container delivery')
+                                : (language === 'pt' ? 'Nenhuma (1ª coleta)' : 'None (1st collection)')}
+                            </span>
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          {hasLastDate && nextDueDate ? (
+                          {isSelfDeliveryWithStorage ? (
+                            <Badge variant="purple" className="gap-1 bg-indigo-50 text-indigo-700 border-indigo-200">
+                              📦 {language === 'pt' ? 'Aguardando Entrega de Recipientes' : 'Awaiting Container Delivery'}
+                            </Badge>
+                          ) : hasLastDate && nextDueDate ? (
                             <Badge variant="warning" className="gap-1">
                               🔔 {language === 'pt' ? 'Nova Coleta Devida' : 'New Collection Due'} ({formatDate(nextDueDate.toISOString())})
                             </Badge>
@@ -1142,13 +1206,15 @@ export default function LogisticsPage() {
                             </Link>
                             <Button
                               size="sm"
-                              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-bold"
+                              className={`gap-1.5 font-bold shadow-xs text-white ${isSelfDeliveryWithStorage ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                               onClick={() => handleOpenScheduleModal(supplier)}
                             >
                               <Calendar size={13} />
-                              {hasLastDate 
-                                ? (language === 'pt' ? 'Agendar Próxima Coleta' : 'Schedule Next Collection') 
-                                : (language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection')}
+                              {isSelfDeliveryWithStorage
+                                ? (language === 'pt' ? 'Agendar Entrega de Recipientes' : 'Schedule Container Delivery')
+                                : hasLastDate 
+                                  ? (language === 'pt' ? 'Agendar Próxima Coleta' : 'Schedule Next Collection') 
+                                  : (language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection')}
                             </Button>
                           </div>
                         </td>
@@ -1746,127 +1812,192 @@ export default function LogisticsPage() {
         </Modal>
       )}
 
-      {/* Schedule Collection Modal */}
-      {schedulingSupplier && (
-        <Modal isOpen={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)}
-          title={`${language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection'} — ${schedulingSupplier.name}`} size="md">
-          <form onSubmit={handleSaveSchedule} className="space-y-4">
-            <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-xs space-y-1 border border-slate-200 dark:border-slate-800">
-              <p className="font-bold text-slate-800 dark:text-slate-200">{language === 'pt' ? 'Endereço de Coleta:' : 'Collection Address:'}</p>
-              <p className="text-slate-600 dark:text-slate-400">
-                {schedulingSupplier.address ? `${schedulingSupplier.address.street || ''}, ${schedulingSupplier.address.number || ''} — ${schedulingSupplier.address.city}/${schedulingSupplier.address.state}` : (language === 'pt' ? 'Não informado' : 'Not provided')}
-              </p>
-            </div>
+      {/* Schedule Collection / Storage Container Delivery Modal */}
+      {schedulingSupplier && (() => {
+        const isSelfDeliveryWithStorage = Boolean(
+          (
+            schedulingSupplier.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+            schedulingSupplier.logistics_analyses?.[0]?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+            schedulingSupplier.logistics_analyses?.[0]?.transport_type === 'Entrega Própria (Gerador)'
+          ) && schedulingSupplier.materials?.some(m => m.needs_storage_provision)
+        );
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        const storageContainers = (schedulingSupplier.materials || [])
+          .filter(m => m.needs_storage_provision);
+
+        return (
+          <Modal 
+            isOpen={isScheduleModalOpen} 
+            onClose={() => setIsScheduleModalOpen(false)}
+            title={isSelfDeliveryWithStorage 
+              ? `${language === 'pt' ? 'Agendar Entrega de Meios de Armazenamento' : 'Schedule Container Delivery'} — ${schedulingSupplier.name}`
+              : `${language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection'} — ${schedulingSupplier.name}`
+            } 
+            size="md"
+          >
+            <form onSubmit={handleSaveSchedule} className="space-y-4">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-xs space-y-1 border border-slate-200 dark:border-slate-800">
+                <p className="font-bold text-slate-800 dark:text-slate-200">
+                  {isSelfDeliveryWithStorage 
+                    ? (language === 'pt' ? 'Endereço de Entrega dos Recipientes:' : 'Container Delivery Address:')
+                    : (language === 'pt' ? 'Endereço de Coleta:' : 'Collection Address:')}
+                </p>
+                <p className="text-slate-600 dark:text-slate-400">
+                  {schedulingSupplier.address ? `${schedulingSupplier.address.street || ''}, ${schedulingSupplier.address.number || ''} — ${schedulingSupplier.address.city}/${schedulingSupplier.address.state}` : (language === 'pt' ? 'Não informado' : 'Not provided')}
+                </p>
+              </div>
+
+              {isSelfDeliveryWithStorage && (
+                <div className="p-3.5 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs space-y-2">
+                  <span className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
+                    📦 {language === 'pt' ? 'Entrega no Hub pelo Fornecedor' : 'Supplier Delivers to Hub'}
+                  </span>
+                  <p className="text-indigo-800 dark:text-indigo-300">
+                    {language === 'pt'
+                      ? 'Este gerador é responsável pelo transporte e entrega no Hub. Este agendamento destina-se exclusivamente à entrega dos recipientes solicitados no endereço do gerador.'
+                      : 'This generator transports material themselves. This schedule is exclusively to deliver requested storage containers.'}
+                  </p>
+                  <div className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-800 flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Recipientes Solicitados:' : 'Requested Containers:'}</span>
+                    {storageContainers.map((m, idx) => (
+                      <span key={idx} className="font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded border border-indigo-200">
+                        {m.storage_provision_quantity || 1}x {m.storage_provision_type === 'Outros' ? (m.storage_provision_custom_type || 'Recipiente') : (m.storage_provision_type || 'Bag')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label={isSelfDeliveryWithStorage 
+                    ? (language === 'pt' ? 'Data de Entrega dos Recipientes *' : 'Container Delivery Date *')
+                    : (language === 'pt' ? 'Data Programada da Coleta *' : 'Scheduled Collection Date *')}
+                  type="date"
+                  value={scheduleForm.scheduled_date}
+                  onChange={e => setScheduleForm(p => ({ ...p, scheduled_date: e.target.value }))}
+                  required
+                />
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {isSelfDeliveryWithStorage 
+                      ? (language === 'pt' ? 'Modalidade' : 'Modality')
+                      : (language === 'pt' ? 'Frequência da Coleta (Recorrência) *' : 'Collection Frequency (Recurrence) *')}
+                  </label>
+                  <select
+                    value={scheduleForm.frequency}
+                    onChange={e => setScheduleForm(p => ({ ...p, frequency: e.target.value }))}
+                    className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                  >
+                    {isSelfDeliveryWithStorage ? (
+                      <>
+                        <option value="Entrega única">Entrega única</option>
+                        <option value="Sob demanda">Sob demanda</option>
+                        <option value="1x por mês">1x por mês</option>
+                      </>
+                    ) : (
+                      frequencyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)
+                    )}
+                  </select>
+                  {!isSelfDeliveryWithStorage && scheduleForm.frequency === 'Outros' && (
+                    <input
+                      type="text"
+                      placeholder={language === 'pt' ? 'Especifique (ex: 2x por semana, a cada 10 dias)...' : 'Specify frequency...'}
+                      value={scheduleForm.custom_frequency}
+                      onChange={e => setScheduleForm(p => ({ ...p, custom_frequency: e.target.value }))}
+                      className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  )}
+                </div>
+              </div>
+
+              {!isSelfDeliveryWithStorage && (
+                <p className="text-[11px] text-indigo-700 dark:text-indigo-300 bg-indigo-50/80 dark:bg-indigo-950/40 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-800 leading-relaxed">
+                  💡 <strong>{language === 'pt' ? 'Aviso Antecipado (3 dias):' : 'Advance Notice (3 days):'}</strong> {language === 'pt' 
+                    ? 'Ao confirmar, o gerador sai desta lista imediatamente. Ele reaparecerá automaticamente aqui 3 dias antes da data da próxima coleta para a Logística realizar o novo agendamento.'
+                    : 'Upon confirming, generator leaves this queue immediately. It will reappear here 3 days before the next collection due date.'}
+                </p>
+              )}
+
               <Input
-                label={language === 'pt' ? 'Data Programada da Coleta *' : 'Scheduled Collection Date *'}
-                type="date"
-                value={scheduleForm.scheduled_date}
-                onChange={e => setScheduleForm(p => ({ ...p, scheduled_date: e.target.value }))}
+                label={isSelfDeliveryWithStorage 
+                  ? (language === 'pt' ? 'Meios de Armazenamento / Descrição *' : 'Containers / Description *')
+                  : (language === 'pt' ? 'Material a Coletar *' : 'Material to Collect *')}
+                value={scheduleForm.material_name}
+                onChange={e => setScheduleForm(p => ({ ...p, material_name: e.target.value }))}
+                placeholder={isSelfDeliveryWithStorage ? 'Ex: 5 Bags, 1 Caçamba de 30m³' : (language === 'pt' ? 'Ex: Papelão Ondulado' : 'E.g. Corrugated Cardboard')}
                 required
               />
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label={isSelfDeliveryWithStorage ? (language === 'pt' ? 'Quantidade Total' : 'Total Quantity') : (language === 'pt' ? 'Volume Estimado *' : 'Estimated Volume *')}
+                  type="number"
+                  value={scheduleForm.estimated_volume}
+                  onChange={e => setScheduleForm(p => ({ ...p, estimated_volume: e.target.value }))}
+                  placeholder="1"
+                  required
+                />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Unidade' : 'Unit'}</label>
+                  <select
+                    value={scheduleForm.unit}
+                    onChange={e => setScheduleForm(p => ({ ...p, unit: e.target.value }))}
+                    className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                  >
+                    <option value="un">un (unidades)</option>
+                    <option value="kg">kg</option>
+                    <option value="ton">ton</option>
+                    <option value="m³">m³</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label={isSelfDeliveryWithStorage ? (language === 'pt' ? 'Motorista / Entregador' : 'Delivery Driver') : (language === 'pt' ? 'Motorista' : 'Driver')}
+                  value={scheduleForm.driver_name}
+                  onChange={e => setScheduleForm(p => ({ ...p, driver_name: e.target.value }))}
+                  placeholder={language === 'pt' ? 'Ex: Carlos Oliveira' : 'E.g. John Doe'}
+                />
+                <Input
+                  label={isSelfDeliveryWithStorage ? (language === 'pt' ? 'Veículo / Transportadora de Entrega' : 'Delivery Vehicle') : (language === 'pt' ? 'Transportadora / Veículo' : 'Carrier / Vehicle')}
+                  value={scheduleForm.carrier_name}
+                  onChange={e => setScheduleForm(p => ({ ...p, carrier_name: e.target.value }))}
+                  placeholder={language === 'pt' ? 'Ex: Logística iWrc / Fiorino' : 'E.g. iWrc Carrier (Truck)'}
+                />
+              </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'pt' ? 'Frequência da Coleta (Recorrência) *' : 'Collection Frequency (Recurrence) *'}
+                  {language === 'pt' ? 'Observações Operacionais' : 'Operational Notes'}
                 </label>
-                <select
-                  value={scheduleForm.frequency}
-                  onChange={e => setScheduleForm(p => ({ ...p, frequency: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
-                >
-                  {frequencyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {scheduleForm.frequency === 'Outros' && (
-                  <input
-                    type="text"
-                    placeholder={language === 'pt' ? 'Especifique (ex: 2x por semana, a cada 10 dias)...' : 'Specify frequency...'}
-                    value={scheduleForm.custom_frequency}
-                    onChange={e => setScheduleForm(p => ({ ...p, custom_frequency: e.target.value }))}
-                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
-                )}
+                <textarea
+                  value={scheduleForm.notes}
+                  onChange={e => setScheduleForm(p => ({ ...p, notes: e.target.value }))}
+                  placeholder={isSelfDeliveryWithStorage 
+                    ? (language === 'pt' ? 'Instruções de descarregamento dos bags/contêineres, contato na portaria, etc.' : 'Drop-off instructions, gate contact, etc.')
+                    : (language === 'pt' ? 'Horário de chegada, instruções de pesagem...' : 'Arrival time, scale instructions...')}
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none min-h-[70px]"
+                />
               </div>
-            </div>
 
-            <p className="text-[11px] text-indigo-700 dark:text-indigo-300 bg-indigo-50/80 dark:bg-indigo-950/40 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-800 leading-relaxed">
-              💡 <strong>{language === 'pt' ? 'Aviso Antecipado (3 dias):' : 'Advance Notice (3 days):'}</strong> {language === 'pt' 
-                ? 'Ao confirmar, o gerador sai desta lista imediatamente. Ele reaparecerá automaticamente aqui 3 dias antes da data da próxima coleta para a Logística realizar o novo agendamento.'
-                : 'Upon confirming, generator leaves this queue immediately. It will reappear here 3 days before the next collection due date.'}
-            </p>
-
-            <Input
-              label={language === 'pt' ? 'Material a Coletar *' : 'Material to Collect *'}
-              value={scheduleForm.material_name}
-              onChange={e => setScheduleForm(p => ({ ...p, material_name: e.target.value }))}
-              placeholder={language === 'pt' ? 'Ex: Papelão Ondulado' : 'E.g. Corrugated Cardboard'}
-              required
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label={language === 'pt' ? 'Volume Estimado *' : 'Estimated Volume *'}
-                type="number"
-                value={scheduleForm.estimated_volume}
-                onChange={e => setScheduleForm(p => ({ ...p, estimated_volume: e.target.value }))}
-                placeholder="1000"
-                required
-              />
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Unidade' : 'Unit'}</label>
-                <select
-                  value={scheduleForm.unit}
-                  onChange={e => setScheduleForm(p => ({ ...p, unit: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
-                >
-                  <option value="kg">kg</option>
-                  <option value="ton">ton</option>
-                  <option value="un">un</option>
-                  <option value="m³">m³</option>
-                </select>
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <Button type="button" variant="outline" onClick={() => setIsScheduleModalOpen(false)}>
+                  {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                </Button>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                  {isSelfDeliveryWithStorage 
+                    ? (language === 'pt' ? 'Confirmar Entrega de Recipientes' : 'Confirm Container Delivery')
+                    : (language === 'pt' ? 'Confirmar Agendamento' : 'Confirm Scheduling')}
+                </Button>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label={language === 'pt' ? 'Motorista' : 'Driver'}
-                value={scheduleForm.driver_name}
-                onChange={e => setScheduleForm(p => ({ ...p, driver_name: e.target.value }))}
-                placeholder={language === 'pt' ? 'Ex: Carlos Oliveira' : 'E.g. John Doe'}
-              />
-              <Input
-                label={language === 'pt' ? 'Transportadora / Veículo' : 'Carrier / Vehicle'}
-                value={scheduleForm.carrier_name}
-                onChange={e => setScheduleForm(p => ({ ...p, carrier_name: e.target.value }))}
-                placeholder={language === 'pt' ? 'Ex: Terceirizado iWrc (VUC)' : 'E.g. iWrc Carrier (Truck)'}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {language === 'pt' ? 'Observações Operacionais' : 'Operational Notes'}
-              </label>
-              <textarea
-                value={scheduleForm.notes}
-                onChange={e => setScheduleForm(p => ({ ...p, notes: e.target.value }))}
-                placeholder={language === 'pt' ? 'Horário de chegada, instruções de pesagem...' : 'Arrival time, scale instructions...'}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg outline-none min-h-[70px]"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <Button type="button" variant="outline" onClick={() => setIsScheduleModalOpen(false)}>
-                {language === 'pt' ? 'Cancelar' : 'Cancel'}
-              </Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
-                {language === 'pt' ? 'Confirmar Agendamento' : 'Confirm Scheduling'}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+            </form>
+          </Modal>
+        );
+      })()}
 
       {/* Outbound Material Dispatch Modal */}
       {isDispatchModalOpen && (

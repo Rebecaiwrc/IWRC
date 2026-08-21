@@ -708,36 +708,58 @@ export default function ProspectingPage() {
         await dbService.addSupplierDocuments(activeMaterialSupplier.id, attachedFiles);
       }
 
-      // 4. If supplier delivers directly to Hub (isHubDelivery === true)
+      const hasStorageNeed = materials.some(m => m.needs_storage_provision);
+
+      // 4. Check if supplier delivers directly to Hub (isHubDelivery === true)
       if (isHubDelivery) {
-        await Promise.all([
-          dbService.updateSupplier(activeMaterialSupplier.id, {
-            current_stage: 'OPERATION',
-            current_status: 'APPROVED',
-            prospecting_status: 'QUALIFIED',
-            transport_responsible: 'Fornecedor (entrega no Hub)'
-          }),
-          dbService.createOrUpdateLogisticsAnalysis({
-            supplier_id: activeMaterialSupplier.id,
-            transport_responsible: 'Fornecedor (entrega no Hub)',
-            transport_type: 'Entrega Própria (Gerador)',
-            estimated_cost: 0,
-            distance_km: null,
-            feasibility: 'FEASIBLE',
-            notes: 'Entrega direta realizada pelo próprio gerador no Hub (dispensa cotação de frete e agendamento de coleta)'
-          }),
-          dbService.addSupplierStatusHistory({
-            supplier_id: activeMaterialSupplier.id,
-            old_stage: activeMaterialSupplier.current_stage,
-            new_stage: 'OPERATION',
-            old_status: activeMaterialSupplier.current_status,
-            new_status: 'APPROVED',
-            user_id: currentUser?.id,
-            notes: 'Fornecedor aprovado diretamente como Gerador Ativo (Entrega direta no Hub)'
-          })
-        ]);
+        if (!hasStorageNeed) {
+          // Case A: Hub Delivery without storage container needs -> Direct to Active Generators (OPERATION / APPROVED)
+          await Promise.all([
+            dbService.updateSupplier(activeMaterialSupplier.id, {
+              current_stage: 'OPERATION',
+              current_status: 'APPROVED',
+              prospecting_status: 'QUALIFIED',
+              transport_responsible: 'Fornecedor (entrega no Hub)'
+            }),
+            dbService.createOrUpdateLogisticsAnalysis({
+              supplier_id: activeMaterialSupplier.id,
+              transport_responsible: 'Fornecedor (entrega no Hub)',
+              transport_type: 'Entrega Própria (Gerador)',
+              estimated_cost: 0,
+              distance_km: null,
+              feasibility: 'FEASIBLE',
+              notes: 'Entrega direta realizada pelo próprio gerador no Hub (sem recipientes necessários nem cotação de frete)'
+            }),
+            dbService.addSupplierStatusHistory({
+              supplier_id: activeMaterialSupplier.id,
+              old_stage: activeMaterialSupplier.current_stage,
+              new_stage: 'OPERATION',
+              old_status: activeMaterialSupplier.current_status,
+              new_status: 'APPROVED',
+              user_id: currentUser?.id,
+              notes: 'Fornecedor aprovado diretamente como Gerador Ativo (Entrega direta no Hub)'
+            })
+          ]);
+        } else {
+          // Case B: Hub Delivery with storage container needs -> Sent to Logistics specifically for storage container quotation
+          await updateStatus(activeMaterialSupplier.id, 'WAITING_LOGISTICS');
+          await Promise.all([
+            dbService.updateSupplier(activeMaterialSupplier.id, {
+              transport_responsible: 'Fornecedor (entrega no Hub)'
+            }),
+            dbService.createOrUpdateLogisticsAnalysis({
+              supplier_id: activeMaterialSupplier.id,
+              transport_responsible: 'Fornecedor (entrega no Hub)',
+              transport_type: 'Entrega Própria (Gerador)',
+              estimated_cost: 0,
+              distance_km: null,
+              feasibility: 'PENDING',
+              notes: 'Entrega direta pelo gerador no Hub — Necessita cotação e organização de fornecimento de meios de armazenamento'
+            })
+          ]);
+        }
       } else {
-        // If sending to logistics
+        // Case C: Standard transport by iWrc
         if (isSendingToLogistics && activeMaterialSupplier.prospecting_status !== 'WAITING_LOGISTICS') {
           await updateStatus(activeMaterialSupplier.id, 'WAITING_LOGISTICS');
         }
@@ -2002,7 +2024,9 @@ export default function ProspectingPage() {
                   </label>
                   <p className="text-[11px] text-sky-700 mt-0.5">
                     {isHubDelivery
-                      ? (language === 'pt' ? '✓ Gerador fará entrega própria no Hub. O lead irá diretamente para Geradores ativos, sem necessidade de cotação de frete ou agendamento de coleta.' : '✓ Supplier self-delivers to Hub. Moves straight to active Generators without freight quotes or collection scheduling.')
+                      ? (materials.some(m => m.needs_storage_provision)
+                          ? (language === 'pt' ? '✓ Fornecedor entregará no Hub, mas necessita de recipientes. Será enviado para a Logística cotar e agendar a entrega dos meios de armazenamento.' : '✓ Supplier self-delivers, but needs containers. Will be sent to Logistics to quote and schedule container delivery.')
+                          : (language === 'pt' ? '✓ Fornecedor entregará no Hub e NÃO necessita de recipientes. O lead irá diretamente para Geradores ativos, sem ação logística.' : '✓ Supplier self-delivers with no container needs. Moves straight to active Generators.'))
                       : (language === 'pt' ? 'iWrc ou parceiro logístico realizará a coleta e transporte (enviado para análise e agendamento da Logística).' : 'iWrc or logistics partner will collect/transport (sent to Logistics for freight quoting and scheduling).')}
                   </p>
                 </div>
@@ -2113,12 +2137,18 @@ export default function ProspectingPage() {
               <Button 
                 onClick={handleSaveMaterialsAndLogistics} 
                 isLoading={isSubmitting} 
-                className={`gap-2 ${isHubDelivery ? '!bg-emerald-600 hover:!bg-emerald-700 text-white' : (isSendingToLogistics ? '!bg-indigo-600 hover:!bg-indigo-700' : '')}`}
+                className={`gap-2 ${isHubDelivery && !materials.some(m => m.needs_storage_provision) ? '!bg-emerald-600 hover:!bg-emerald-700 text-white' : ((isSendingToLogistics || (isHubDelivery && materials.some(m => m.needs_storage_provision))) ? '!bg-indigo-600 hover:!bg-indigo-700' : '')}`}
               >
                 {isHubDelivery ? (
-                  <>
-                    <CheckCircle size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Geradores' : 'Confirm and Send to Generators'}
-                  </>
+                  materials.some(m => m.needs_storage_provision) ? (
+                    <>
+                      <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística (Cotação Armazenamento)' : 'Send to Logistics (Storage Quotation)'}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Geradores' : 'Confirm and Send to Generators'}
+                    </>
+                  )
                 ) : isSendingToLogistics ? (
                   <>
                     <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística' : 'Confirm and Send to Logistics'}
