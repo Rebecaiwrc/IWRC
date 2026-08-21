@@ -113,6 +113,10 @@ interface MaterialLine {
   price_per_kg: string; 
   estimated_volume: string; 
   unit: string;
+  needs_storage_provision?: boolean;
+  storage_provision_type?: string;
+  storage_provision_quantity?: string;
+  storage_provision_custom_type?: string;
 }
 
 const newLine = (): MaterialLine => ({
@@ -124,7 +128,11 @@ const newLine = (): MaterialLine => ({
   transaction_type: 'donation', 
   price_per_kg: '', 
   estimated_volume: '', 
-  unit: 'kg'
+  unit: 'kg',
+  needs_storage_provision: false,
+  storage_provision_type: 'Bag',
+  storage_provision_quantity: '',
+  storage_provision_custom_type: ''
 });
 
 export default function ProspectingPage() {
@@ -283,7 +291,11 @@ export default function ProspectingPage() {
           transaction_type: m.transaction_type,
           price_per_kg: m.price_per_kg ? String(m.price_per_kg) : '',
           estimated_volume: m.estimated_volume ? String(m.estimated_volume) : '', 
-          unit: m.unit || 'kg'
+          unit: m.unit || 'kg',
+          needs_storage_provision: m.needs_storage_provision || false,
+          storage_provision_type: m.storage_provision_type || 'Bag',
+          storage_provision_quantity: m.storage_provision_quantity ? String(m.storage_provision_quantity) : '',
+          storage_provision_custom_type: m.storage_provision_custom_type || ''
         };
       }));
     } else { 
@@ -449,7 +461,7 @@ export default function ProspectingPage() {
     if (id) await updateStatus(id, col);
   };
 
-  const updMat = (id: string, field: keyof MaterialLine, val: string) =>
+  const updMat = (id: string, field: keyof MaterialLine, val: string | boolean) =>
     setMaterials(p => p.map(m => m.id === id ? { ...m, [field]: val } : m));
 
   const handleSaveMaterialsAndLogistics = async () => {
@@ -479,7 +491,11 @@ export default function ProspectingPage() {
           transaction_type: mat.transaction_type,
           price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
           storage_form: mat.storage_form || null, 
-          notes: null
+          notes: null,
+          needs_storage_provision: Boolean(mat.needs_storage_provision),
+          storage_provision_type: mat.needs_storage_provision ? (mat.storage_provision_type || 'Bag') : null,
+          storage_provision_quantity: mat.needs_storage_provision && mat.storage_provision_quantity ? Number(mat.storage_provision_quantity) : null,
+          storage_provision_custom_type: mat.needs_storage_provision && mat.storage_provision_type === 'Outros' ? (mat.storage_provision_custom_type || '') : null
         });
       });
 
@@ -1674,6 +1690,90 @@ export default function ProspectingPage() {
                         />
                       </div>
                     )}
+
+                    {/* Fornecimento de Meio de Armazenamento */}
+                    <div className="col-span-1 md:col-span-2 p-3.5 bg-[#F0F9FB] border border-[#CCEAF1] rounded-xl space-y-3 mt-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label className="text-xs font-bold text-[#0E2439]">
+                          {language === 'pt' ? 'Necessita fornecimento de meio de armazenamento?' : 'Requires storage container provision?'}
+                        </label>
+                        <div className="flex gap-2">
+                          <label className={`px-4 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                            mat.needs_storage_provision
+                              ? 'border-[#2098D1] bg-[#2098D1] text-white shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}>
+                            <input
+                              type="radio"
+                              name={`prosp_needs_storage_${mat.id}`}
+                              className="sr-only"
+                              checked={Boolean(mat.needs_storage_provision)}
+                              onChange={() => updMat(mat.id, 'needs_storage_provision', true)}
+                            />
+                            {language === 'pt' ? 'Sim' : 'Yes'}
+                          </label>
+                          <label className={`px-4 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                            !mat.needs_storage_provision
+                              ? 'border-slate-400 bg-slate-200 text-slate-800'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}>
+                            <input
+                              type="radio"
+                              name={`prosp_needs_storage_${mat.id}`}
+                              className="sr-only"
+                              checked={!mat.needs_storage_provision}
+                              onChange={() => updMat(mat.id, 'needs_storage_provision', false)}
+                            />
+                            {language === 'pt' ? 'Não' : 'No'}
+                          </label>
+                        </div>
+                      </div>
+
+                      {mat.needs_storage_provision && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-[#CCEAF1]">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[11px] font-bold text-slate-700">
+                              {language === 'pt' ? 'Tipo de Armazenamento *' : 'Storage Type *'}
+                            </label>
+                            <select
+                              value={mat.storage_provision_type || 'Bag'}
+                              onChange={e => updMat(mat.id, 'storage_provision_type', e.target.value)}
+                              className="px-3 py-2 text-xs bg-white border border-[#CCEAF1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                            >
+                              <option value="Bag">Bag</option>
+                              <option value="Contêiner">{language === 'pt' ? 'Contêiner' : 'Container'}</option>
+                              <option value="Caçamba">{language === 'pt' ? 'Caçamba' : 'Dumpster'}</option>
+                              <option value="Outros">{language === 'pt' ? 'Outros' : 'Others'}</option>
+                            </select>
+                            {mat.storage_provision_type === 'Outros' && (
+                              <input
+                                type="text"
+                                placeholder={language === 'pt' ? 'Descreva o tipo de armazenamento...' : 'Describe storage type...'}
+                                value={mat.storage_provision_custom_type || ''}
+                                onChange={e => updMat(mat.id, 'storage_provision_custom_type', e.target.value)}
+                                className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                                required
+                              />
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[11px] font-bold text-slate-700">
+                              {language === 'pt' ? 'Quantidade Necessária *' : 'Required Quantity *'}
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              placeholder="Ex: 5"
+                              value={mat.storage_provision_quantity || ''}
+                              onChange={e => updMat(mat.id, 'storage_provision_quantity', e.target.value)}
+                              className="px-3 py-2 text-xs bg-white border border-[#CCEAF1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1]"
+                              required
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -109,6 +109,10 @@ interface MaterialLine {
   price_per_kg: string; 
   estimated_volume: string; 
   unit: string;
+  needs_storage_provision?: boolean;
+  storage_provision_type?: string;
+  storage_provision_quantity?: string;
+  storage_provision_custom_type?: string;
   created_at?: string;
 }
 
@@ -121,7 +125,11 @@ const newLine = (): MaterialLine => ({
   transaction_type: 'donation', 
   price_per_kg: '', 
   estimated_volume: '', 
-  unit: 'kg'
+  unit: 'kg',
+  needs_storage_provision: false,
+  storage_provision_type: 'Bag',
+  storage_provision_quantity: '',
+  storage_provision_custom_type: ''
 });
 
 export default function SupplierDetailPage() {
@@ -164,6 +172,8 @@ export default function SupplierDetailPage() {
     transport_responsible: 'Terceirizado da iWrc',
     custom_transport_responsible: '',
     conditioning_infrastructure_needed: '',
+    storage_provision_cost: '',
+    storage_provision_delivery_date: '',
     feasibility: 'FEASIBLE',
     notes: '',
     need_info_reason: ''
@@ -511,6 +521,10 @@ export default function SupplierDetailPage() {
           price_per_kg: m.price_per_kg ? String(m.price_per_kg) : '',
           estimated_volume: m.estimated_volume ? String(m.estimated_volume) : '',
           unit: m.unit || 'kg',
+          needs_storage_provision: m.needs_storage_provision || false,
+          storage_provision_type: m.storage_provision_type || 'Bag',
+          storage_provision_quantity: m.storage_provision_quantity ? String(m.storage_provision_quantity) : '',
+          storage_provision_custom_type: m.storage_provision_custom_type || '',
           created_at: m.created_at
         };
       }));
@@ -521,7 +535,7 @@ export default function SupplierDetailPage() {
     setIsMaterialModalOpen(true);
   };
 
-  const updMat = (id: string, field: keyof MaterialLine, val: string) =>
+  const updMat = (id: string, field: keyof MaterialLine, val: string | boolean) =>
     setMaterialsForm(p => p.map(m => m.id === id ? { ...m, [field]: val } : m));
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -595,6 +609,10 @@ export default function SupplierDetailPage() {
           price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
           storage_form: mat.storage_form || null,
           notes: null,
+          needs_storage_provision: Boolean(mat.needs_storage_provision),
+          storage_provision_type: mat.needs_storage_provision ? (mat.storage_provision_type || 'Bag') : null,
+          storage_provision_quantity: mat.needs_storage_provision && mat.storage_provision_quantity ? Number(mat.storage_provision_quantity) : null,
+          storage_provision_custom_type: mat.needs_storage_provision && mat.storage_provision_type === 'Outros' ? (mat.storage_provision_custom_type || '') : null,
           created_at: origCreatedAt
         });
       });
@@ -647,6 +665,8 @@ export default function SupplierDetailPage() {
         transport_responsible: isStdResp ? (act.transport_responsible || 'Terceirizado da iWrc') : 'Outros',
         custom_transport_responsible: isStdResp ? '' : (act.transport_responsible || ''),
         conditioning_infrastructure_needed: act.conditioning_infrastructure_needed || '',
+        storage_provision_cost: act.storage_provision_cost?.toString() || '',
+        storage_provision_delivery_date: act.storage_provision_delivery_date || '',
         feasibility: act.feasibility || 'FEASIBLE',
         notes: act.notes || '',
         need_info_reason: supplier?.backlog_reason || ''
@@ -663,6 +683,8 @@ export default function SupplierDetailPage() {
         transport_responsible: 'Terceirizado da iWrc',
         custom_transport_responsible: '',
         conditioning_infrastructure_needed: '',
+        storage_provision_cost: '',
+        storage_provision_delivery_date: '',
         feasibility: 'FEASIBLE',
         notes: '',
         need_info_reason: ''
@@ -695,14 +717,18 @@ export default function SupplierDetailPage() {
         d === 'Outros' ? (customPendingDoc?.trim() ? `Outros: ${customPendingDoc.trim()}` : 'Outros') : d
       );
 
+      const isGenTransport = finalResponsible === 'Fornecedor (entrega no Hub)';
+
       await dbService.saveLogisticsAnalysis({
         supplier_id: supplier.id,
-        distance_km: Number(logisticsForm.distance_km) || null,
-        transport_type: finalTransport || null,
-        estimated_cost: Number(logisticsForm.estimated_cost) || null,
+        distance_km: isGenTransport ? null : (Number(logisticsForm.distance_km) || null),
+        transport_type: isGenTransport ? 'Entrega Própria (Gerador)' : (finalTransport || null),
+        estimated_cost: isGenTransport ? 0 : (Number(logisticsForm.estimated_cost) || null),
         recommended_frequency: finalFrequency || null,
         transport_responsible: finalResponsible || null,
         conditioning_infrastructure_needed: logisticsForm.conditioning_infrastructure_needed || null,
+        storage_provision_cost: logisticsForm.storage_provision_cost ? Number(logisticsForm.storage_provision_cost) : null,
+        storage_provision_delivery_date: logisticsForm.storage_provision_delivery_date || null,
         feasibility: logisticsForm.feasibility as any,
         notes: logisticsForm.notes || null,
         analyst_id: currentUser.id,
@@ -1371,6 +1397,25 @@ export default function SupplierDetailPage() {
                     </div>
                   </div>
 
+                  {/* Cotação de Fornecimento de Armazenamento se preenchida */}
+                  {(activeLogistics.storage_provision_cost !== null && activeLogistics.storage_provision_cost !== undefined || activeLogistics.storage_provision_delivery_date) && (
+                    <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-150 dark:border-indigo-800 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-indigo-900 dark:text-indigo-200 uppercase text-[9px] flex items-center gap-1">
+                          📦 {language === 'pt' ? 'Cotação de Armazenamento' : 'Storage Quotation'}
+                        </span>
+                        {activeLogistics.storage_provision_delivery_date && (
+                          <span className="text-[10px] text-indigo-700 dark:text-indigo-300 font-bold">
+                            {language === 'pt' ? 'Entrega prevista:' : 'Est. Delivery:'} {formatDate(activeLogistics.storage_provision_delivery_date)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-black text-indigo-950 dark:text-white text-sm">
+                        {activeLogistics.storage_provision_cost ? formatCurrency(activeLogistics.storage_provision_cost) : (language === 'pt' ? 'Sem custo adicional' : 'No extra cost')}
+                      </p>
+                    </div>
+                  )}
+
                   {activeLogistics.conditioning_infrastructure_needed && (
                     <div>
                       <span className="font-bold text-slate-400 uppercase text-[9px]">
@@ -1447,7 +1492,14 @@ export default function SupplierDetailPage() {
                             )}
                           </td>
                           <td className="px-3 py-2.5 text-slate-500">
-                            {translateStorageForm(mat.storage_form, language)}
+                            <div className="flex flex-col gap-0.5">
+                              <span>{translateStorageForm(mat.storage_form, language)}</span>
+                              {mat.needs_storage_provision && (
+                                <span className="inline-flex items-center gap-1 font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded text-[9px] border border-indigo-200 dark:border-indigo-800 w-fit">
+                                  📦 {language === 'pt' ? 'Fornecer' : 'Provide'}: {mat.storage_provision_quantity || 1}x {mat.storage_provision_type === 'Outros' ? mat.storage_provision_custom_type || 'Outros' : mat.storage_provision_type}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           {canUserModifySupplier() && (
                             <td className="px-3 py-2.5 text-right">
@@ -2078,7 +2130,16 @@ export default function SupplierDetailPage() {
                                 <Badge variant="success">{language === 'pt' ? 'Doação' : 'Donation'}</Badge>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-slate-500">{translateStorageForm(mat.storage_form, language)}</td>
+                            <td className="px-4 py-3 text-slate-500">
+                              <div className="flex flex-col gap-0.5">
+                                <span>{translateStorageForm(mat.storage_form, language)}</span>
+                                {mat.needs_storage_provision && (
+                                  <span className="inline-flex items-center gap-1 font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded text-[10px] border border-indigo-200 dark:border-indigo-800 w-fit">
+                                    📦 {language === 'pt' ? 'Fornecer' : 'Provide'}: {mat.storage_provision_quantity || 1}x {mat.storage_provision_type === 'Outros' ? mat.storage_provision_custom_type || 'Outros' : mat.storage_provision_type}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                             {canUserModifySupplier() && (
                               <td className="px-4 py-3 text-right">
                                 <div className="flex items-center justify-end gap-1.5">
@@ -2229,6 +2290,25 @@ export default function SupplierDetailPage() {
                         <span className="font-bold text-slate-400 uppercase text-[9px]">{language === 'pt' ? 'Frequência Recomendada' : 'Recommended Frequency'}</span>
                         <p className="font-bold text-slate-800 mt-0.5">{activeLogistics.recommended_frequency || '-'}</p>
                       </div>
+
+                      {/* Cotação de Fornecimento de Armazenamento se preenchida */}
+                      {(activeLogistics.storage_provision_cost !== null && activeLogistics.storage_provision_cost !== undefined || activeLogistics.storage_provision_delivery_date) && (
+                        <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-150 dark:border-indigo-800 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-indigo-900 dark:text-indigo-200 uppercase text-[9px] flex items-center gap-1">
+                              📦 {language === 'pt' ? 'Cotação de Armazenamento' : 'Storage Quotation'}
+                            </span>
+                            {activeLogistics.storage_provision_delivery_date && (
+                              <span className="text-[10px] text-indigo-700 dark:text-indigo-300 font-bold">
+                                {language === 'pt' ? 'Entrega prevista:' : 'Est. Delivery:'} {formatDate(activeLogistics.storage_provision_delivery_date)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-black text-indigo-950 dark:text-white text-sm">
+                            {activeLogistics.storage_provision_cost ? formatCurrency(activeLogistics.storage_provision_cost) : (language === 'pt' ? 'Sem custo adicional' : 'No extra cost')}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-4">
@@ -2731,6 +2811,90 @@ export default function SupplierDetailPage() {
                       />
                     </div>
                   )}
+
+                  {/* Fornecimento de Meio de Armazenamento */}
+                  <div className="col-span-1 md:col-span-2 p-3.5 bg-[#F0F9FB] dark:bg-slate-900/80 border border-[#CCEAF1] dark:border-slate-800 rounded-xl space-y-3 mt-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <label className="text-xs font-bold text-[#0E2439] dark:text-slate-200">
+                        {language === 'pt' ? 'Necessita fornecimento de meio de armazenamento?' : 'Requires storage container provision?'}
+                      </label>
+                      <div className="flex gap-2">
+                        <label className={`px-4 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                          mat.needs_storage_provision
+                            ? 'border-[#2098D1] bg-[#2098D1] text-white shadow-xs'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300'
+                        }`}>
+                          <input
+                            type="radio"
+                            name={`needs_storage_${mat.id}`}
+                            className="sr-only"
+                            checked={Boolean(mat.needs_storage_provision)}
+                            onChange={() => updMat(mat.id, 'needs_storage_provision', true)}
+                          />
+                          {language === 'pt' ? 'Sim' : 'Yes'}
+                        </label>
+                        <label className={`px-4 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                          !mat.needs_storage_provision
+                            ? 'border-slate-400 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300'
+                        }`}>
+                          <input
+                            type="radio"
+                            name={`needs_storage_${mat.id}`}
+                            className="sr-only"
+                            checked={!mat.needs_storage_provision}
+                            onChange={() => updMat(mat.id, 'needs_storage_provision', false)}
+                          />
+                          {language === 'pt' ? 'Não' : 'No'}
+                        </label>
+                      </div>
+                    </div>
+
+                    {mat.needs_storage_provision && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-[#CCEAF1] dark:border-slate-800">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                            {language === 'pt' ? 'Tipo de Armazenamento *' : 'Storage Type *'}
+                          </label>
+                          <select
+                            value={mat.storage_provision_type || 'Bag'}
+                            onChange={e => updMat(mat.id, 'storage_provision_type', e.target.value)}
+                            className="px-3 py-2 text-xs bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                          >
+                            <option value="Bag">Bag</option>
+                            <option value="Contêiner">{language === 'pt' ? 'Contêiner' : 'Container'}</option>
+                            <option value="Caçamba">{language === 'pt' ? 'Caçamba' : 'Dumpster'}</option>
+                            <option value="Outros">{language === 'pt' ? 'Outros' : 'Others'}</option>
+                          </select>
+                          {mat.storage_provision_type === 'Outros' && (
+                            <input
+                              type="text"
+                              placeholder={language === 'pt' ? 'Descreva o tipo de armazenamento...' : 'Describe storage type...'}
+                              value={mat.storage_provision_custom_type || ''}
+                              onChange={e => updMat(mat.id, 'storage_provision_custom_type', e.target.value)}
+                              className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                              required
+                            />
+                          )}
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                            {language === 'pt' ? 'Quantidade Necessária *' : 'Required Quantity *'}
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="Ex: 5"
+                            value={mat.storage_provision_quantity || ''}
+                            onChange={e => updMat(mat.id, 'storage_provision_quantity', e.target.value)}
+                            className="px-3 py-2 text-xs bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1]"
+                            required
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -3034,84 +3198,155 @@ export default function SupplierDetailPage() {
             </div>
           )}
 
-          {/* Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label={language === 'pt' ? 'Distância até o local (km)' : 'Distance to site (km)'} type="number"
-              value={logisticsForm.distance_km}
-              onChange={e => setLogisticsForm(p => ({ ...p, distance_km: e.target.value }))}
-              placeholder="Ex: 45" />
+          {/* Responsável pelo Transporte */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Responsável pelo Transporte / Coleta *' : 'Freight / Transport Responsible *'}</label>
+            <select
+              value={logisticsForm.transport_responsible}
+              onChange={e => setLogisticsForm(p => ({ ...p, transport_responsible: e.target.value }))}
+              className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+            >
+              {responsibleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {logisticsForm.transport_responsible === 'Outros' && (
+              <input
+                type="text"
+                placeholder={language === 'pt' ? 'Digite o responsável...' : 'Type responsible...'}
+                value={logisticsForm.custom_transport_responsible}
+                onChange={e => setLogisticsForm(p => ({ ...p, custom_transport_responsible: e.target.value }))}
+                className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            )}
+          </div>
 
-            <Input label={language === 'pt' ? 'Custo estimado de frete (R$)' : 'Estimated Freight Cost (R$)'} type="number"
-              value={logisticsForm.estimated_cost}
-              onChange={e => setLogisticsForm(p => ({ ...p, estimated_cost: e.target.value }))}
-              placeholder="Ex: 350" />
+          {/* Banner if Generator handles transport */}
+          {logisticsForm.transport_responsible === 'Fornecedor (entrega no Hub)' ? (
+            <div className="p-3.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-xl text-xs space-y-1">
+              <span className="font-bold text-sky-800 dark:text-sky-300 flex items-center gap-1.5">
+                🚚 {language === 'pt' ? 'Coleta Realizada pelo Próprio Gerador (Entrega no Hub)' : 'Generator Self-Delivery to Hub'}
+              </span>
+              <p className="text-slate-600 dark:text-slate-400">
+                {(supplier.materials || []).some(m => m.needs_storage_provision)
+                  ? (language === 'pt' 
+                      ? 'A iWrc não realizará o frete/transporte. Preencha apenas a cotação e previsão de entrega dos recipientes de armazenamento solicitados abaixo.'
+                      : 'iWrc will not perform transportation. Please fill the storage container quote and delivery date below.')
+                  : (language === 'pt'
+                      ? 'O gerador entregará os materiais no Hub e não necessita de recipientes. Nenhuma cotação de frete ou armazenamento é necessária.'
+                      : 'The generator will deliver to the Hub with no container requirements. No freight or container quote required.')}
+              </p>
+            </div>
+          ) : (
+            /* Transport Quotation Fields */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="md:col-span-2">
+                <span className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  🚚 {language === 'pt' ? 'Cotação de Frete & Transporte' : 'Freight & Transport Quotation'}
+                </span>
+              </div>
 
-            {/* Tipo de Veículo */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Tipo de Veículo *' : 'Vehicle Type *'}</label>
-              <select
-                value={logisticsForm.transport_type}
-                onChange={e => setLogisticsForm(p => ({ ...p, transport_type: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
-              >
-                {transportTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              {logisticsForm.transport_type === 'Outros' && (
-                <input
-                  type="text"
-                  placeholder={language === 'pt' ? 'Digite o outro tipo de transporte...' : 'Type transport type...'}
-                  value={logisticsForm.custom_transport_type}
-                  onChange={e => setLogisticsForm(p => ({ ...p, custom_transport_type: e.target.value }))}
-                  className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+              <Input label={language === 'pt' ? 'Distância até o local (km)' : 'Distance to site (km)'} type="number"
+                value={logisticsForm.distance_km}
+                onChange={e => setLogisticsForm(p => ({ ...p, distance_km: e.target.value }))}
+                placeholder="Ex: 45" />
+
+              <Input label={language === 'pt' ? 'Custo estimado de frete (R$)' : 'Estimated Freight Cost (R$)'} type="number"
+                value={logisticsForm.estimated_cost}
+                onChange={e => setLogisticsForm(p => ({ ...p, estimated_cost: e.target.value }))}
+                placeholder="Ex: 350" />
+
+              {/* Tipo de Veículo */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Tipo de Veículo *' : 'Vehicle Type *'}</label>
+                <select
+                  value={logisticsForm.transport_type}
+                  onChange={e => setLogisticsForm(p => ({ ...p, transport_type: e.target.value }))}
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                >
+                  {transportTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                {logisticsForm.transport_type === 'Outros' && (
+                  <input
+                    type="text"
+                    placeholder={language === 'pt' ? 'Digite o outro tipo de transporte...' : 'Type transport type...'}
+                    value={logisticsForm.custom_transport_type}
+                    onChange={e => setLogisticsForm(p => ({ ...p, custom_transport_type: e.target.value }))}
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                )}
+              </div>
+
+              {/* Frequência Recomendada */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Frequência Recomendada *' : 'Recommended Frequency *'}</label>
+                <select
+                  value={logisticsForm.recommended_frequency}
+                  onChange={e => setLogisticsForm(p => ({ ...p, recommended_frequency: e.target.value }))}
+                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                >
+                  {frequencyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                {logisticsForm.recommended_frequency === 'Outros' && (
+                  <input
+                    type="text"
+                    placeholder={language === 'pt' ? 'Especifique a frequência...' : 'Specify frequency...'}
+                    value={logisticsForm.custom_frequency}
+                    onChange={e => setLogisticsForm(p => ({ ...p, custom_frequency: e.target.value }))}
+                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Storage Provision Section if requested */}
+          {(supplier.materials || []).some(m => m.needs_storage_provision) && (
+            <div className="p-4 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                  📦 {language === 'pt' ? 'Cotação de Fornecimento de Meios de Armazenamento' : 'Storage Provision Quotation'}
+                </span>
+                <span className="text-[10px] font-bold bg-indigo-200/80 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200 px-2.5 py-0.5 rounded-full">
+                  {(supplier.materials || []).filter(m => m.needs_storage_provision).length} {language === 'pt' ? 'item(ns) solicitado(s)' : 'item(s) requested'}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-white dark:bg-slate-950 border border-indigo-100 dark:border-indigo-900 rounded-lg text-xs space-y-1">
+                <span className="font-bold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Recipientes Solicitados pelo Comercial:' : 'Containers Requested by Commercial:'}</span>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(supplier.materials || []).filter(m => m.needs_storage_provision).map((m, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50 px-2 py-1 rounded text-xs border border-indigo-200 dark:border-indigo-800">
+                      • {m.storage_provision_quantity || 1}x {m.storage_provision_type === 'Outros' ? m.storage_provision_custom_type || 'Outros' : m.storage_provision_type} ({translateMaterialName(m.material_name, language)})
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <Input
+                  label={language === 'pt' ? 'Valor da Cotação dos Recipientes (R$) *' : 'Containers Quotation Value (R$) *'}
+                  type="number"
+                  step="0.01"
+                  value={logisticsForm.storage_provision_cost}
+                  onChange={e => setLogisticsForm(p => ({ ...p, storage_provision_cost: e.target.value }))}
+                  placeholder="Ex: 800.00"
                   required
                 />
-              )}
-            </div>
-
-            {/* Responsável pelo Transporte */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Responsável pelo Transporte *' : 'Freight Responsible *'}</label>
-              <select
-                value={logisticsForm.transport_responsible}
-                onChange={e => setLogisticsForm(p => ({ ...p, transport_responsible: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
-              >
-                {responsibleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              {logisticsForm.transport_responsible === 'Outros' && (
-                <input
-                  type="text"
-                  placeholder={language === 'pt' ? 'Digite o responsável...' : 'Type responsible...'}
-                  value={logisticsForm.custom_transport_responsible}
-                  onChange={e => setLogisticsForm(p => ({ ...p, custom_transport_responsible: e.target.value }))}
-                  className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                <Input
+                  label={language === 'pt' ? 'Previsão / Data de Entrega dos Recipientes *' : 'Estimated Container Delivery Date *'}
+                  type="date"
+                  value={logisticsForm.storage_provision_delivery_date}
+                  onChange={e => setLogisticsForm(p => ({ ...p, storage_provision_delivery_date: e.target.value }))}
                   required
                 />
-              )}
+              </div>
             </div>
+          )}
 
-            {/* Frequência Recomendada */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Frequência Recomendada *' : 'Recommended Frequency *'}</label>
-              <select
-                value={logisticsForm.recommended_frequency}
-                onChange={e => setLogisticsForm(p => ({ ...p, recommended_frequency: e.target.value }))}
-                className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
-              >
-                {frequencyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              {logisticsForm.recommended_frequency === 'Outros' && (
-                <input
-                  type="text"
-                  placeholder={language === 'pt' ? 'Especifique a frequência...' : 'Specify frequency...'}
-                  value={logisticsForm.custom_frequency}
-                  onChange={e => setLogisticsForm(p => ({ ...p, custom_frequency: e.target.value }))}
-                  className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              )}
-            </div>
-
+          {/* Feasibility Decision */}
+          <div className="grid grid-cols-1 gap-4">
             <Select label={language === 'pt' ? 'Decisão de Viabilidade *' : 'Feasibility Decision *'} value={logisticsForm.feasibility}
               onChange={e => setLogisticsForm(p => ({ ...p, feasibility: e.target.value }))}
               options={feasibilityOptions} />

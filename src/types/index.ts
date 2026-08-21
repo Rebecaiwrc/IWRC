@@ -174,6 +174,10 @@ export interface SupplierMaterial {
   price_per_kg: number;
   storage_form: string | null;
   notes: string | null;
+  needs_storage_provision?: boolean | null;
+  storage_provision_type?: string | null; // 'Bag' | 'Contêiner' | 'Caçamba' | 'Outros'
+  storage_provision_quantity?: number | null;
+  storage_provision_custom_type?: string | null;
   created_at: string;
 }
 
@@ -228,6 +232,8 @@ export interface LogisticsAnalysis {
   recommended_frequency: string | null;
   transport_responsible: string | null; // 'Terceirizado da iWrc', 'Fornecedor (entrega no Hub)', 'Empresa terceirizada', or custom
   conditioning_infrastructure_needed: string | null;
+  storage_provision_cost?: number | null; // Cotação de fornecimento de meios de armazenamento (R$)
+  storage_provision_delivery_date?: string | null; // Previsão / data de entrega dos recipientes
   pending_docs: string[]; // e.g. ['Aguardando documentação', 'Aguardando dados MTR', 'donation_letter', ...]
   feasibility: FeasibilityStatus;
   notes: string | null;

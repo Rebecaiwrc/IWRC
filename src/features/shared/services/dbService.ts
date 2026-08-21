@@ -726,6 +726,10 @@ export const dbService = {
       price_per_kg: Number(materialData.price_per_kg) || 0,
       storage_form: materialData.storage_form || null,
       notes: materialData.notes || null,
+      needs_storage_provision: Boolean(materialData.needs_storage_provision),
+      storage_provision_type: materialData.storage_provision_type || null,
+      storage_provision_quantity: materialData.storage_provision_quantity !== undefined ? Number(materialData.storage_provision_quantity) : null,
+      storage_provision_custom_type: materialData.storage_provision_custom_type || null,
       created_at: materialData.created_at || now
     };
     materials.push(newMaterial);
@@ -1071,6 +1075,8 @@ export const dbService = {
         recommended_frequency: analysisData.recommended_frequency || null,
         transport_responsible: analysisData.transport_responsible || null,
         conditioning_infrastructure_needed: analysisData.conditioning_infrastructure_needed || null,
+        storage_provision_cost: analysisData.storage_provision_cost !== undefined ? Number(analysisData.storage_provision_cost) : null,
+        storage_provision_delivery_date: analysisData.storage_provision_delivery_date || null,
         pending_docs: analysisData.pending_docs || [],
         feasibility: analysisData.feasibility || 'PENDING',
         notes: analysisData.notes || null,

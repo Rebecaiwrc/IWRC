@@ -183,6 +183,8 @@ export default function LogisticsPage() {
     transport_responsible: 'Terceirizado da iWrc',
     custom_transport_responsible: '',
     conditioning_infrastructure_needed: '',
+    storage_provision_cost: '',
+    storage_provision_delivery_date: '',
     feasibility: 'FEASIBLE',
     notes: '',
     need_info_reason: ''
@@ -461,6 +463,8 @@ export default function LogisticsPage() {
         transport_responsible: isStdResp ? (existing.transport_responsible || 'Terceirizado da iWrc') : 'Outros',
         custom_transport_responsible: isStdResp ? '' : (existing.transport_responsible || ''),
         conditioning_infrastructure_needed: existing.conditioning_infrastructure_needed || '',
+        storage_provision_cost: existing.storage_provision_cost?.toString() || '',
+        storage_provision_delivery_date: existing.storage_provision_delivery_date || '',
         feasibility: existing.feasibility || 'FEASIBLE',
         notes: existing.notes || '',
         need_info_reason: supplier.backlog_reason || ''
@@ -477,6 +481,8 @@ export default function LogisticsPage() {
         transport_responsible: 'Terceirizado da iWrc',
         custom_transport_responsible: '',
         conditioning_infrastructure_needed: '', 
+        storage_provision_cost: '',
+        storage_provision_delivery_date: '',
         feasibility: 'FEASIBLE', 
         notes: '', 
         need_info_reason: ''
@@ -510,15 +516,19 @@ export default function LogisticsPage() {
         d === 'Outros' ? (customPendingDoc?.trim() ? `Outros: ${customPendingDoc.trim()}` : 'Outros') : d
       );
 
+      const isGenTransport = finalResponsible === 'Fornecedor (entrega no Hub)';
+
       // Save logistics analysis
       await dbService.saveLogisticsAnalysis({
         supplier_id: selectedSupplier.id,
-        distance_km: Number(analysisForm.distance_km) || null,
-        transport_type: finalTransport || null,
-        estimated_cost: Number(analysisForm.estimated_cost) || null,
+        distance_km: isGenTransport ? null : (Number(analysisForm.distance_km) || null),
+        transport_type: isGenTransport ? 'Entrega Própria (Gerador)' : (finalTransport || null),
+        estimated_cost: isGenTransport ? 0 : (Number(analysisForm.estimated_cost) || null),
         recommended_frequency: finalFrequency || null,
         transport_responsible: finalResponsible || null,
         conditioning_infrastructure_needed: analysisForm.conditioning_infrastructure_needed || null,
+        storage_provision_cost: analysisForm.storage_provision_cost ? Number(analysisForm.storage_provision_cost) : null,
+        storage_provision_delivery_date: analysisForm.storage_provision_delivery_date || null,
         feasibility: analysisForm.feasibility as any,
         notes: analysisForm.notes || null,
         analyst_id: currentUser.id,
@@ -1464,8 +1474,53 @@ export default function LogisticsPage() {
               </div>
             )}
 
-            {/* Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Responsável pelo Transporte */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Responsável pelo Transporte / Coleta *' : 'Freight / Transport Responsible *'}</label>
+            <select
+              value={analysisForm.transport_responsible}
+              onChange={e => setAnalysisForm(p => ({ ...p, transport_responsible: e.target.value }))}
+              className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+            >
+              {responsibleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {analysisForm.transport_responsible === 'Outros' && (
+              <input
+                type="text"
+                placeholder={language === 'pt' ? 'Digite o responsável...' : 'Type responsible...'}
+                value={analysisForm.custom_transport_responsible}
+                onChange={e => setAnalysisForm(p => ({ ...p, custom_transport_responsible: e.target.value }))}
+                className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            )}
+          </div>
+
+          {/* Banner if Generator handles transport */}
+          {analysisForm.transport_responsible === 'Fornecedor (entrega no Hub)' ? (
+            <div className="p-3.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-xl text-xs space-y-1">
+              <span className="font-bold text-sky-800 dark:text-sky-300 flex items-center gap-1.5">
+                🚚 {language === 'pt' ? 'Coleta Realizada pelo Próprio Gerador (Entrega no Hub)' : 'Generator Self-Delivery to Hub'}
+              </span>
+              <p className="text-slate-600 dark:text-slate-400">
+                {(selectedSupplier.materials || []).some(m => m.needs_storage_provision)
+                  ? (language === 'pt' 
+                      ? 'A iWrc não realizará o frete/transporte. Preencha apenas a cotação e previsão de entrega dos recipientes de armazenamento solicitados abaixo.'
+                      : 'iWrc will not perform transportation. Please fill the storage container quote and delivery date below.')
+                  : (language === 'pt'
+                      ? 'O gerador entregará os materiais no Hub e não necessita de recipientes. Nenhuma cotação de frete ou armazenamento é necessária.'
+                      : 'The generator will deliver to the Hub with no container requirements. No freight or container quote required.')}
+              </p>
+            </div>
+          ) : (
+            /* Transport Quotation Fields */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="md:col-span-2">
+                <span className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  🚚 {language === 'pt' ? 'Cotação de Frete & Transporte' : 'Freight & Transport Quotation'}
+                </span>
+              </div>
+
               <Input label={language === 'pt' ? 'Distância até o local (km)' : 'Distance to site (km)'} type="number"
                 value={analysisForm.distance_km}
                 onChange={e => setAnalysisForm(p => ({ ...p, distance_km: e.target.value }))}
@@ -1498,28 +1553,6 @@ export default function LogisticsPage() {
                 )}
               </div>
 
-              {/* Responsável pelo Transporte */}
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Responsável pelo Transporte *' : 'Freight Responsible *'}</label>
-                <select
-                  value={analysisForm.transport_responsible}
-                  onChange={e => setAnalysisForm(p => ({ ...p, transport_responsible: e.target.value }))}
-                  className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
-                >
-                  {responsibleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {analysisForm.transport_responsible === 'Outros' && (
-                  <input
-                    type="text"
-                    placeholder={language === 'pt' ? 'Digite o responsável...' : 'Type responsible...'}
-                    value={analysisForm.custom_transport_responsible}
-                    onChange={e => setAnalysisForm(p => ({ ...p, custom_transport_responsible: e.target.value }))}
-                    className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
-                )}
-              </div>
-
               {/* Frequência Recomendada */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Frequência Recomendada *' : 'Recommended Frequency *'}</label>
@@ -1541,11 +1574,59 @@ export default function LogisticsPage() {
                   />
                 )}
               </div>
-
-              <Select label={language === 'pt' ? 'Decisão de Viabilidade *' : 'Feasibility Decision *'} value={analysisForm.feasibility}
-                onChange={e => setAnalysisForm(p => ({ ...p, feasibility: e.target.value }))}
-                options={feasibilityOptions} />
             </div>
+          )}
+
+          {/* Storage Provision Section if requested */}
+          {(selectedSupplier.materials || []).some(m => m.needs_storage_provision) && (
+            <div className="p-4 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                  📦 {language === 'pt' ? 'Cotação de Fornecimento de Meios de Armazenamento' : 'Storage Provision Quotation'}
+                </span>
+                <span className="text-[10px] font-bold bg-indigo-200/80 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200 px-2.5 py-0.5 rounded-full">
+                  {(selectedSupplier.materials || []).filter(m => m.needs_storage_provision).length} {language === 'pt' ? 'item(ns) solicitado(s)' : 'item(s) requested'}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-white dark:bg-slate-950 border border-indigo-100 dark:border-indigo-900 rounded-lg text-xs space-y-1">
+                <span className="font-bold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Recipientes Solicitados pelo Comercial:' : 'Containers Requested by Commercial:'}</span>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(selectedSupplier.materials || []).filter(m => m.needs_storage_provision).map((m, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50 px-2 py-1 rounded text-xs border border-indigo-200 dark:border-indigo-800">
+                      • {m.storage_provision_quantity || 1}x {m.storage_provision_type === 'Outros' ? m.storage_provision_custom_type || 'Outros' : m.storage_provision_type} ({translateMaterialName(m.material_name, language)})
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <Input
+                  label={language === 'pt' ? 'Valor da Cotação dos Recipientes (R$) *' : 'Containers Quotation Value (R$) *'}
+                  type="number"
+                  step="0.01"
+                  value={analysisForm.storage_provision_cost}
+                  onChange={e => setAnalysisForm(p => ({ ...p, storage_provision_cost: e.target.value }))}
+                  placeholder="Ex: 800.00"
+                  required
+                />
+                <Input
+                  label={language === 'pt' ? 'Previsão / Data de Entrega dos Recipientes *' : 'Estimated Container Delivery Date *'}
+                  type="date"
+                  value={analysisForm.storage_provision_delivery_date}
+                  onChange={e => setAnalysisForm(p => ({ ...p, storage_provision_delivery_date: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Feasibility Decision */}
+          <div className="grid grid-cols-1 gap-4">
+            <Select label={language === 'pt' ? 'Decisão de Viabilidade *' : 'Feasibility Decision *'} value={analysisForm.feasibility}
+              onChange={e => setAnalysisForm(p => ({ ...p, feasibility: e.target.value }))}
+              options={feasibilityOptions} />
+          </div>
 
             {/* Documentation checklist (shown only when Necessita Informação Adicional) */}
             {analysisForm.feasibility === 'NEED_INFO' && (
