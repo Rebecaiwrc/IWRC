@@ -300,6 +300,7 @@ interface MaterialLine {
   material_name: string;
   custom_material_name?: string;
   storage_form: string;
+  custom_storage_form?: string;
   frequency: string; 
   transaction_type: 'donation' | 'purchase';
   price_per_kg: string; 
@@ -316,6 +317,7 @@ const newLine = (): MaterialLine => ({
   material_name: '', 
   custom_material_name: '',
   storage_form: '', 
+  custom_storage_form: '',
   frequency: '',
   transaction_type: 'donation', 
   price_per_kg: '', 
@@ -528,11 +530,14 @@ export default function ProspectingPage() {
     if (supplier.materials && supplier.materials.length > 0) {
       setMaterials(supplier.materials.map(m => {
         const isStandard = MATERIAL_OPTIONS.includes(m.material_name);
+        const isStandardStorage = STORAGE_OPTIONS.includes(m.storage_form || '');
+        const customStorage = isStandardStorage ? '' : (m.storage_form?.replace(/^Outro:\s*/, '') || m.storage_form || '');
         return {
           id: m.id, 
           material_name: isStandard ? m.material_name : 'Outro', 
           custom_material_name: isStandard ? '' : m.material_name,
-          storage_form: m.storage_form || 'Sacos de Lixo',
+          storage_form: isStandardStorage ? (m.storage_form || 'Sacos de Lixo') : (m.storage_form ? 'Outro' : 'Sacos de Lixo'),
+          custom_storage_form: customStorage,
           frequency: m.frequency || '1x por mês', 
           transaction_type: m.transaction_type,
           price_per_kg: m.price_per_kg ? String(m.price_per_kg) : '',
@@ -738,6 +743,10 @@ export default function ProspectingPage() {
 
         if (!finalName) return Promise.resolve(null);
 
+        const finalStorage = (mat.storage_form === 'Outro' || mat.storage_form === 'Outros')
+          ? (mat.custom_storage_form?.trim() ? `Outro: ${mat.custom_storage_form.trim()}` : 'Outro')
+          : (mat.storage_form || null);
+
         const prov = hasStorageNeed ? (storageProvisions[idx] || storageProvisions[0]) : null;
 
         return dbService.addSupplierMaterial({
@@ -749,7 +758,7 @@ export default function ProspectingPage() {
           frequency: mat.frequency || '1x por mês',
           transaction_type: mat.transaction_type,
           price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
-          storage_form: mat.storage_form || null, 
+          storage_form: finalStorage, 
           notes: hasStorageNeed ? storageStorageItemTags : null,
           needs_storage_provision: hasStorageNeed,
           storage_provision_type: prov ? prov.type : null,
@@ -1955,6 +1964,17 @@ export default function ProspectingPage() {
                         <option value="">Selecione o acondicionamento...</option>
                         {STORAGE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
+                      {(mat.storage_form === 'Outro' || mat.storage_form === 'Outros') && (
+                        <input
+                          type="text"
+                          placeholder={language === 'pt' ? 'Especifique o armazenamento no local...' : 'Specify on-site storage...'}
+                          value={mat.custom_storage_form || ''}
+                          onChange={e => updMat(mat.id, 'custom_storage_form', e.target.value)}
+                          className="mt-1 px-3 py-1.5 text-xs bg-white border border-[#2098D1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
+                          required
+                          autoFocus
+                        />
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1">
