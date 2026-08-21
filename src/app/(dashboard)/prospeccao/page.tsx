@@ -39,8 +39,188 @@ import {
   FileCheck,
   Loader2,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  Check
 } from 'lucide-react';
+
+export function MaterialSelectDropdown({
+  value,
+  customValue,
+  onChange,
+  onCustomChange,
+  language = 'pt'
+}: {
+  value: string;
+  customValue?: string;
+  onChange: (val: string) => void;
+  onCustomChange: (val: string) => void;
+  language?: 'pt' | 'en';
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const mainOptions = [
+    'Papelão',
+    'Papel',
+    'Plástico',
+    'Eletrônicos',
+    'Recicláveis em geral',
+    'Outro'
+  ];
+
+  const additionalOptions = [
+    'Papel Branco Sigiloso',
+    'Papel Misto',
+    'Plástico Filme',
+    'Plástico Rígido',
+    'PET',
+    'Alumínio',
+    'Ferro/Aço',
+    'Cobre',
+    'Vidro',
+    'Eletrônicos (REEE)',
+    'Orgânicos'
+  ];
+
+  const handleSelect = (mat: string) => {
+    onChange(mat);
+    setIsOpen(false);
+  };
+
+  const displayText = value 
+    ? (value === 'Outro' 
+        ? (customValue ? `${language === 'pt' ? 'Outro' : 'Other'}: ${customValue}` : (language === 'pt' ? 'Outro' : 'Other'))
+        : translateMaterialName(value, language))
+    : (language === 'pt' ? 'Selecione o material...' : 'Select material...');
+
+  return (
+    <div className="flex flex-col gap-1 relative" ref={dropdownRef}>
+      <label className="text-xs font-semibold text-slate-600">
+        {language === 'pt' ? 'Tipo de Material / Categoria *' : 'Material Type / Category *'}
+      </label>
+
+      {/* Select Trigger Field */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(prev => !prev)}
+        className={`w-full flex items-center justify-between px-3 py-2 text-sm bg-white border rounded-xl outline-none transition-all cursor-pointer text-left ${
+          isOpen 
+            ? 'border-[#2098D1] ring-2 ring-[#2098D1]/20 shadow-xs' 
+            : 'border-[#CCEAF1] hover:border-[#2098D1]/60'
+        }`}
+      >
+        <span className={value ? 'font-medium text-slate-800 truncate' : 'text-slate-400'}>
+          {displayText}
+        </span>
+        <ChevronDown size={16} className={`text-slate-400 shrink-0 ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#2098D1]' : ''}`} />
+      </button>
+
+      {/* Dropdown Options List */}
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-[#CCEAF1] rounded-xl shadow-2xl overflow-hidden py-1 max-h-72 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
+          {/* Main Options */}
+          {mainOptions.map(opt => {
+            const isSelected = value === opt;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleSelect(opt)}
+                className={`w-full px-3.5 py-2 text-left text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                  isSelected 
+                    ? 'bg-[#E5F5F8] text-[#2098D1] font-bold' 
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span>{translateMaterialName(opt, language)}</span>
+                {isSelected && <Check size={14} className="text-[#2098D1]" />}
+              </button>
+            );
+          })}
+
+          {/* Additional Options (expanded in-place without closing) */}
+          {isExpanded && (
+            <div className="border-t border-slate-100 pt-1 mt-1 bg-slate-50/50">
+              <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {language === 'pt' ? 'Outras Opções' : 'More Options'}
+              </div>
+              {additionalOptions.map(opt => {
+                const isSelected = value === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => handleSelect(opt)}
+                    className={`w-full px-3.5 py-2 text-left text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                      isSelected 
+                        ? 'bg-[#E5F5F8] text-[#2098D1] font-bold' 
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{translateMaterialName(opt, language)}</span>
+                    {isSelected && <Check size={14} className="text-[#2098D1]" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Ver mais opções Button (inside dropdown, expands in-place) */}
+          <div className="p-1.5 border-t border-slate-100 bg-slate-50 mt-1 sticky bottom-0">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsExpanded(prev => !prev);
+              }}
+              className="w-full py-1.5 px-3 text-xs font-bold text-[#2098D1] bg-white border border-[#CCEAF1] rounded-lg hover:bg-[#E5F5F8] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+            >
+              {isExpanded ? (
+                <span>{language === 'pt' ? '▲ Ver menos opções' : '▲ Show fewer options'}</span>
+              ) : (
+                <>
+                  <Plus size={13} />
+                  <span>{language === 'pt' ? 'Ver mais opções' : 'Show more options'}</span>
+                  <span className="text-[10px] text-slate-400 font-normal">({additionalOptions.length})</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Input when Outro is selected */}
+      {value === 'Outro' && (
+        <input
+          type="text"
+          placeholder={language === 'pt' ? 'Digite o nome do material personalizado...' : 'Enter custom material name...'}
+          value={customValue || ''}
+          onChange={e => onCustomChange(e.target.value)}
+          className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+          required
+          autoFocus
+        />
+      )}
+    </div>
+  );
+}
 
 const PROSPECTING_COLUMNS: { key: ProspectingStatus; label: string; color: string; badgeVariant: 'default' | 'warning' | 'info' | 'emerald' | 'purple' }[] = [
   { key: 'NEW_LEAD',          label: 'Novo Lead',            color: 'bg-slate-400',   badgeVariant: 'default' },
@@ -1582,26 +1762,13 @@ export default function ProspectingPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-600">Tipo de Material / Categoria *</label>
-                      <select 
-                        value={mat.material_name} 
-                        onChange={e => updMat(mat.id, 'material_name', e.target.value)}
-                        className="px-3 py-2 text-sm bg-white border border-[#CCEAF1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
-                      >
-                        <option value="">Selecione o material...</option>
-                        {MATERIAL_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                      {mat.material_name === 'Outro' && (
-                        <input
-                          type="text"
-                          placeholder="Digite o nome do material personalizado..."
-                          value={mat.custom_material_name || ''}
-                          onChange={e => updMat(mat.id, 'custom_material_name', e.target.value)}
-                          className="mt-1 px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                      )}
-                    </div>
+                    <MaterialSelectDropdown
+                      value={mat.material_name}
+                      customValue={mat.custom_material_name}
+                      onChange={val => updMat(mat.id, 'material_name', val)}
+                      onCustomChange={val => updMat(mat.id, 'custom_material_name', val)}
+                      language={language}
+                    />
 
                     <div className="flex flex-col gap-1">
                       <label className="text-xs font-semibold text-slate-600">Armazenamento no Local</label>
