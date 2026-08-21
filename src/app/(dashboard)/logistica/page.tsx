@@ -274,6 +274,14 @@ export default function LogisticsPage() {
     .filter(s => isResponsibleForSupplier(s))
     .filter(s => {
       const act = s.logistics_analyses?.[0];
+      const isSelfDelivery = 
+        act?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+        act?.transport_type === 'Entrega Própria (Gerador)' ||
+        s.transport_responsible === 'Fornecedor (entrega no Hub)';
+
+      const needsStorage = s.materials?.some(m => m.needs_storage_provision);
+      if (isSelfDelivery && !needsStorage) return false;
+
       const isCompleted = Boolean(
         act && 
         act.feasibility && 
@@ -296,6 +304,22 @@ export default function LogisticsPage() {
   const schedulingQueue = allSuppliers
     .filter(s => isResponsibleForSupplier(s))
     .filter(s => {
+      // If supplier delivered by generator themselves (Fornecedor entrega no Hub), iWrc does NOT collect! It must NEVER appear in Agendamento de Coletas!
+      const activeLog = s.logistics_analyses?.[0];
+      const isSelfDelivery = 
+        activeLog?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+        activeLog?.transport_type === 'Entrega Própria (Gerador)' ||
+        activeLog?.transport_responsible?.toLowerCase().includes('fornecedor') ||
+        activeLog?.transport_responsible?.toLowerCase().includes('hub') ||
+        activeLog?.transport_type?.toLowerCase().includes('própria') ||
+        activeLog?.transport_type?.toLowerCase().includes('propria') ||
+        s.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+        (s as any).self_delivery === true;
+
+      if (isSelfDelivery) {
+        return false;
+      }
+
       // If supplier ALREADY has an upcoming scheduled collection, it has already been scheduled and must NOT appear in this pending queue
       const scheduledCols = (s.collections || []).filter(c => c.status === 'SCHEDULED');
       if (scheduledCols.length > 0) {
@@ -312,7 +336,6 @@ export default function LogisticsPage() {
 
       // 2. Active operation: check if within 3 days of next collection cycle and not yet scheduled
       if (s.current_stage === 'OPERATION') {
-        const activeLog = s.logistics_analyses?.[0];
         const freq = activeLog?.recommended_frequency || 'Mensal';
         if (freq.toLowerCase().includes('demanda') || freq.toLowerCase().includes('única') || freq.toLowerCase().includes('unica')) return false;
 

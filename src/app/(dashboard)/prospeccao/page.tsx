@@ -373,12 +373,10 @@ export default function ProspectingPage() {
   // Material / Logistics Modals
   const [activeMaterialSupplier, setActiveMaterialSupplier] = useState<Supplier | null>(null);
   const [isSendingToLogistics, setIsSendingToLogistics] = useState(false);
+  const [isHubDelivery, setIsHubDelivery] = useState(false);
   const [materials, setMaterials] = useState<MaterialLine[]>([newLine()]);
   
   // Optional attachments for logistics
-  const [mtrFileName, setMtrFileName] = useState('');
-  const [donationLetterFileName, setDonationLetterFileName] = useState('');
-
   // Form State for New Lead (nenhum campo pré-preenchido)
   const [form, setForm] = useState({
     name: '', 
@@ -458,6 +456,12 @@ export default function ProspectingPage() {
     setActiveMaterialSupplier(supplier);
     setIsSendingToLogistics(forLogistics);
     setAttachedFiles([]);
+
+    const activeLog = supplier.logistics_analyses?.[0];
+    const isSupplierSelfDelivery = 
+      activeLog?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+      supplier.transport_responsible === 'Fornecedor (entrega no Hub)';
+    setIsHubDelivery(Boolean(isSupplierSelfDelivery));
 
     if (supplier.materials && supplier.materials.length > 0) {
       setMaterials(supplier.materials.map(m => {
@@ -689,9 +693,39 @@ export default function ProspectingPage() {
         await dbService.addSupplierDocuments(activeMaterialSupplier.id, attachedFiles);
       }
 
-      // 4. If sending to logistics
-      if (isSendingToLogistics && activeMaterialSupplier.prospecting_status !== 'WAITING_LOGISTICS') {
-        await updateStatus(activeMaterialSupplier.id, 'WAITING_LOGISTICS');
+      // 4. If supplier delivers directly to Hub (isHubDelivery === true)
+      if (isHubDelivery) {
+        await Promise.all([
+          dbService.updateSupplier(activeMaterialSupplier.id, {
+            current_stage: 'OPERATION',
+            current_status: 'APPROVED',
+            prospecting_status: 'QUALIFIED',
+            transport_responsible: 'Fornecedor (entrega no Hub)'
+          }),
+          dbService.createOrUpdateLogisticsAnalysis({
+            supplier_id: activeMaterialSupplier.id,
+            transport_responsible: 'Fornecedor (entrega no Hub)',
+            transport_type: 'Entrega Própria (Gerador)',
+            estimated_cost: 0,
+            distance_km: null,
+            feasibility: 'FEASIBLE',
+            notes: 'Entrega direta realizada pelo próprio gerador no Hub (dispensa cotação de frete e agendamento de coleta)'
+          }),
+          dbService.addSupplierStatusHistory({
+            supplier_id: activeMaterialSupplier.id,
+            old_stage: activeMaterialSupplier.current_stage,
+            new_stage: 'OPERATION',
+            old_status: activeMaterialSupplier.current_status,
+            new_status: 'APPROVED',
+            user_id: currentUser?.id,
+            notes: 'Fornecedor aprovado diretamente como Gerador Ativo (Entrega direta no Hub)'
+          })
+        ]);
+      } else {
+        // If sending to logistics
+        if (isSendingToLogistics && activeMaterialSupplier.prospecting_status !== 'WAITING_LOGISTICS') {
+          await updateStatus(activeMaterialSupplier.id, 'WAITING_LOGISTICS');
+        }
       }
 
       setActiveMaterialSupplier(null);
@@ -1943,6 +1977,47 @@ export default function ProspectingPage() {
               ))}
             </div>
 
+            {/* Pergunta: O fornecedor realizará a entrega do material no Hub? */}
+            <div className="p-4 bg-sky-50/70 border border-sky-200 rounded-2xl space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="text-xs font-bold text-sky-950 block">
+                    {language === 'pt' ? 'O fornecedor realizará a entrega do material no Hub?' : 'Will the supplier deliver the material to the Hub?'}
+                  </label>
+                  <p className="text-[11px] text-sky-700 mt-0.5">
+                    {isHubDelivery
+                      ? (language === 'pt' ? '✓ Gerador fará entrega própria no Hub. O lead irá diretamente para Geradores ativos, sem necessidade de cotação de frete ou agendamento de coleta.' : '✓ Supplier self-delivers to Hub. Moves straight to active Generators without freight quotes or collection scheduling.')
+                      : (language === 'pt' ? 'iWrc ou parceiro logístico realizará a coleta e transporte (enviado para análise e agendamento da Logística).' : 'iWrc or logistics partner will collect/transport (sent to Logistics for freight quoting and scheduling).')}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsHubDelivery(true)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      isHubDelivery
+                        ? 'bg-[#2098D1] text-white border-[#2098D1] shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {language === 'pt' ? 'Sim' : 'Yes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsHubDelivery(false)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      !isHubDelivery
+                        ? 'bg-[#2098D1] text-white border-[#2098D1] shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {language === 'pt' ? 'Não' : 'No'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Multi-file Attachments from PC */}
             <div className="p-4 bg-[#F0F9FB] border border-[#CCEAF1] rounded-2xl space-y-3">
               <div className="flex items-center justify-between">
@@ -2022,9 +2097,13 @@ export default function ProspectingPage() {
               <Button 
                 onClick={handleSaveMaterialsAndLogistics} 
                 isLoading={isSubmitting} 
-                className={`gap-2 ${isSendingToLogistics ? '!bg-indigo-600 hover:!bg-indigo-700' : ''}`}
+                className={`gap-2 ${isHubDelivery ? '!bg-emerald-600 hover:!bg-emerald-700 text-white' : (isSendingToLogistics ? '!bg-indigo-600 hover:!bg-indigo-700' : '')}`}
               >
-                {isSendingToLogistics ? (
+                {isHubDelivery ? (
+                  <>
+                    <CheckCircle size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Geradores' : 'Confirm and Send to Generators'}
+                  </>
+                ) : isSendingToLogistics ? (
                   <>
                     <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística' : 'Confirm and Send to Logistics'}
                   </>

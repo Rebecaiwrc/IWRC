@@ -395,6 +395,7 @@ export default function SupplierDetailPage() {
   });
 
   const [materialsForm, setMaterialsForm] = useState<MaterialLine[]>([]);
+  const [isHubDelivery, setIsHubDelivery] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<{
     id: string;
     name: string;
@@ -712,6 +713,12 @@ export default function SupplierDetailPage() {
       setMaterialsForm([newLine()]);
     }
     setAttachedFiles([]);
+
+    const isSupplierSelfDelivery = 
+      supplier.transport_responsible === 'Fornecedor (entrega no Hub)' ||
+      supplier.logistics_analyses?.[0]?.transport_responsible === 'Fornecedor (entrega no Hub)';
+    setIsHubDelivery(Boolean(isSupplierSelfDelivery));
+
     setIsMaterialModalOpen(true);
   };
 
@@ -802,6 +809,27 @@ export default function SupplierDetailPage() {
       // 3. Save attached documents if any
       if (attachedFiles.length > 0) {
         await dbService.addSupplierDocuments(supplier.id, attachedFiles);
+      }
+
+      // 4. Update Hub delivery / self-delivery status if configured
+      if (isHubDelivery) {
+        const isProspecting = ['PROSPECTING', 'QUALIFICATION', 'LOGISTICS'].includes(supplier.current_stage || '');
+        await Promise.all([
+          dbService.updateSupplier(supplier.id, {
+            current_stage: isProspecting ? 'OPERATION' : supplier.current_stage,
+            current_status: isProspecting ? 'APPROVED' : supplier.current_status,
+            transport_responsible: 'Fornecedor (entrega no Hub)'
+          }),
+          dbService.createOrUpdateLogisticsAnalysis({
+            supplier_id: supplier.id,
+            transport_responsible: 'Fornecedor (entrega no Hub)',
+            transport_type: 'Entrega Própria (Gerador)',
+            estimated_cost: 0,
+            distance_km: null,
+            feasibility: 'FEASIBLE',
+            notes: 'Entrega direta realizada pelo próprio gerador no Hub (dispensa cotação de frete e agendamento de coleta)'
+          })
+        ]);
       }
 
       setIsMaterialModalOpen(false);
@@ -3063,6 +3091,47 @@ export default function SupplierDetailPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Pergunta: O fornecedor realizará a entrega do material no Hub? */}
+          <div className="p-4 bg-sky-50/70 dark:bg-slate-900 border border-sky-200 dark:border-slate-800 rounded-2xl space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="text-xs font-bold text-sky-950 dark:text-slate-100 block">
+                  {language === 'pt' ? 'O fornecedor realizará a entrega do material no Hub?' : 'Will the supplier deliver the material to the Hub?'}
+                </label>
+                <p className="text-[11px] text-sky-700 dark:text-slate-400 mt-0.5">
+                  {isHubDelivery
+                    ? (language === 'pt' ? '✓ Gerador fará entrega própria no Hub. Lead vai direto para Geradores ativos, sem necessidade de agendamento de coleta.' : '✓ Supplier self-delivers to Hub. Goes straight to active Generators without collection scheduling.')
+                    : (language === 'pt' ? 'iWrc ou parceiro logístico realizará a coleta e transporte (necessita agendamento).' : 'iWrc or logistics partner will collect/transport (scheduling required).')}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsHubDelivery(true)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    isHubDelivery
+                      ? 'bg-[#2098D1] text-white border-[#2098D1] shadow-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {language === 'pt' ? 'Sim' : 'Yes'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsHubDelivery(false)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    !isHubDelivery
+                      ? 'bg-[#2098D1] text-white border-[#2098D1] shadow-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {language === 'pt' ? 'Não' : 'No'}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Multi-file Attachments from PC */}

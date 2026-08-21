@@ -480,20 +480,20 @@ export const dbService = {
 
       if (supplierData.prospecting_status) {
         if (supplierData.prospecting_status === 'WAITING_LOGISTICS') {
-          updatePayload.current_stage = 'LOGISTICS';
-          updatePayload.current_status = 'PENDING';
+          updatePayload.current_stage = supplierData.current_stage || 'LOGISTICS';
+          updatePayload.current_status = supplierData.current_status || 'PENDING';
           updatePayload.backlog_reason = null;
         } else if (supplierData.prospecting_status === 'QUALIFIED') {
-          updatePayload.current_stage = 'QUALIFICATION';
-          updatePayload.current_status = 'APPROVED';
+          updatePayload.current_stage = supplierData.current_stage || 'QUALIFICATION';
+          updatePayload.current_status = supplierData.current_status || 'APPROVED';
           updatePayload.backlog_reason = 'QUALIFIED';
         } else {
-          updatePayload.current_stage = 'PROSPECTING';
+          updatePayload.current_stage = supplierData.current_stage || 'PROSPECTING';
           updatePayload.backlog_reason = supplierData.prospecting_status;
           if (['FIRST_CONTACT', 'PRESENTATION_SENT'].includes(supplierData.prospecting_status)) {
-            updatePayload.current_status = 'IN_PROGRESS';
+            updatePayload.current_status = supplierData.current_status || 'IN_PROGRESS';
           } else {
-            updatePayload.current_status = 'PENDING';
+            updatePayload.current_status = supplierData.current_status || 'PENDING';
           }
         }
       }
