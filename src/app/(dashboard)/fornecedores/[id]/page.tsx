@@ -375,6 +375,11 @@ export default function SupplierDetailPage() {
   };
   const canUserDeleteSupplier = canUserModifySupplier;
 
+  const canUserRespondLogistics = () => {
+    if (!currentUser) return false;
+    return currentUser.role === 'LOGISTICS' || currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN';
+  };
+
   const handleDeleteSupplier = async () => {
     if (!canUserDeleteSupplier()) {
       alert(
@@ -1143,14 +1148,16 @@ export default function SupplierDetailPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   {supplier.current_stage === 'LOGISTICS' && (
                     <>
-                      <Button 
-                        size="sm" 
-                        className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs" 
-                        onClick={handleOpenLogisticsModal}
-                      >
-                        <Truck size={14} />
-                        {language === 'pt' ? 'Responder Análise Logística' : 'Respond to Logistics Analysis'}
-                      </Button>
+                      {canUserRespondLogistics() && (
+                        <Button 
+                          size="sm" 
+                          className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs" 
+                          onClick={handleOpenLogisticsModal}
+                        >
+                          <Truck size={14} />
+                          {language === 'pt' ? 'Responder Análise Logística' : 'Respond to Logistics Analysis'}
+                        </Button>
+                      )}
                       
                       {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || supplier.internal_responsible_id === currentUser?.id || (currentUser?.name && supplier.responsible?.name?.toLowerCase() === currentUser?.name?.toLowerCase())) && (
                         <Button 
@@ -1283,9 +1290,11 @@ export default function SupplierDetailPage() {
                   {language === 'pt' ? 'Parecer da Análise Logística' : 'Logistics Analysis Report'}
                 </h3>
                 {supplier.current_stage === 'LOGISTICS' ? (
-                  <Button size="sm" variant="outline" onClick={handleOpenLogisticsModal} className="text-xs">
-                    {activeLogistics ? (language === 'pt' ? 'Editar Parecer' : 'Edit Report') : (language === 'pt' ? 'Responder' : 'Respond')}
-                  </Button>
+                  canUserRespondLogistics() ? (
+                    <Button size="sm" variant="outline" onClick={handleOpenLogisticsModal} className="text-xs">
+                      {activeLogistics ? (language === 'pt' ? 'Editar Parecer' : 'Edit Report') : (language === 'pt' ? 'Responder' : 'Respond')}
+                    </Button>
+                  ) : null
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
                     <Lock size={10} /> {language === 'pt' ? 'Bloqueado' : 'Locked'}
@@ -1384,9 +1393,11 @@ export default function SupplierDetailPage() {
                 <div className="py-8 text-center text-slate-400 text-xs space-y-3">
                   <Truck size={28} className="mx-auto text-slate-300 opacity-60" />
                   <p>{language === 'pt' ? 'Nenhuma resposta logística registrada ainda.' : 'No logistics report registered yet.'}</p>
-                  <Button size="sm" onClick={handleOpenLogisticsModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                    {language === 'pt' ? 'Responder Análise Logística' : 'Respond Logistics Analysis'}
-                  </Button>
+                  {canUserRespondLogistics() && (
+                    <Button size="sm" onClick={handleOpenLogisticsModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                      {language === 'pt' ? 'Responder Análise Logística' : 'Respond Logistics Analysis'}
+                    </Button>
+                  )}
                 </div>
               )}
             </Card>
@@ -2186,9 +2197,11 @@ export default function SupplierDetailPage() {
                     <Truck size={16} className="text-emerald-600" />
                     {language === 'pt' ? 'Parecer e Viabilidade Logística' : 'Logistics Feasibility & Opinion'}
                   </h3>
-                  <Button size="sm" variant="outline" onClick={handleOpenLogisticsModal} className="text-xs">
-                    {activeLogistics ? (language === 'pt' ? 'Editar Parecer' : 'Edit Opinion') : (language === 'pt' ? 'Preencher Parecer' : 'Submit Opinion')}
-                  </Button>
+                  {canUserRespondLogistics() && (
+                    <Button size="sm" variant="outline" onClick={handleOpenLogisticsModal} className="text-xs">
+                      {activeLogistics ? (language === 'pt' ? 'Editar Parecer' : 'Edit Opinion') : (language === 'pt' ? 'Preencher Parecer' : 'Submit Opinion')}
+                    </Button>
+                  )}
                 </div>
 
                 {activeLogistics ? (
@@ -2244,9 +2257,11 @@ export default function SupplierDetailPage() {
                 ) : (
                   <div className="py-12 text-center text-slate-400 text-sm space-y-3">
                     <p>{language === 'pt' ? 'Nenhuma análise logística registrada para este gerador.' : 'No logistics analysis registered for this generator.'}</p>
-                    <Button size="sm" onClick={handleOpenLogisticsModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                      {language === 'pt' ? 'Preencher Análise Logística' : 'Fill Logistics Analysis'}
-                    </Button>
+                    {canUserRespondLogistics() && (
+                      <Button size="sm" onClick={handleOpenLogisticsModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                        {language === 'pt' ? 'Preencher Análise Logística' : 'Fill Logistics Analysis'}
+                      </Button>
+                    )}
                   </div>
                 )}
               </Card>
