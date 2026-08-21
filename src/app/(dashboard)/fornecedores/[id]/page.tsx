@@ -79,10 +79,21 @@ import {
   feasibilityOptions
 } from '@/app/(dashboard)/logistica/page';
 
-const MATERIAL_OPTIONS = [
+export const MAIN_MATERIAL_OPTIONS = [
   'Papelão', 
+  'Papel', 
+  'Plástico', 
+  'Eletrônicos', 
+  'Recicláveis em geral', 
+  'Outro'
+];
+
+export const DETAILED_MATERIAL_OPTIONS = [
+  'Papelão', 
+  'Papel', 
   'Papel Branco Sigiloso', 
   'Papel Misto', 
+  'Plástico', 
   'Plástico Filme',
   'Plástico Rígido', 
   'PET', 
@@ -90,11 +101,14 @@ const MATERIAL_OPTIONS = [
   'Ferro/Aço', 
   'Cobre',
   'Vidro', 
+  'Eletrônicos', 
   'Eletrônicos (REEE)', 
   'Orgânicos', 
   'Recicláveis em geral', 
   'Outro'
 ];
+
+const MATERIAL_OPTIONS = DETAILED_MATERIAL_OPTIONS;
 
 const STORAGE_OPTIONS = ['Container', 'Big Bag', 'Sacos de Lixo', 'Caçamba', 'Lixeira', 'Prensa / Enfardado', 'Granel / Solto', 'Outro'];
 const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico', 'Entrega única'];
@@ -113,6 +127,7 @@ interface MaterialLine {
   storage_provision_type?: string;
   storage_provision_quantity?: string;
   storage_provision_custom_type?: string;
+  showMoreMaterials?: boolean;
   created_at?: string;
 }
 
@@ -129,7 +144,8 @@ const newLine = (): MaterialLine => ({
   needs_storage_provision: false,
   storage_provision_type: 'Bag',
   storage_provision_quantity: '',
-  storage_provision_custom_type: ''
+  storage_provision_custom_type: '',
+  showMoreMaterials: false
 });
 
 export default function SupplierDetailPage() {
@@ -510,7 +526,8 @@ export default function SupplierDetailPage() {
   const openFullMaterialsModal = () => {
     if (supplier?.materials && supplier.materials.length > 0) {
       setMaterialsForm(supplier.materials.map(m => {
-        const isStandard = MATERIAL_OPTIONS.includes(m.material_name);
+        const isStandard = DETAILED_MATERIAL_OPTIONS.includes(m.material_name);
+        const isMain = MAIN_MATERIAL_OPTIONS.includes(m.material_name);
         return {
           id: m.id,
           material_name: isStandard ? m.material_name : 'Outro',
@@ -525,6 +542,7 @@ export default function SupplierDetailPage() {
           storage_provision_type: m.storage_provision_type || 'Bag',
           storage_provision_quantity: m.storage_provision_quantity ? String(m.storage_provision_quantity) : '',
           storage_provision_custom_type: m.storage_provision_custom_type || '',
+          showMoreMaterials: !isMain && isStandard,
           created_at: m.created_at
         };
       }));
@@ -2690,16 +2708,47 @@ export default function SupplierDetailPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      {language === 'pt' ? 'Tipo de Material / Categoria *' : 'Material Type / Category *'}
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        {language === 'pt' ? 'Tipo de Material / Categoria *' : 'Material Type / Category *'}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => updMat(mat.id, 'showMoreMaterials' as any, !mat.showMoreMaterials as any)}
+                        className="text-[11px] font-bold text-[#2098D1] hover:underline cursor-pointer flex items-center gap-1"
+                      >
+                        {mat.showMoreMaterials 
+                          ? (language === 'pt' ? '↑ Ver principais' : '↑ Main options') 
+                          : (language === 'pt' ? '+ Ver mais opções' : '+ Show more options')}
+                      </button>
+                    </div>
                     <select 
                       value={mat.material_name} 
-                      onChange={e => updMat(mat.id, 'material_name', e.target.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === '__SHOW_MORE__') {
+                          updMat(mat.id, 'showMoreMaterials' as any, true as any);
+                        } else if (val === '__SHOW_LESS__') {
+                          updMat(mat.id, 'showMoreMaterials' as any, false as any);
+                        } else {
+                          updMat(mat.id, 'material_name', val);
+                        }
+                      }}
                       className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
                     >
                       <option value="">{language === 'pt' ? 'Selecione o material...' : 'Select material...'}</option>
-                      {MATERIAL_OPTIONS.map(o => <option key={o} value={o}>{translateMaterialName(o, language)}</option>)}
+                      {(mat.showMoreMaterials ? DETAILED_MATERIAL_OPTIONS : MAIN_MATERIAL_OPTIONS).map(o => (
+                        <option key={o} value={o}>{translateMaterialName(o, language)}</option>
+                      ))}
+                      {!mat.showMoreMaterials ? (
+                        <option value="__SHOW_MORE__" className="font-bold text-[#2098D1]">
+                          {language === 'pt' ? '➕ Ver mais opções (Alumínio, PET, Vidro...)' : '➕ Show more options (Alumínio, PET, Vidro...)'}
+                        </option>
+                      ) : (
+                        <option value="__SHOW_LESS__" className="font-bold text-slate-500">
+                          {language === 'pt' ? '⬆️ Voltar para opções principais' : '⬆️ Back to main options'}
+                        </option>
+                      )}
                     </select>
                     {mat.material_name === 'Outro' && (
                       <input
@@ -2708,6 +2757,7 @@ export default function SupplierDetailPage() {
                         value={mat.custom_material_name || ''}
                         onChange={e => updMat(mat.id, 'custom_material_name', e.target.value)}
                         className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-emerald-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                        required
                       />
                     )}
                   </div>
