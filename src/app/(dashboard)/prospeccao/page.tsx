@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { dbService } from '@/features/shared/services/dbService';
-import { Supplier, Profile, ProspectingStatus } from '@/types';
+import { Supplier, Profile, ProspectingStatus, StorageProvisionItem } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -467,6 +467,27 @@ export default function ProspectingPage() {
     fetchData(); 
   }, [fetchData]);
 
+  // Multi-storage provision state
+  const [needsStorageProvision, setNeedsStorageProvision] = useState<boolean>(false);
+  const [storageProvisions, setStorageProvisions] = useState<StorageProvisionItem[]>([
+    { id: '1', type: 'Bag', quantity: '1', custom_type: '' }
+  ]);
+
+  const addStorageProvision = () => {
+    setStorageProvisions(prev => [
+      ...prev,
+      { id: Math.random().toString(36).substring(2, 9), type: 'Bag', quantity: '1', custom_type: '' }
+    ]);
+  };
+
+  const removeStorageProvision = (id: string) => {
+    setStorageProvisions(prev => prev.filter(p => p.id !== id));
+  };
+
+  const updateStorageProvision = (id: string, field: keyof StorageProvisionItem, value: any) => {
+    setStorageProvisions(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+  };
+
   const openMaterialsModal = (supplier: Supplier, forLogistics = false) => {
     setActiveMaterialSupplier(supplier);
     setIsSendingToLogistics(forLogistics);
@@ -477,6 +498,32 @@ export default function ProspectingPage() {
       activeLog?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
       supplier.transport_responsible === 'Fornecedor (entrega no Hub)';
     setIsHubDelivery(Boolean(isSupplierSelfDelivery));
+
+    const hasStorage = 
+      (supplier.storage_provisions && supplier.storage_provisions.length > 0) ||
+      (supplier.materials && supplier.materials.some(m => m.needs_storage_provision)) ||
+      Boolean(activeLog?.conditioning_infrastructure_needed?.includes('Armazenamento') || activeLog?.notes?.includes('STORAGE_ITEM'));
+
+    setNeedsStorageProvision(hasStorage);
+
+    if (supplier.storage_provisions && supplier.storage_provisions.length > 0) {
+      setStorageProvisions(supplier.storage_provisions.map(p => ({
+        id: p.id || Math.random().toString(36).substring(2, 9),
+        type: p.type || 'Bag',
+        quantity: String(p.quantity || 1),
+        custom_type: p.custom_type || ''
+      })));
+    } else if (supplier.materials && supplier.materials.some(m => m.needs_storage_provision)) {
+      const existing = supplier.materials.filter(m => m.needs_storage_provision).map(m => ({
+        id: m.id || Math.random().toString(36).substring(2, 9),
+        type: m.storage_provision_type || 'Bag',
+        quantity: String(m.storage_provision_quantity || 1),
+        custom_type: m.storage_provision_custom_type || ''
+      }));
+      setStorageProvisions(existing.length > 0 ? existing : [{ id: '1', type: 'Bag', quantity: '1', custom_type: '' }]);
+    } else {
+      setStorageProvisions([{ id: '1', type: 'Bag', quantity: '1', custom_type: '' }]);
+    }
 
     if (supplier.materials && supplier.materials.length > 0) {
       setMaterials(supplier.materials.map(m => {
@@ -670,18 +717,28 @@ export default function ProspectingPage() {
     if (!activeMaterialSupplier || !currentUser) return;
     setIsSubmitting(true);
     try {
+      const hasStorageNeed = Boolean(needsStorageProvision && storageProvisions.length > 0);
+      const storageSummary = hasStorageNeed 
+        ? storageProvisions.map(p => `${p.quantity}x ${p.type === 'Outros' ? (p.custom_type || 'Outros') : p.type}`).join(', ')
+        : '';
+      const storageStorageItemTags = hasStorageNeed
+        ? storageProvisions.map(p => `[STORAGE_ITEM: ${p.type} | ${p.quantity} | ${p.custom_type || ''}]`).join(' ')
+        : '';
+
       // 1. Delete previous materials if any to avoid duplication
       if (activeMaterialSupplier.materials && activeMaterialSupplier.materials.length > 0) {
         await Promise.all(activeMaterialSupplier.materials.map(m => dbService.deleteSupplierMaterial(m.id)));
       }
 
-      // 2. Parallel save materials
-      const materialPromises = materials.map(mat => {
+      // 2. Save each material line to Supabase / Local Mock
+      const materialPromises = materials.map((mat, idx) => {
         const finalName = mat.material_name === 'Outro' 
           ? (mat.custom_material_name?.trim() || 'Material Diversos') 
           : mat.material_name;
 
         if (!finalName) return Promise.resolve(null);
+
+        const prov = hasStorageNeed ? (storageProvisions[idx] || storageProvisions[0]) : null;
 
         return dbService.addSupplierMaterial({
           supplier_id: activeMaterialSupplier.id, 
@@ -693,11 +750,11 @@ export default function ProspectingPage() {
           transaction_type: mat.transaction_type,
           price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
           storage_form: mat.storage_form || null, 
-          notes: null,
-          needs_storage_provision: Boolean(mat.needs_storage_provision),
-          storage_provision_type: mat.needs_storage_provision ? (mat.storage_provision_type || 'Bag') : null,
-          storage_provision_quantity: mat.needs_storage_provision && mat.storage_provision_quantity ? Number(mat.storage_provision_quantity) : null,
-          storage_provision_custom_type: mat.needs_storage_provision && mat.storage_provision_type === 'Outros' ? (mat.storage_provision_custom_type || '') : null
+          notes: hasStorageNeed ? storageStorageItemTags : null,
+          needs_storage_provision: hasStorageNeed,
+          storage_provision_type: prov ? prov.type : null,
+          storage_provision_quantity: prov ? Number(prov.quantity) : null,
+          storage_provision_custom_type: prov && prov.type === 'Outros' ? (prov.custom_type || '') : null
         });
       });
 
@@ -707,8 +764,6 @@ export default function ProspectingPage() {
       if (attachedFiles.length > 0) {
         await dbService.addSupplierDocuments(activeMaterialSupplier.id, attachedFiles);
       }
-
-      const hasStorageNeed = materials.some(m => m.needs_storage_provision);
 
       // 4. Check if supplier delivers directly to Hub (isHubDelivery === true)
       if (isHubDelivery) {
@@ -777,7 +832,8 @@ export default function ProspectingPage() {
               estimated_cost: 0,
               distance_km: null,
               feasibility: 'PENDING',
-              notes: 'Entrega direta pelo gerador no Hub — Necessita cotação e organização de fornecimento de meios de armazenamento'
+              conditioning_infrastructure_needed: `Fornecimento de Meios de Armazenamento: ${storageSummary}`,
+              notes: `Entrega direta pelo gerador no Hub — Necessita cotação e organização de fornecimento de meios de armazenamento: ${storageSummary} ${storageStorageItemTags}`
             }),
             dbService.addSupplierStatusHistory({
               supplier_id: activeMaterialSupplier.id,
@@ -786,14 +842,32 @@ export default function ProspectingPage() {
               old_status: activeMaterialSupplier.current_status,
               new_status: 'PENDING',
               user_id: currentUser?.id,
-              notes: 'Enviado para análise e cotação de meios de armazenamento pela Logística (Entrega no Hub)'
+              notes: `Enviado para análise e cotação de meios de armazenamento pela Logística (${storageSummary})`
             })
           ]);
         }
       } else {
         // Case C: Standard transport by iWrc
         if (isSendingToLogistics && activeMaterialSupplier.prospecting_status !== 'WAITING_LOGISTICS') {
-          await updateStatus(activeMaterialSupplier.id, 'WAITING_LOGISTICS');
+          const now = new Date().toISOString();
+          const deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
+          await Promise.all([
+            dbService.updateSupplier(activeMaterialSupplier.id, {
+              current_stage: 'LOGISTICS',
+              current_status: 'PENDING',
+              prospecting_status: 'WAITING_LOGISTICS',
+              sent_to_logistics_at: now,
+              logistics_deadline: deadline,
+              backlog_reason: null
+            }),
+            dbService.createOrUpdateLogisticsAnalysis({
+              supplier_id: activeMaterialSupplier.id,
+              feasibility: 'PENDING',
+              conditioning_infrastructure_needed: hasStorageNeed ? `Fornecimento de Meios de Armazenamento: ${storageSummary}` : null,
+              notes: hasStorageNeed ? `Necessita frete e fornecimento de meios de armazenamento: ${storageSummary} ${storageStorageItemTags}` : undefined
+            })
+          ]);
         }
       }
 
@@ -1958,93 +2032,130 @@ export default function ProspectingPage() {
                         />
                       </div>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                    {/* Fornecimento de Meio de Armazenamento */}
-                    <div className="col-span-1 md:col-span-2 p-3.5 bg-[#F0F9FB] border border-[#CCEAF1] rounded-xl space-y-3 mt-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <label className="text-xs font-bold text-[#0E2439]">
-                          {language === 'pt' ? 'Necessita fornecimento de meio de armazenamento?' : 'Requires storage container provision?'}
-                        </label>
-                        <div className="flex gap-2">
-                          <label className={`px-4 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
-                            mat.needs_storage_provision
-                              ? 'border-[#2098D1] bg-[#2098D1] text-white shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                          }`}>
-                            <input
-                              type="radio"
-                              name={`prosp_needs_storage_${mat.id}`}
-                              className="sr-only"
-                              checked={Boolean(mat.needs_storage_provision)}
-                              onChange={() => updMat(mat.id, 'needs_storage_provision', true)}
-                            />
-                            {language === 'pt' ? 'Sim' : 'Yes'}
-                          </label>
-                          <label className={`px-4 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
-                            !mat.needs_storage_provision
-                              ? 'border-slate-400 bg-slate-200 text-slate-800'
-                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                          }`}>
-                            <input
-                              type="radio"
-                              name={`prosp_needs_storage_${mat.id}`}
-                              className="sr-only"
-                              checked={!mat.needs_storage_provision}
-                              onChange={() => updMat(mat.id, 'needs_storage_provision', false)}
-                            />
-                            {language === 'pt' ? 'Não' : 'No'}
-                          </label>
-                        </div>
-                      </div>
+            {/* SEÇÃO: FORNECIMENTO DE MEIOS DE ARMAZENAMENTO */}
+            <div className="p-4 bg-[#F0F9FB] border border-[#CCEAF1] rounded-2xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label className="text-xs font-bold text-[#0E2439] flex items-center gap-1.5">
+                    📦 {language === 'pt' ? 'Fornecimento de Meios de Armazenamento' : 'Storage Container Provision'}
+                  </label>
+                  <p className="text-[11px] text-[#4F7891] mt-0.5">
+                    {language === 'pt' ? 'O fornecedor necessita de bags, contêineres, caçambas ou outros recipientes para guardar os materiais?' : 'Does supplier need storage containers (bags, dumpsters, containers)?'}
+                  </p>
+                </div>
 
-                      {mat.needs_storage_provision && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-[#CCEAF1]">
-                          <div className="flex flex-col gap-1">
-                            <label className="text-[11px] font-bold text-slate-700">
-                              {language === 'pt' ? 'Tipo de Armazenamento *' : 'Storage Type *'}
-                            </label>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNeedsStorageProvision(true);
+                      if (storageProvisions.length === 0) {
+                        setStorageProvisions([{ id: '1', type: 'Bag', quantity: '1', custom_type: '' }]);
+                      }
+                    }}
+                    className={`px-4 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                      needsStorageProvision
+                        ? 'border-[#2098D1] bg-[#2098D1] text-white shadow-xs'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    {language === 'pt' ? 'Sim' : 'Yes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNeedsStorageProvision(false)}
+                    className={`px-4 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                      !needsStorageProvision
+                        ? 'border-slate-400 bg-slate-200 text-slate-800'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    {language === 'pt' ? 'Não' : 'No'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de Meios de Armazenamento Selecionados */}
+              {needsStorageProvision && (
+                <div className="space-y-2.5 pt-2 border-t border-[#CCEAF1]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      {language === 'pt' ? 'Recipientes Solicitados:' : 'Requested Containers:'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={addStorageProvision}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2098D1] hover:text-[#1883B5] bg-white border border-[#CCEAF1] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <Plus size={12} />
+                      {language === 'pt' ? 'Adicionar mais recipientes' : 'Add more containers'}
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {storageProvisions.map((prov, pIdx) => (
+                      <div key={prov.id} className="p-3 bg-white border border-[#CCEAF1] rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-2.5 shadow-2xs">
+                        <span className="text-xs font-bold text-slate-400 shrink-0">#{pIdx + 1}</span>
+
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+                          <div className="flex flex-col gap-0.5">
+                            <label className="text-[10px] font-bold text-slate-600">{language === 'pt' ? 'Tipo de Armazenamento *' : 'Storage Type *'}</label>
                             <select
-                              value={mat.storage_provision_type || 'Bag'}
-                              onChange={e => updMat(mat.id, 'storage_provision_type', e.target.value)}
-                              className="px-3 py-2 text-xs bg-white border border-[#CCEAF1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                              value={prov.type}
+                              onChange={e => updateStorageProvision(prov.id, 'type', e.target.value)}
+                              className="px-2.5 py-1.5 text-xs bg-[#F7FCFD] border border-[#CCEAF1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-semibold"
                             >
                               <option value="Bag">Bag</option>
                               <option value="Contêiner">{language === 'pt' ? 'Contêiner' : 'Container'}</option>
                               <option value="Caçamba">{language === 'pt' ? 'Caçamba' : 'Dumpster'}</option>
                               <option value="Outros">{language === 'pt' ? 'Outros' : 'Others'}</option>
                             </select>
-                            {mat.storage_provision_type === 'Outros' && (
+                            {prov.type === 'Outros' && (
                               <input
                                 type="text"
-                                placeholder={language === 'pt' ? 'Descreva o tipo de armazenamento...' : 'Describe storage type...'}
-                                value={mat.storage_provision_custom_type || ''}
-                                onChange={e => updMat(mat.id, 'storage_provision_custom_type', e.target.value)}
-                                className="mt-1 px-3 py-1.5 text-xs bg-white border border-indigo-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder={language === 'pt' ? 'Descreva o tipo...' : 'Describe type...'}
+                                value={prov.custom_type || ''}
+                                onChange={e => updateStorageProvision(prov.id, 'custom_type', e.target.value)}
+                                className="mt-1 px-2.5 py-1 text-xs bg-white border border-indigo-300 rounded-md outline-none focus:ring-2 focus:ring-indigo-500"
                                 required
                               />
                             )}
                           </div>
 
-                          <div className="flex flex-col gap-1">
-                            <label className="text-[11px] font-bold text-slate-700">
-                              {language === 'pt' ? 'Quantidade Necessária *' : 'Required Quantity *'}
-                            </label>
+                          <div className="flex flex-col gap-0.5">
+                            <label className="text-[10px] font-bold text-slate-600">{language === 'pt' ? 'Quantidade *' : 'Quantity *'}</label>
                             <input
                               type="number"
                               min="1"
                               placeholder="Ex: 5"
-                              value={mat.storage_provision_quantity || ''}
-                              onChange={e => updMat(mat.id, 'storage_provision_quantity', e.target.value)}
-                              className="px-3 py-2 text-xs bg-white border border-[#CCEAF1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1]"
+                              value={prov.quantity}
+                              onChange={e => updateStorageProvision(prov.id, 'quantity', e.target.value)}
+                              className="px-2.5 py-1.5 text-xs bg-[#F7FCFD] border border-[#CCEAF1] rounded-lg outline-none focus:ring-2 focus:ring-[#2098D1] font-semibold"
                               required
                             />
                           </div>
                         </div>
-                      )}
-                    </div>
+
+                        {storageProvisions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeStorageProvision(prov.id)}
+                            className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 self-end sm:self-center"
+                            title={language === 'pt' ? 'Remover este recipiente' : 'Remove this container'}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Pergunta: O fornecedor realizará a entrega do material no Hub? */}
@@ -2056,7 +2167,7 @@ export default function ProspectingPage() {
                   </label>
                   <p className="text-[11px] text-sky-700 mt-0.5">
                     {isHubDelivery
-                      ? (materials.some(m => m.needs_storage_provision)
+                      ? (needsStorageProvision && storageProvisions.length > 0
                           ? (language === 'pt' ? '✓ Fornecedor entregará no Hub, mas necessita de recipientes. Será enviado para a Logística cotar e agendar a entrega dos meios de armazenamento.' : '✓ Supplier self-delivers, but needs containers. Will be sent to Logistics to quote and schedule container delivery.')
                           : (language === 'pt' ? '✓ Fornecedor entregará no Hub e NÃO necessita de recipientes. O lead irá diretamente para Geradores ativos, sem ação logística.' : '✓ Supplier self-delivers with no container needs. Moves straight to active Generators.'))
                       : (language === 'pt' ? 'iWrc ou parceiro logístico realizará a coleta e transporte (enviado para análise e agendamento da Logística).' : 'iWrc or logistics partner will collect/transport (sent to Logistics for freight quoting and scheduling).')}
@@ -2169,10 +2280,10 @@ export default function ProspectingPage() {
               <Button 
                 onClick={handleSaveMaterialsAndLogistics} 
                 isLoading={isSubmitting} 
-                className={`gap-2 ${isHubDelivery && !materials.some(m => m.needs_storage_provision) ? '!bg-emerald-600 hover:!bg-emerald-700 text-white' : ((isSendingToLogistics || (isHubDelivery && materials.some(m => m.needs_storage_provision))) ? '!bg-indigo-600 hover:!bg-indigo-700' : '')}`}
+                className={`gap-2 ${isHubDelivery && (!needsStorageProvision || storageProvisions.length === 0) ? '!bg-emerald-600 hover:!bg-emerald-700 text-white' : ((isSendingToLogistics || (isHubDelivery && needsStorageProvision && storageProvisions.length > 0)) ? '!bg-indigo-600 hover:!bg-indigo-700' : '')}`}
               >
                 {isHubDelivery ? (
-                  materials.some(m => m.needs_storage_provision) ? (
+                  (needsStorageProvision && storageProvisions.length > 0) ? (
                     <>
                       <Send size={14}/>{language === 'pt' ? 'Confirmar e Enviar para Logística (Cotação Armazenamento)' : 'Send to Logistics (Storage Quotation)'}
                     </>

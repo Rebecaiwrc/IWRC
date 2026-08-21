@@ -96,6 +96,13 @@ export interface Profile {
   must_change_password?: boolean;
 }
 
+export interface StorageProvisionItem {
+  id: string;
+  type: string; // 'Bag' | 'Contêiner' | 'Caçamba' | 'Outros'
+  custom_type?: string;
+  quantity: number | string;
+}
+
 export interface Supplier {
   id: string;
   code?: string; // e.g. GER-001
@@ -130,6 +137,7 @@ export interface Supplier {
   contacts?: SupplierContact[];
   address?: SupplierAddress | null;
   materials?: SupplierMaterial[];
+  storage_provisions?: StorageProvisionItem[];
   interactions?: SupplierInteraction[];
   tasks?: SupplierTask[];
   logistics_analyses?: LogisticsAnalysis[];

@@ -1588,13 +1588,9 @@ export default function LogisticsPage() {
                 🚚 {language === 'pt' ? 'Coleta Realizada pelo Próprio Gerador (Entrega no Hub)' : 'Generator Self-Delivery to Hub'}
               </span>
               <p className="text-slate-600 dark:text-slate-400">
-                {(selectedSupplier.materials || []).some(m => m.needs_storage_provision)
-                  ? (language === 'pt' 
-                      ? 'A iWrc não realizará o frete/transporte. Preencha apenas a cotação e previsão de entrega dos recipientes de armazenamento solicitados abaixo.'
-                      : 'iWrc will not perform transportation. Please fill the storage container quote and delivery date below.')
-                  : (language === 'pt'
-                      ? 'O gerador entregará os materiais no Hub e não necessita de recipientes. Nenhuma cotação de frete ou armazenamento é necessária.'
-                      : 'The generator will deliver to the Hub with no container requirements. No freight or container quote required.')}
+                {language === 'pt' 
+                  ? 'A iWrc não realizará o frete/transporte (o próprio gerador entregará no Hub). Preencha abaixo a cotação e previsão de entrega dos meios de armazenamento solicitados.'
+                  : 'iWrc will not perform transportation. Please fill the storage container quote and delivery date below.'}
               </p>
             </div>
           ) : (
@@ -1662,49 +1658,88 @@ export default function LogisticsPage() {
             </div>
           )}
 
-          {/* Storage Provision Section if requested */}
-          {(selectedSupplier.materials || []).some(m => m.needs_storage_provision) && (
-            <div className="p-4 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
-                  📦 {language === 'pt' ? 'Cotação de Fornecimento de Meios de Armazenamento' : 'Storage Provision Quotation'}
-                </span>
-                <span className="text-[10px] font-bold bg-indigo-200/80 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200 px-2.5 py-0.5 rounded-full">
-                  {(selectedSupplier.materials || []).filter(m => m.needs_storage_provision).length} {language === 'pt' ? 'item(ns) solicitado(s)' : 'item(s) requested'}
-                </span>
-              </div>
+          {/* Storage Provision Section */}
+          {(() => {
+            const storageItems: { type: string; quantity: number | string; custom_type?: string }[] = [];
+            (selectedSupplier.materials || []).forEach(m => {
+              if (m.needs_storage_provision) {
+                storageItems.push({
+                  type: m.storage_provision_type || 'Bag',
+                  quantity: m.storage_provision_quantity || 1,
+                  custom_type: m.storage_provision_custom_type || ''
+                });
+              }
+            });
 
-              <div className="p-2.5 bg-white dark:bg-slate-950 border border-indigo-100 dark:border-indigo-900 rounded-lg text-xs space-y-1">
-                <span className="font-bold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Recipientes Solicitados pelo Comercial:' : 'Containers Requested by Commercial:'}</span>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {(selectedSupplier.materials || []).filter(m => m.needs_storage_provision).map((m, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-1 font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50 px-2 py-1 rounded text-xs border border-indigo-200 dark:border-indigo-800">
-                      • {m.storage_provision_quantity || 1}x {m.storage_provision_type === 'Outros' ? m.storage_provision_custom_type || 'Outros' : m.storage_provision_type} ({translateMaterialName(m.material_name, language)})
+            if (storageItems.length === 0 && selectedSupplier.storage_provisions) {
+              selectedSupplier.storage_provisions.forEach(p => storageItems.push(p));
+            }
+
+            if (storageItems.length === 0) {
+              const text = `${selectedSupplier.logistics_analyses?.[0]?.conditioning_infrastructure_needed || ''} ${selectedSupplier.logistics_analyses?.[0]?.notes || ''}`;
+              const matches = text.matchAll(/\[STORAGE_ITEM:\s*([^|]+)\s*\|\s*([^|]+)\s*(?:\|\s*([^\]]+))?\]/g);
+              for (const match of matches) {
+                storageItems.push({
+                  type: match[1]?.trim() || 'Bag',
+                  quantity: match[2]?.trim() || '1',
+                  custom_type: match[3]?.trim() || ''
+                });
+              }
+            }
+
+            return (
+              <div className="p-4 bg-indigo-50/90 dark:bg-indigo-950/50 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                    📦 {language === 'pt' ? 'Cotação de Meios de Armazenamento (Bags / Caçambas / Contêineres)' : 'Storage Provision Quotation'}
+                  </span>
+                  {storageItems.length > 0 && (
+                    <span className="text-[10px] font-black bg-indigo-200 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200 px-2.5 py-0.5 rounded-full">
+                      {storageItems.length} {language === 'pt' ? 'tipo(s) solicitado(s)' : 'item(s) requested'}
                     </span>
-                  ))}
+                  )}
+                </div>
+
+                {storageItems.length > 0 ? (
+                  <div className="p-3 bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs space-y-1.5">
+                    <span className="font-bold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Recipientes Solicitados pelo Comercial:' : 'Containers Requested by Commercial:'}</span>
+                    <div className="flex flex-wrap gap-2 pt-0.5">
+                      {storageItems.map((item, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1.5 font-bold text-indigo-800 dark:text-indigo-200 bg-indigo-100/70 dark:bg-indigo-900/60 px-3 py-1 rounded-lg text-xs border border-indigo-300 dark:border-indigo-700">
+                          📦 {item.quantity}x {item.type === 'Outros' ? (item.custom_type || 'Outros') : item.type}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-indigo-800 dark:text-indigo-300 font-medium">
+                    {language === 'pt' 
+                      ? 'Informe o valor da cotação e data prevista de entrega caso o gerador necessite de fornecimento de recipientes.' 
+                      : 'Enter storage containers quote value and delivery date if required.'}
+                  </p>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <Input
+                    label={language === 'pt' ? 'Valor da Cotação do Armazenamento (R$) *' : 'Storage Quotation Value (R$) *'}
+                    type="number"
+                    step="0.01"
+                    value={analysisForm.storage_provision_cost}
+                    onChange={e => setAnalysisForm(p => ({ ...p, storage_provision_cost: e.target.value }))}
+                    placeholder="Ex: 800.00"
+                    required
+                  />
+                  <Input
+                    label={language === 'pt' ? 'Previsão / Data de Entrega dos Recipientes *' : 'Estimated Container Delivery Date *'}
+                    type="date"
+                    value={analysisForm.storage_provision_delivery_date}
+                    onChange={e => setAnalysisForm(p => ({ ...p, storage_provision_delivery_date: e.target.value }))}
+                    required
+                  />
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <Input
-                  label={language === 'pt' ? 'Valor da Cotação dos Recipientes (R$) *' : 'Containers Quotation Value (R$) *'}
-                  type="number"
-                  step="0.01"
-                  value={analysisForm.storage_provision_cost}
-                  onChange={e => setAnalysisForm(p => ({ ...p, storage_provision_cost: e.target.value }))}
-                  placeholder="Ex: 800.00"
-                  required
-                />
-                <Input
-                  label={language === 'pt' ? 'Previsão / Data de Entrega dos Recipientes *' : 'Estimated Container Delivery Date *'}
-                  type="date"
-                  value={analysisForm.storage_provision_delivery_date}
-                  onChange={e => setAnalysisForm(p => ({ ...p, storage_provision_delivery_date: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Feasibility Decision */}
           <div className="grid grid-cols-1 gap-4">
