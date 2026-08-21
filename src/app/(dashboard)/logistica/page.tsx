@@ -119,9 +119,18 @@ export const DISPATCH_MATERIAL_OPTIONS = [
   'Outros'
 ];
 
+import { useRouter } from 'next/navigation';
+
 export default function LogisticsPage() {
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (currentUser && currentUser.role === 'BUYER') {
+      router.replace('/prospeccao');
+    }
+  }, [currentUser, router]);
 
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [dispatches, setDispatches] = useState<MaterialDispatch[]>([]);
@@ -138,6 +147,10 @@ export default function LogisticsPage() {
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [dispatchSearch, setDispatchSearch] = useState('');
   const [dispatchDestinationFilter, setDispatchDestinationFilter] = useState('ALL');
+
+  if (currentUser && currentUser.role === 'BUYER') {
+    return null;
+  }
   const [dispatchForm, setDispatchForm] = useState<{
     buyer_name: string;
     buyer_document: string;

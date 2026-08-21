@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { UserRole, Profile } from '@/types';
 import { 
@@ -28,6 +28,7 @@ import { getLogisticsSlaInfo } from '@/lib/utils';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout, switchUserById } = useAuth();
   const { t } = useLanguage();
   
@@ -85,8 +86,17 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const handleUserSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    switchUserById(e.target.value);
+  const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    await switchUserById(selectedId);
+    const targetProfile = allProfiles.find(p => p.id === selectedId);
+    if (targetProfile) {
+      if (targetProfile.role === 'BUYER' && pathname.startsWith('/logistica')) {
+        router.replace('/prospeccao');
+      } else if (targetProfile.role === 'LOGISTICS' && pathname.startsWith('/prospeccao')) {
+        router.replace('/logistica');
+      }
+    }
   };
 
   const getRoleLabel = (role: UserRole) => {
