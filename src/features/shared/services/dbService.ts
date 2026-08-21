@@ -190,7 +190,30 @@ export const dbService = {
           prospecting_status: pStatus,
           sent_to_logistics_at: sentLogAt,
           logistics_deadline: logDeadline,
-          materials: (s.materials || []).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
+          materials: (s.materials || []).map((m: any) => {
+            let needsStorage = Boolean(m.needs_storage_provision);
+            let sType = m.storage_provision_type || 'Bag';
+            let sQty = m.storage_provision_quantity || null;
+            let sCustom = m.storage_provision_custom_type || null;
+
+            if (m.notes && m.notes.includes('[STORAGE_PROVISION:')) {
+              needsStorage = true;
+              const match = m.notes.match(/\[STORAGE_PROVISION:\s*([^|]+)\s*\|\s*([^|]+)\s*(?:\|\s*([^\]]+))?\]/);
+              if (match) {
+                sType = match[1]?.trim() || 'Bag';
+                sQty = Number(match[2]?.trim()) || null;
+                sCustom = match[3]?.trim() || null;
+              }
+            }
+
+            return {
+              ...m,
+              needs_storage_provision: needsStorage,
+              storage_provision_type: sType,
+              storage_provision_quantity: sQty,
+              storage_provision_custom_type: sCustom
+            };
+          }).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
           contacts: s.contacts || [],
           interactions: s.interactions || [],
           tasks: s.tasks || [],
@@ -279,7 +302,30 @@ export const dbService = {
         prospecting_status: pStatus,
         sent_to_logistics_at: sentLogAt,
         logistics_deadline: logDeadline,
-        materials: (data.materials || []).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
+        materials: (data.materials || []).map((m: any) => {
+          let needsStorage = Boolean(m.needs_storage_provision);
+          let sType = m.storage_provision_type || 'Bag';
+          let sQty = m.storage_provision_quantity || null;
+          let sCustom = m.storage_provision_custom_type || null;
+
+          if (m.notes && m.notes.includes('[STORAGE_PROVISION:')) {
+            needsStorage = true;
+            const match = m.notes.match(/\[STORAGE_PROVISION:\s*([^|]+)\s*\|\s*([^|]+)\s*(?:\|\s*([^\]]+))?\]/);
+            if (match) {
+              sType = match[1]?.trim() || 'Bag';
+              sQty = Number(match[2]?.trim()) || null;
+              sCustom = match[3]?.trim() || null;
+            }
+          }
+
+          return {
+            ...m,
+            needs_storage_provision: needsStorage,
+            storage_provision_type: sType,
+            storage_provision_quantity: sQty,
+            storage_provision_custom_type: sCustom
+          };
+        }).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
         contacts: data.contacts || [],
         interactions: (data.interactions || []).map((i: any) => ({
           ...i,
@@ -701,9 +747,14 @@ export const dbService = {
       : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15));
     const now = new Date().toISOString();
 
+    const notesWithProvision = materialData.needs_storage_provision
+      ? `${materialData.notes || ''} [STORAGE_PROVISION: ${materialData.storage_provision_type || 'Bag'} | ${materialData.storage_provision_quantity || 1} | ${materialData.storage_provision_custom_type || ''}]`.trim()
+      : (materialData.notes || null);
+
     if (isSupabaseConfigured && supabase) {
       const payload: any = {
         ...materialData,
+        notes: notesWithProvision,
         id,
         created_at: materialData.created_at || now
       };
@@ -751,7 +802,7 @@ export const dbService = {
       transaction_type: (materialData.transaction_type as any) || 'donation',
       price_per_kg: Number(materialData.price_per_kg) || 0,
       storage_form: materialData.storage_form || null,
-      notes: materialData.notes || null,
+      notes: notesWithProvision,
       needs_storage_provision: Boolean(materialData.needs_storage_provision),
       storage_provision_type: materialData.storage_provision_type || null,
       storage_provision_quantity: materialData.storage_provision_quantity !== undefined ? Number(materialData.storage_provision_quantity) : null,

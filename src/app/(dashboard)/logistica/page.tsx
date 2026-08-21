@@ -274,15 +274,6 @@ export default function LogisticsPage() {
     .filter(s => isResponsibleForSupplier(s))
     .filter(s => {
       const act = s.logistics_analyses?.[0];
-      const isSelfDelivery = 
-        act?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
-        act?.transport_type === 'Entrega Própria (Gerador)' ||
-        s.transport_responsible === 'Fornecedor (entrega no Hub)' ||
-        (s as any).self_delivery === true;
-
-      const needsStorage = s.materials?.some(m => Boolean(m.needs_storage_provision));
-      if (isSelfDelivery && !needsStorage) return false;
-
       const isLogisticsStage = s.current_stage === 'LOGISTICS' || s.prospecting_status === 'WAITING_LOGISTICS';
       if (!isLogisticsStage) return false;
 
