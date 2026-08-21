@@ -603,11 +603,14 @@ export default function ProspectingPage() {
       return item;
     }));
 
-    // Auto-open materials modal whenever moving to QUALIFIED or WAITING_LOGISTICS
-    if (newStatus === 'QUALIFIED') {
-      openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, false);
-    } else if (newStatus === 'WAITING_LOGISTICS') {
-      openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, true);
+    // Auto-open materials modal ONLY if the supplier does not have materials filled yet
+    const hasMaterials = Boolean(s.materials && s.materials.length > 0);
+    if (!hasMaterials) {
+      if (newStatus === 'QUALIFIED') {
+        openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, false);
+      } else if (newStatus === 'WAITING_LOGISTICS') {
+        openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, true);
+      }
     }
 
     // ⚡ 2. ASYNC BACKGROUND PERSISTENCE: Save to Supabase in parallel
@@ -1412,7 +1415,7 @@ export default function ProspectingPage() {
                                 {supplier.materials.length} {language === 'pt' ? 'item(ns)' : 'item(s)'}
                               </span>
                             </div>
-                            {supplier.materials.slice(0, 2).map((m, i) => (
+                            {supplier.materials.map((m, i) => (
                               <div key={i} className="flex items-center justify-between gap-1">
                                 <span className="truncate font-medium">• {translateMaterialName(m.material_name, language)}</span>
                                 <span className={`text-[9px] font-bold px-1 rounded shrink-0 ${
@@ -1422,12 +1425,6 @@ export default function ProspectingPage() {
                                 </span>
                               </div>
                             ))}
-                            <button
-                              onClick={() => openMaterialsModal(supplier, false)}
-                              className="text-[9px] font-bold text-[#2098D1] hover:underline pt-0.5 block cursor-pointer"
-                            >
-                              + {language === 'pt' ? 'Gerenciar / Editar Materiais' : 'Manage / Edit Materials'}
-                            </button>
                           </div>
                         ) : (
                           <button
