@@ -48,7 +48,8 @@ import {
   Filter,
   UserCheck,
   ShieldCheck,
-  Layers
+  Layers,
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 

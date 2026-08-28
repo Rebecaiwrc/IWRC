@@ -116,8 +116,8 @@ export default function ComprasPage() {
     setIsResponseModalOpen(true);
 
     try {
-      const interactions = await dbService.getSupplierInteractions(supplier.id);
-      setSupplierInteractions(interactions);
+      const fullSupplier = await dbService.getSupplier(supplier.id);
+      setSupplierInteractions(fullSupplier?.interactions || []);
     } catch (err) {
       console.error('Error loading interactions:', err);
       setSupplierInteractions([]);
@@ -150,7 +150,9 @@ export default function ComprasPage() {
         const previousNotes = activeAnalysis.notes ? `${activeAnalysis.notes}\n\n` : '';
         const updatedNotes = `${previousNotes}[${new Date().toLocaleDateString('pt-BR')} - Resposta de Compras por ${currentUser.name}]: ${responseText.trim()}`;
         
-        await dbService.updateLogisticsAnalysis(activeAnalysis.id, {
+        await dbService.createOrUpdateLogisticsAnalysis({
+          id: activeAnalysis.id,
+          supplier_id: selectedSupplier.id,
           feasibility: 'PENDING',
           notes: updatedNotes
         });
@@ -282,7 +284,6 @@ export default function ComprasPage() {
             placeholder={language === 'pt' ? 'Buscar por Nome, Razão Social, Código (IW-xxx) ou Cidade...' : 'Search by name, legal name, code (IW-xxx), city...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            icon={<Search size={16} />}
           />
         </div>
 
@@ -339,7 +340,7 @@ export default function ComprasPage() {
                   const respName = formatTitleCase(supplier.responsible?.name || (language === 'pt' ? 'Não atribuído' : 'Unassigned'), { isPerson: true });
 
                   const activeAnalysis = supplier.logistics_analyses?.[0];
-                  const needInfoReason = activeAnalysis?.need_info_reason || supplier.backlog_reason || (language === 'pt' ? 'Logística solicitou informações adicionais de acesso e documentação.' : 'Logistics requested additional details.');
+                  const needInfoReason = supplier.backlog_reason || activeAnalysis?.notes || (language === 'pt' ? 'Logística solicitou informações adicionais de acesso e documentação.' : 'Logistics requested additional details.');
                   const requestDate = activeAnalysis?.created_at || supplier.updated_at;
 
                   return (
@@ -457,7 +458,7 @@ export default function ComprasPage() {
           isOpen={isResponseModalOpen}
           onClose={() => !isSubmitting && setIsResponseModalOpen(false)}
           title={language === 'pt' ? 'Responder Pendência à Logística' : 'Respond to Logistics Inquiry'}
-          className="max-w-2xl"
+          size="lg"
         >
           <form onSubmit={handleSendResponse} className="space-y-4">
             {/* Header / Supplier Summary */}
@@ -485,7 +486,7 @@ export default function ComprasPage() {
                 <span>{language === 'pt' ? 'O que a Logística solicitou:' : 'Logistics requested:'}</span>
               </div>
               <p className="text-sm text-amber-950 font-medium leading-relaxed bg-white/80 p-3 rounded-lg border border-amber-200/60">
-                {selectedSupplier.logistics_analyses?.[0]?.need_info_reason || selectedSupplier.backlog_reason || 'Informações adicionais de rota, acesso de caminhão ou documentação.'}
+                {selectedSupplier.backlog_reason || selectedSupplier.logistics_analyses?.[0]?.notes || 'Informações adicionais de rota, acesso de caminhão ou documentação.'}
               </p>
             </div>
 
@@ -500,7 +501,7 @@ export default function ComprasPage() {
                     <div key={inter.id} className="p-2 bg-white rounded border border-slate-200/60">
                       <div className="flex items-center justify-between text-[10px] text-slate-400">
                         <span className="font-semibold text-slate-600">{inter.user?.name || 'Sistema'}</span>
-                        <span>{formatDate(inter.created_at)}</span>
+                        <span>{inter.interaction_date}</span>
                       </div>
                       <p className="text-slate-700 text-xs mt-0.5">{inter.description}</p>
                     </div>
