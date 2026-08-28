@@ -203,7 +203,7 @@ export default function ComprasPage() {
             </div>
             <div>
               <h1 className="text-2xl font-black text-slate-900 leading-tight">
-                {language === 'pt' ? 'Compras e Pendências' : 'Purchasing & Pending'}
+                {language === 'pt' ? 'Compras' : 'Purchasing'}
               </h1>
               <p className="text-slate-500 text-sm mt-0.5">
                 {language === 'pt' 
