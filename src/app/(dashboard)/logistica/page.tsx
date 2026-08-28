@@ -1488,8 +1488,20 @@ export default function LogisticsPage() {
 
       {/* Analysis Modal (Idêntico em todas as telas) */}
       {selectedSupplier && (
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
-          title={`Análise Logística — ${selectedSupplier.name}`} size="lg">
+        <Modal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)}
+          title={`Análise Logística — ${selectedSupplier.name}`} 
+          size="lg"
+          hasUnsavedChanges={Boolean(
+            analysisForm.distance_km || 
+            (analysisForm.estimated_cost && analysisForm.estimated_cost !== '0') || 
+            analysisForm.notes || 
+            analysisForm.need_info_reason || 
+            analysisForm.conditioning_infrastructure_needed || 
+            analysisForm.storage_provision_cost
+          )}
+        >
           <form onSubmit={handleSaveAnalysis} className="space-y-5">
 
             {/* Materials recap */}
@@ -1655,7 +1667,7 @@ export default function LogisticsPage() {
               }
             });
 
-            if (storageItems.length === 0 && selectedSupplier.storage_provisions) {
+            if (storageItems.length === 0 && selectedSupplier.storage_provisions && selectedSupplier.storage_provisions.length > 0) {
               selectedSupplier.storage_provisions.forEach(p => storageItems.push(p));
             }
 
@@ -1671,37 +1683,32 @@ export default function LogisticsPage() {
               }
             }
 
+            // CRITICAL FIX: If supplier does not need storage provision, DO NOT render this block at all
+            if (storageItems.length === 0) {
+              return null;
+            }
+
             return (
               <div className="p-4 bg-indigo-50/90 dark:bg-indigo-950/50 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl space-y-3 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
                     📦 {language === 'pt' ? 'Cotação de Meios de Armazenamento (Bags / Caçambas / Contêineres)' : 'Storage Provision Quotation'}
                   </span>
-                  {storageItems.length > 0 && (
-                    <span className="text-[10px] font-black bg-indigo-200 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200 px-2.5 py-0.5 rounded-full">
-                      {storageItems.length} {language === 'pt' ? 'tipo(s) solicitado(s)' : 'item(s) requested'}
-                    </span>
-                  )}
+                  <span className="text-[10px] font-black bg-indigo-200 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200 px-2.5 py-0.5 rounded-full">
+                    {storageItems.length} {language === 'pt' ? 'tipo(s) solicitado(s)' : 'item(s) requested'}
+                  </span>
                 </div>
 
-                {storageItems.length > 0 ? (
-                  <div className="p-3 bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs space-y-1.5">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Recipientes Solicitados pelo Comercial:' : 'Containers Requested by Commercial:'}</span>
-                    <div className="flex flex-wrap gap-2 pt-0.5">
-                      {storageItems.map((item, idx) => (
-                        <span key={idx} className="inline-flex items-center gap-1.5 font-bold text-indigo-800 dark:text-indigo-200 bg-indigo-100/70 dark:bg-indigo-900/60 px-3 py-1 rounded-lg text-xs border border-indigo-300 dark:border-indigo-700">
-                          📦 {item.quantity}x {item.type === 'Outros' ? (item.custom_type || 'Outros') : item.type}
-                        </span>
-                      ))}
-                    </div>
+                <div className="p-3 bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs space-y-1.5">
+                  <span className="font-bold text-slate-700 dark:text-slate-300">{language === 'pt' ? 'Recipientes Solicitados pelo Comercial:' : 'Containers Requested by Commercial:'}</span>
+                  <div className="flex flex-wrap gap-2 pt-0.5">
+                    {storageItems.map((item, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1.5 font-bold text-indigo-800 dark:text-indigo-200 bg-indigo-100/70 dark:bg-indigo-900/60 px-3 py-1 rounded-lg text-xs border border-indigo-300 dark:border-indigo-700">
+                        📦 {item.quantity}x {item.type === 'Outros' ? (item.custom_type || 'Outros') : item.type}
+                      </span>
+                    ))}
                   </div>
-                ) : (
-                  <p className="text-xs text-indigo-800 dark:text-indigo-300 font-medium">
-                    {language === 'pt' 
-                      ? 'Informe o valor da cotação e data prevista de entrega caso o gerador necessite de fornecimento de recipientes.' 
-                      : 'Enter storage containers quote value and delivery date if required.'}
-                  </p>
-                )}
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <Input

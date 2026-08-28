@@ -132,8 +132,6 @@ export default function SuppliersPage() {
   });
 
   const [formMaterials, setFormMaterials] = useState<FormMaterialLine[]>([newMaterialLine()]);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-
   const updMat = (id: string, field: keyof FormMaterialLine, value: any) => {
     setFormMaterials(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
@@ -157,16 +155,7 @@ export default function SuppliersPage() {
     return false;
   };
 
-  const handleRequestClose = () => {
-    if (isFormDirty()) {
-      setShowExitConfirm(true);
-    } else {
-      resetAndCloseModal();
-    }
-  };
-
   const resetAndCloseModal = () => {
-    setShowExitConfirm(false);
     setIsModalOpen(false);
     setFormSupplier({
       name: '',
@@ -752,11 +741,10 @@ export default function SuppliersPage() {
       {/* Cadastro Direto Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={handleRequestClose}
+        onClose={resetAndCloseModal}
         title={language === 'pt' ? 'Cadastrar Gerador Homologado' : 'Register Approved Generator'}
         size="xl"
-        closeOnOverlayClick={false}
-        closeOnEsc={false}
+        hasUnsavedChanges={isFormDirty()}
       >
         <form onSubmit={handleCreateSupplier} className="space-y-6">
           
@@ -1109,7 +1097,7 @@ export default function SuppliersPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={handleRequestClose}
+              onClick={resetAndCloseModal}
             >
               {language === 'pt' ? 'Cancelar' : 'Cancel'}
             </Button>
@@ -1121,48 +1109,6 @@ export default function SuppliersPage() {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Confirmação de Saída sem Salvar */}
-      <Modal
-        isOpen={showExitConfirm}
-        onClose={() => setShowExitConfirm(false)}
-        title={language === 'pt' ? 'Informações não salvas' : 'Unsaved Information'}
-        size="sm"
-        closeOnOverlayClick={false}
-      >
-        <div className="space-y-5">
-          <div className="flex items-start gap-3.5 p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-2xl text-amber-900 text-xs shadow-2xs">
-            <AlertTriangle className="shrink-0 text-amber-600 mt-0.5" size={20} />
-            <div>
-              <p className="font-bold text-sm text-amber-950">
-                {language === 'pt' ? 'Atenção' : 'Warning'}
-              </p>
-              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                {language === 'pt' 
-                  ? 'Existem informações não salvas. Deseja realmente sair?' 
-                  : 'There are unsaved changes. Do you really want to exit?'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => setShowExitConfirm(false)}
-              className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
-            >
-              {language === 'pt' ? 'Continuar preenchendo' : 'Continue filling'}
-            </button>
-            <button
-              type="button"
-              onClick={resetAndCloseModal}
-              className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-all cursor-pointer shadow-xs shadow-rose-600/20"
-            >
-              {language === 'pt' ? 'Sair sem salvar' : 'Exit without saving'}
-            </button>
-          </div>
-        </div>
       </Modal>
     </div>
   );

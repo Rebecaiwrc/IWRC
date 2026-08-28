@@ -396,9 +396,13 @@ export default function ComprasPage() {
       {isResponseModalOpen && selectedSupplier && (
         <Modal
           isOpen={isResponseModalOpen}
-          onClose={() => !isSubmitting && setIsResponseModalOpen(false)}
+          onClose={() => {
+            setIsResponseModalOpen(false);
+            setResponseText('');
+          }}
           title={language === 'pt' ? 'Responder Pendência à Logística' : 'Respond to Logistics Inquiry'}
           size="lg"
+          hasUnsavedChanges={Boolean(responseText.trim())}
         >
           <form onSubmit={handleSendResponse} className="space-y-4">
             {/* Header / Supplier Summary */}

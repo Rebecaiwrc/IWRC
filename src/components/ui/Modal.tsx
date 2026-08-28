@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, AlertTriangle } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   closeOnOverlayClick?: boolean;
   closeOnEsc?: boolean;
+  hasUnsavedChanges?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -19,12 +20,16 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   size = 'md',
-  closeOnOverlayClick = true,
-  closeOnEsc = true
+  closeOnOverlayClick = false,
+  closeOnEsc = false,
+  hasUnsavedChanges = false
 }) => {
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      setShowDiscardConfirm(false);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -33,16 +38,24 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen]);
 
+  const handleAttemptClose = () => {
+    if (hasUnsavedChanges) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleAttemptClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, closeOnEsc, onClose]);
+  }, [isOpen, closeOnEsc, hasUnsavedChanges]);
 
   if (!isOpen) return null;
 
@@ -55,10 +68,10 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#081B2B]/40 backdrop-blur-xs transition-all duration-300 animate-fadeIn">
-      {/* Backdrop click */}
+      {/* Backdrop click - default false across whole system */}
       <div 
         className="absolute inset-0" 
-        onClick={closeOnOverlayClick ? onClose : undefined} 
+        onClick={closeOnOverlayClick ? handleAttemptClose : undefined} 
       />
       
       {/* Modal Box */}
@@ -69,8 +82,10 @@ export const Modal: React.FC<ModalProps> = ({
             {title}
           </h3>
           <button
-            onClick={onClose}
+            type="button"
+            onClick={handleAttemptClose}
             className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] p-2 rounded-full transition-colors cursor-pointer"
+            title="Fechar"
           >
             <X size={18} />
           </button>
@@ -80,6 +95,42 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="p-6 overflow-y-auto flex-1 text-[#0D2439] custom-modal-scrollbar">
           {children}
         </div>
+
+        {/* Built-in Unsaved Changes Confirmation Dialog */}
+        {showDiscardConfirm && (
+          <div className="absolute inset-0 z-50 bg-[#081B2B]/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl p-5 max-w-sm w-full border border-amber-200 shadow-2xl space-y-4">
+              <div className="flex items-start gap-3 text-amber-900">
+                <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900">Informações não salvas</h4>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Existem informações não salvas. Deseja realmente sair?
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowDiscardConfirm(false)}
+                  className="px-3.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                >
+                  Continuar preenchendo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDiscardConfirm(false);
+                    onClose();
+                  }}
+                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-all cursor-pointer shadow-xs"
+                >
+                  Sair sem salvar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
