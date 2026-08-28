@@ -639,6 +639,145 @@ export const getLogisticsSlaInfo = (supplier?: Supplier | null, slaDays: number 
   };
 };
 
+export const formatSupplierCode = (code?: string | null): string => {
+  if (!code) return 'IW-001';
+  const clean = code.trim();
+  if (/^ger[-_]?\s*(\d+)$/i.test(clean)) {
+    const match = clean.match(/^ger[-_]?\s*(\d+)$/i);
+    return `IW-${match ? match[1].padStart(3, '0') : '001'}`;
+  }
+  if (/^iw[-_]?\s*(\d+)$/i.test(clean)) {
+    const match = clean.match(/^iw[-_]?\s*(\d+)$/i);
+    return `IW-${match ? match[1].padStart(3, '0') : '001'}`;
+  }
+  if (/^\d+$/.test(clean)) {
+    return `IW-${clean.padStart(3, '0')}`;
+  }
+  return clean.replace(/^GER-/i, 'IW-');
+};
+
+const LOWERCASE_PT_WORDS = new Set([
+  'de', 'da', 'do', 'das', 'dos',
+  'e', 'em', 'na', 'no', 'nas', 'nos',
+  'para', 'por', 'com', 'a', 'o', 'as', 'os',
+  'd\'', 'd’'
+]);
+
+const ACRONYMS_AND_FIXED: Record<string, string> = {
+  'ltda': 'Ltda',
+  'ltda.': 'Ltda.',
+  's/a': 'S/A',
+  's.a.': 'S.A.',
+  's.a': 'S.A.',
+  'sa': 'S/A',
+  'me': 'ME',
+  'epp': 'EPP',
+  'eireli': 'Eireli',
+  'mei': 'MEI',
+  'cnpj': 'CNPJ',
+  'cpf': 'CPF',
+  'rg': 'RG',
+  'ie': 'IE',
+  'im': 'IM',
+  'cep': 'CEP',
+  'iwrc': 'IWRC',
+  'iw': 'IW',
+  'dld': 'DLD',
+  'lf': 'LF',
+  's/n': 'S/N',
+  's/n.': 'S/N',
+  'sn': 'S/N',
+  'av': 'Av.',
+  'av.': 'Av.',
+  'r.': 'R.',
+  'rua': 'Rua',
+  'rod.': 'Rod.',
+  'rod': 'Rod.',
+  'alameda': 'Alameda',
+  'estrada': 'Estrada',
+  'sp': 'SP', 'rj': 'RJ', 'mg': 'MG', 'pr': 'PR', 'sc': 'SC', 'rs': 'RS',
+  'ba': 'BA', 'go': 'GO', 'mt': 'MT', 'ms': 'MS', 'df': 'DF', 'pe': 'PE',
+  'ce': 'CE', 'es': 'ES', 'am': 'AM', 'pa': 'PA', 'rn': 'RN', 'pb': 'PB',
+  'al': 'AL', 'se': 'SE', 'pi': 'PI', 'ma': 'MA', 'to': 'TO', 'ro': 'RO',
+  'ac': 'AC', 'ap': 'AP', 'rr': 'RR',
+  'i': 'I', 'ii': 'II', 'iii': 'III', 'iv': 'IV', 'v': 'V',
+  'vi': 'VI', 'vii': 'VII', 'viii': 'VIII', 'ix': 'IX', 'x': 'X'
+};
+
+export const formatTitleCase = (
+  text?: string | null,
+  options?: { isCompany?: boolean; isPerson?: boolean; isLocation?: boolean }
+): string => {
+  if (!text) return '';
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+
+  // Split by whitespace while preserving tokens
+  const tokens = trimmed.split(/\s+/);
+  
+  const formattedTokens = tokens.map((token, index) => {
+    // Preserve parentheses or punctuation around token
+    const prefixMatch = token.match(/^([([{"'“‘\-]+)/);
+    const suffixMatch = token.match(/([)\]}"'”’,\.\-]+)$/);
+    
+    const prefix = prefixMatch ? prefixMatch[1] : '';
+    const suffix = suffixMatch ? suffixMatch[1] : '';
+    
+    const core = token.slice(prefix.length, token.length - suffix.length);
+    if (!core) return token;
+
+    const lowerCore = core.toLowerCase();
+
+    // Check fixed acronyms/casing
+    if (ACRONYMS_AND_FIXED[lowerCore]) {
+      return prefix + ACRONYMS_AND_FIXED[lowerCore] + suffix;
+    }
+
+    // Check lowercase connectives (unless first or last word)
+    const isFirstOrLast = index === 0 || index === tokens.length - 1;
+    if (!isFirstOrLast && LOWERCASE_PT_WORDS.has(lowerCore)) {
+      return prefix + lowerCore + suffix;
+    }
+
+    // Standard Capitalization: First letter uppercase, rest lowercase
+    // Handles accents properly (e.g. Ó, É, Ç)
+    const capitalized = core.charAt(0).toLocaleUpperCase('pt-BR') + core.slice(1).toLocaleLowerCase('pt-BR');
+    return prefix + capitalized + suffix;
+  });
+
+  return formattedTokens.join(' ');
+};
+
+export const cleanContactName = (name?: string | null): string => {
+  if (!name) return '';
+  // Remove duplicate (Contato) or (contato)
+  return name.replace(/\s*\(\s*contato\s*\)/gi, '').trim();
+};
+
+export const formatCityState = (city?: string | null, state?: string | null): string => {
+  if (!city && !state) return '-';
+  const c = formatTitleCase(city || '', { isLocation: true });
+  const s = (state || '').toUpperCase().trim();
+  
+  if (c && s) {
+    if (c.toUpperCase().includes(s)) return c;
+    return `${c} - ${s}`;
+  }
+  return c || s;
+};
+
+export const formatPhone = (phone?: string | null): string => {
+  if (!phone || phone === '-') return '-';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return phone;
+};
+
 export const formatCnpj = (value: string): string => {
   const clean = value.replace(/\D/g, '').slice(0, 14);
   if (clean.length <= 2) return clean;
@@ -658,4 +797,5 @@ export const formatDocument = (value: string): string => {
   if (clean.length <= 9) return `${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`;
   return `${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9, 11)}`;
 };
+
 

@@ -21,7 +21,8 @@ import {
   getLogisticsSlaInfo,
   translateMaterialName,
   translateSupplierType,
-  translateLeadSource
+  translateLeadSource,
+  formatSupplierCode
 } from '@/lib/utils';
 import {
   Truck,
@@ -1142,7 +1143,7 @@ export default function LogisticsPage() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-900 leading-snug">{supplier.name}</span>
-                            <span className="text-xs text-slate-400">{supplier.code || 'GER-001'} • {supplier.supplier_type || (language === 'pt' ? 'Indústria' : 'Industry')}</span>
+                            <span className="text-xs text-slate-400">{formatSupplierCode(supplier.code)} • {supplier.supplier_type || (language === 'pt' ? 'Indústria' : 'Industry')}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-slate-500">

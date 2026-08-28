@@ -37,7 +37,9 @@ import {
   translateFeasibility,
   getFeasibilityColor,
   getLogisticsSlaInfo,
-  translateMaterialName
+  translateMaterialName,
+  formatSupplierCode,
+  formatTitleCase
 } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -2109,7 +2111,7 @@ export default function SupplierDetailPage() {
               ← Voltar para Geradores
             </Link>
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase">
-              {language === 'pt' ? 'Código' : 'Code'}: {supplier.code || 'GER-001'}
+              {language === 'pt' ? 'Código' : 'Code'}: {formatSupplierCode(supplier.code)}
             </span>
           </div>
 
@@ -2136,7 +2138,7 @@ export default function SupplierDetailPage() {
               <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-sm font-black font-mono bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-300">
-                    {supplier.code || 'GER-001'}
+                    {formatSupplierCode(supplier.code)}
                   </span>
                   <h1 className="text-2xl font-black text-slate-900 leading-tight">{supplier.name}</h1>
                   <Badge variant={getStageColor(supplier.current_stage)}>

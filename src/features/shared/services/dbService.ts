@@ -183,10 +183,9 @@ export const dbService = {
 
         const sentLogAt = s.sent_to_logistics_at || (s.current_stage === 'LOGISTICS' ? (s.updated_at || s.created_at) : null);
         const logDeadline = s.logistics_deadline || (sentLogAt ? new Date(new Date(sentLogAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null);
-
         return {
           ...s,
-          code: s.code || ('GER-' + String((data?.length || 1) - idx).padStart(3, '0')),
+          code: s.code ? (s.code.startsWith('GER-') ? s.code.replace('GER-', 'IW-') : s.code) : ('IW-' + String((data?.length || 1) - idx).padStart(3, '0')),
           prospecting_status: pStatus,
           sent_to_logistics_at: sentLogAt,
           logistics_deadline: logDeadline,
@@ -298,7 +297,7 @@ export const dbService = {
 
       return {
         ...data,
-        code: data.code || 'GER-001',
+        code: data.code ? (data.code.startsWith('GER-') ? data.code.replace('GER-', 'IW-') : data.code) : 'IW-001',
         prospecting_status: pStatus,
         sent_to_logistics_at: sentLogAt,
         logistics_deadline: logDeadline,
@@ -431,7 +430,7 @@ export const dbService = {
     const addresses = getLocalData<SupplierAddress>('addresses', mockAddresses);
     const contacts = getLocalData<SupplierContact>('contacts', mockContacts);
 
-    const geradorCode = supplierData.code || ('GER-' + String(suppliers.length + 1).padStart(3, '0'));
+    const geradorCode = supplierData.code ? (supplierData.code.startsWith('GER-') ? supplierData.code.replace('GER-', 'IW-') : supplierData.code) : ('IW-' + String(suppliers.length + 1).padStart(3, '0'));
 
     const newSupplier: Supplier = {
       id: supplierId,

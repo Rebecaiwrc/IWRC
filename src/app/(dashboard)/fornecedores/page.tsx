@@ -21,7 +21,13 @@ import {
   formatCep,
   fetchAddressByCep,
   translateSupplierType,
-  translateFrequency
+  translateFrequency,
+  formatSupplierCode,
+  formatTitleCase,
+  cleanContactName,
+  formatCityState,
+  formatPhone,
+  formatDocument
 } from '@/lib/utils';
 import { 
   Building2, 
@@ -353,7 +359,7 @@ export default function SuppliersPage() {
             label={language === 'pt' ? 'Pesquisa Rápida' : 'Quick Search'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('suppliers.searchPlaceholder', 'Buscar por Código (GER-xxx), Razão Social, Fantasia, Segmento ou Cidade...')}
+            placeholder={t('suppliers.searchPlaceholder', 'Buscar por Código (IW-xxx), Razão Social, Fantasia, Segmento ou Cidade...')}
             className="w-full"
           />
         </div>
@@ -374,18 +380,18 @@ export default function SuppliersPage() {
             onChange={(e) => setResponsibleFilter(e.target.value)}
             options={[
               { value: '', label: language === 'pt' ? 'Todos os responsáveis' : 'All responsibles' },
-              ...profiles.map(p => ({ value: p.id, label: p.name }))
+              ...profiles.map(p => ({ value: p.id, label: formatTitleCase(p.name, { isPerson: true }) }))
             ]}
           />
         </div>
       </Card>
 
       {/* Suppliers Table */}
-      <Card className="overflow-hidden !p-0 border border-slate-200">
+      <Card className="overflow-hidden !p-0 border border-slate-200/90 shadow-xs rounded-2xl bg-white">
         {filteredSuppliers.length === 0 ? (
           <div className="p-16 text-center text-slate-400">
-            <Building2 size={36} className="mx-auto text-slate-300 mb-2 opacity-60" />
-            <p className="font-semibold text-sm">
+            <Building2 size={40} className="mx-auto text-slate-300 mb-3 opacity-60" />
+            <p className="font-bold text-slate-700 text-sm">
               {language === 'pt' ? 'Nenhum gerador ativo encontrado para os filtros selecionados.' : 'No active generators found for the selected filters.'}
             </p>
             <p className="text-xs text-slate-400 mt-1">
@@ -394,81 +400,108 @@ export default function SuppliersPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[980px]">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="px-6 py-4">{t('suppliers.colName', 'Código & Gerador')}</th>
-                  <th className="px-6 py-4">{t('suppliers.colSegment', 'Segmento')}</th>
-                  <th className="px-6 py-4">{t('suppliers.colCity', 'Localização')}</th>
-                  <th className="px-6 py-4">{language === 'pt' ? 'Contato' : 'Contact'}</th>
-                  <th className="px-6 py-4">{t('suppliers.colStage', 'Etapa / Situação')}</th>
-                  <th className="px-6 py-4">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
-                  <th className="px-6 py-4">{language === 'pt' ? 'MTR / Acesso' : 'MTR / Access'}</th>
-                  <th className="px-6 py-4">{t('suppliers.colResponsible', 'Responsável')}</th>
-                  <th className="px-6 py-4 text-right">{t('suppliers.actions', 'Ações')}</th>
+                <tr className="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 w-[28%] min-w-[260px]">{language === 'pt' ? 'Gerador / Razão Social' : 'Generator / Legal Name'}</th>
+                  <th className="px-4 py-3.5 w-[11%] min-w-[110px]">{language === 'pt' ? 'Segmento' : 'Segment'}</th>
+                  <th className="px-4 py-3.5 w-[13%] min-w-[130px]">{language === 'pt' ? 'Cidade/UF' : 'City/State'}</th>
+                  <th className="px-4 py-3.5 w-[14%] min-w-[140px]">{language === 'pt' ? 'Contato' : 'Contact'}</th>
+                  <th className="px-4 py-3.5 w-[13%] min-w-[130px]">{language === 'pt' ? 'Etapa Atual' : 'Current Stage'}</th>
+                  <th className="px-4 py-3.5 w-[10%] min-w-[110px]">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
+                  <th className="px-4 py-3.5 w-[11%] min-w-[110px]">{language === 'pt' ? 'Responsável' : 'Responsible'}</th>
+                  <th className="px-5 py-3.5 w-[10%] min-w-[120px] text-right">{language === 'pt' ? 'Ficha 360°' : '360° Details'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {filteredSuppliers.map((supplier) => {
                   const primaryContact = supplier.contacts?.find(c => c.is_primary) || supplier.contacts?.[0];
+                  const formattedCode = formatSupplierCode(supplier.code);
+                  const formattedName = formatTitleCase(supplier.name, { isCompany: true });
+                  const formattedTradeName = formatTitleCase(supplier.trade_name, { isCompany: true });
+                  const contactClean = primaryContact ? formatTitleCase(cleanContactName(primaryContact.name), { isPerson: true }) : '';
+                  const cityState = formatCityState(supplier.address?.city, supplier.address?.state);
+                  const streetAddr = supplier.address?.street 
+                    ? `${formatTitleCase(supplier.address.street, { isLocation: true })}${supplier.address.number ? `, ${supplier.address.number}` : ''}`
+                    : '';
+                  const respName = formatTitleCase(supplier.responsible?.name || (language === 'pt' ? 'Não atribuído' : 'Unassigned'), { isPerson: true });
+
                   return (
                     <tr 
                       key={supplier.id}
-                      className="hover:bg-slate-50/60 transition-colors"
+                      className="hover:bg-slate-50/70 transition-colors group"
                     >
-                      {/* Code & Name */}
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-black font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">
-                              {supplier.code || 'GER-001'}
+                      {/* Gerador / Razão Social */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex flex-col pr-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-bold font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200/90 shadow-2xs shrink-0">
+                              {formattedCode}
                             </span>
-                            <span className="font-bold text-slate-900 leading-snug">
-                              {supplier.name}
+                            <Link 
+                              href={`/fornecedores/${supplier.id}`}
+                              className="font-bold text-slate-900 hover:text-[#0284c7] transition-colors leading-snug break-words"
+                              title={supplier.name}
+                            >
+                              {formattedName}
+                            </Link>
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                            {formattedTradeName && (
+                              <>
+                                <span className="font-medium text-slate-500">{formattedTradeName}</span>
+                                <span>•</span>
+                              </>
+                            )}
+                            <span className="font-mono text-slate-400">
+                              {supplier.document ? formatDocument(supplier.document) : (language === 'pt' ? 'Sem CNPJ' : 'No Tax ID')}
                             </span>
                           </div>
-                          <span className="text-xs text-slate-400 mt-0.5">
-                            {supplier.trade_name || (language === 'pt' ? 'Sem fantasia' : 'No trade name')} • {supplier.document || (language === 'pt' ? 'Sem CNPJ' : 'No Tax ID')}
-                          </span>
                         </div>
                       </td>
 
-                      {/* Segment */}
-                      <td className="px-6 py-4">
-                        <span className="inline-block text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                      {/* Segmento */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-block text-xs font-semibold text-slate-700 bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/60 whitespace-nowrap">
                           {translateSupplierType(supplier.supplier_type, language)}
                         </span>
                       </td>
 
-                      {/* Location */}
-                      <td className="px-6 py-4">
+                      {/* Cidade/UF */}
+                      <td className="px-4 py-3.5">
                         {supplier.address ? (
                           <div className="flex flex-col text-xs text-slate-600">
-                            <span className="font-medium">{supplier.address.city} - {supplier.address.state}</span>
-                            {supplier.address.street && <span className="text-[11px] text-slate-400">{supplier.address.street}, {supplier.address.number}</span>}
+                            <span className="font-semibold text-slate-800 whitespace-nowrap">{cityState}</span>
+                            {streetAddr && (
+                              <span className="text-[11px] text-slate-400 truncate max-w-[170px] mt-0.5" title={streetAddr}>
+                                {streetAddr}
+                              </span>
+                            )}
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-xs">{language === 'pt' ? 'Sem endereço' : 'No address'}</span>
+                          <span className="text-slate-300 text-xs italic">{language === 'pt' ? 'Sem endereço' : 'No address'}</span>
                         )}
                       </td>
 
-                      {/* Contact */}
-                      <td className="px-6 py-4">
+                      {/* Contato */}
+                      <td className="px-4 py-3.5">
                         {primaryContact ? (
-                          <div className="flex flex-col text-xs text-slate-500">
-                            <span className="font-semibold text-slate-800">{primaryContact.name} ({language === 'pt' ? 'Contato' : 'Contact'})</span>
-                            <span className="flex items-center gap-1 mt-0.5 text-slate-400">
-                              <Phone size={10} />
-                              {primaryContact.whatsapp || primaryContact.phone || '-'}
+                          <div className="flex flex-col text-xs">
+                            <span className="font-semibold text-slate-800 break-words" title={contactClean}>
+                              {contactClean}
+                            </span>
+                            <span className="flex items-center gap-1.5 mt-0.5 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                              <Phone size={11} className="text-slate-400 shrink-0" />
+                              {formatPhone(primaryContact.whatsapp || primaryContact.phone)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-xs">{language === 'pt' ? 'Nenhum' : 'None'}</span>
+                          <span className="text-slate-300 text-xs italic">{language === 'pt' ? 'Nenhum' : 'None'}</span>
                         )}
                       </td>
 
-                      {/* Stage & Status / Situação */}
-                      <td className="px-6 py-4">
+                      {/* Etapa Atual */}
+                      <td className="px-4 py-3.5">
                         {(() => {
                           const scheduledCols = (supplier.collections || []).filter(c => c.status === 'SCHEDULED');
                           const nextCol = scheduledCols.length > 0 
@@ -482,19 +515,19 @@ export default function SuppliersPage() {
                                   <Badge variant="emerald">
                                     📅 {language === 'pt' ? 'Coleta Agendada' : 'Collection Scheduled'}
                                   </Badge>
-                                  <span className="text-[10px] text-emerald-700 font-bold">
+                                  <span className="text-[11px] text-emerald-700 font-bold">
                                     {formatDate(nextCol.scheduled_date)}
                                   </span>
                                 </>
                               ) : supplier.current_stage === 'OPERATION' && supplier.current_status === 'APPROVED' ? (
                                 <Badge variant="success">✓ {language === 'pt' ? 'Ativo' : 'Active'}</Badge>
                               ) : supplier.current_stage === 'COLLECTION' || (supplier.backlog_reason && supplier.backlog_reason.toLowerCase().includes('agendamento')) ? (
-                                <Badge variant="warning">📅 {language === 'pt' ? 'Aguardando agendamento da coleta' : 'Awaiting collection scheduling'}</Badge>
+                                <Badge variant="warning">📅 {language === 'pt' ? 'Aguardando agendamento' : 'Awaiting scheduling'}</Badge>
                               ) : supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' ? (
                                 <>
-                                  <Badge variant="purple">⚠️ {language === 'pt' ? 'Precisa de Informação' : 'Needs Information'}</Badge>
+                                  <Badge variant="purple">⚠️ {language === 'pt' ? 'Precisa de Info' : 'Needs Info'}</Badge>
                                   {supplier.backlog_reason && (
-                                    <span className="text-[10px] text-amber-700 font-medium line-clamp-1 max-w-[200px]" title={supplier.backlog_reason}>
+                                    <span className="text-[10px] text-amber-700 font-medium line-clamp-1 max-w-[160px]" title={supplier.backlog_reason}>
                                       {supplier.backlog_reason}
                                     </span>
                                   )}
@@ -505,7 +538,7 @@ export default function SuppliersPage() {
                                     {translateStage(supplier.current_stage, language)}
                                   </Badge>
                                   {supplier.backlog_reason && (
-                                    <span className="text-[10px] text-slate-500 font-medium line-clamp-1 max-w-[180px]" title={supplier.backlog_reason}>
+                                    <span className="text-[10px] text-slate-500 font-medium line-clamp-1 max-w-[160px]" title={supplier.backlog_reason}>
                                       {supplier.backlog_reason}
                                     </span>
                                   )}
@@ -516,8 +549,8 @@ export default function SuppliersPage() {
                         })()}
                       </td>
 
-                      {/* Última Coleta & Recorrência */}
-                      <td className="px-6 py-4">
+                      {/* Última Coleta */}
+                      <td className="px-4 py-3.5">
                         {(() => {
                           const scheduledCols = (supplier.collections || []).filter(c => c.status === 'SCHEDULED');
                           const nextCol = scheduledCols.length > 0 
@@ -526,7 +559,7 @@ export default function SuppliersPage() {
 
                           if (nextCol) {
                             return (
-                              <div className="flex flex-col text-xs">
+                              <div className="flex flex-col text-xs whitespace-nowrap">
                                 <span className="font-bold text-slate-800 flex items-center gap-1">
                                   📅 {formatDate(nextCol.scheduled_date)}
                                 </span>
@@ -541,64 +574,53 @@ export default function SuppliersPage() {
                             const freq = supplier.logistics_analyses?.[0]?.recommended_frequency || 'Mensal';
                             const nextDate = getNextCollectionDate(supplier.last_collection_date, freq);
                             return (
-                              <div className="flex flex-col text-xs">
+                              <div className="flex flex-col text-xs whitespace-nowrap">
                                 <span className="font-bold text-slate-800 flex items-center gap-1">
                                   📅 {formatDate(supplier.last_collection_date)}
                                 </span>
                                 <span className="text-[10px] text-indigo-700 font-semibold mt-0.5" title={`Recorrência: ${freq}`}>
-                                  {language === 'pt' ? 'Próx:' : 'Next:'} {formatDate(nextDate.toISOString())} ({translateFrequency(freq, language)})
+                                  {language === 'pt' ? 'Próx:' : 'Next:'} {formatDate(nextDate.toISOString())}
                                 </span>
                               </div>
                             );
                           }
 
                           return (
-                            <span className="text-slate-400 text-xs italic">
+                            <span className="text-slate-400 text-xs italic whitespace-nowrap">
                               {language === 'pt' ? 'Aguardando 1ª coleta' : 'Awaiting 1st collection'}
                             </span>
                           );
                         })()}
                       </td>
 
-                      {/* MTR status */}
-                      <td className="px-6 py-4">
-                        {supplier.mtr_login ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                            <Key size={11} /> {language === 'pt' ? 'MTR Configurado' : 'MTR Configured'}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-slate-400">{language === 'pt' ? 'Pendente' : 'Pending'}</span>
-                        )}
-                      </td>
-
-                      {/* Responsible */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                          <UserCheck size={12} className="text-emerald-500" />
-                          <span>{supplier.responsible?.name || (language === 'pt' ? 'Não atribuído' : 'Unassigned')}</span>
+                      {/* Responsável */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-700 whitespace-nowrap">
+                          <UserCheck size={13} className="text-emerald-600 shrink-0" />
+                          <span className="font-medium">{respName}</span>
                         </div>
                       </td>
 
-                      {/* Actions */}
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      {/* Ficha 360° / Ações */}
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           {supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' && canUserModifySupplier(supplier) && (
                             <Link href={`/fornecedores/${supplier.id}`}>
-                              <button className="inline-flex items-center gap-1.5 text-xs text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3.5 py-1.5 rounded-full font-bold transition-all border border-amber-300 cursor-pointer shadow-xs">
+                              <button className="inline-flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-full font-bold transition-all border border-amber-300 cursor-pointer shadow-2xs">
                                 💬 {language === 'pt' ? 'Responder Info' : 'Respond Info'}
                               </button>
                             </Link>
                           )}
                           <Link href={`/fornecedores/${supplier.id}`}>
-                            <button className="inline-flex items-center gap-1.5 text-xs text-[#2098D1] hover:text-[#1883B5] bg-[#E5F5F8] hover:bg-[#DDF4F9] px-3.5 py-1.5 rounded-full font-bold transition-all border border-[#CCEAF1] cursor-pointer">
-                              <Eye size={12} />
-                              {language === 'pt' ? 'Ficha 360º' : '360º Details'}
+                            <button className="inline-flex items-center gap-1 text-xs text-[#0284c7] hover:text-[#0369a1] bg-[#e0f2fe] hover:bg-[#bae6fd] px-3 py-1.5 rounded-full font-bold transition-all border border-[#7dd3fc] cursor-pointer shadow-2xs hover:shadow-xs">
+                              <Eye size={13} />
+                              <span>{language === 'pt' ? 'Ficha 360°' : '360°'}</span>
                             </button>
                           </Link>
                           {canUserModifySupplier(supplier) && (
                             <button
                               onClick={async () => {
-                                if (!confirm(language === 'pt' ? `Tem certeza que deseja apagar o gerador "${supplier.name}" permanentemente?` : `Are you sure you want to permanently delete generator "${supplier.name}"?`)) return;
+                                if (!confirm(language === 'pt' ? `Tem certeza que deseja apagar o gerador "${formattedName}" permanentemente?` : `Are you sure you want to permanently delete generator "${formattedName}"?`)) return;
                                 try {
                                   await dbService.deleteSupplier(supplier.id);
                                   await fetchData();
@@ -607,7 +629,7 @@ export default function SuppliersPage() {
                                   alert(language === 'pt' ? 'Erro ao excluir gerador.' : 'Error deleting generator.');
                                 }
                               }}
-                              className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
+                              className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
                               title={language === 'pt' ? 'Apagar Gerador' : 'Delete Generator'}
                             >
                               <Trash2 size={13} />
