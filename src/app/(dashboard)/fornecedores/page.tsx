@@ -44,8 +44,41 @@ import {
   Calendar, 
   Trash2, 
   AlertTriangle,
-  Loader2
+  Loader2,
+  PackagePlus
 } from 'lucide-react';
+import { MaterialSelectDropdown } from '../prospeccao/page';
+
+const STORAGE_OPTIONS = ['Container', 'Big Bag', 'Sacos de Lixo', 'Caçamba', 'Lixeira', 'Prensa / Enfardado', 'Granel / Solto', 'Outro'];
+const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico', 'Entrega única', 'Outros'];
+
+interface FormMaterialLine {
+  id: string;
+  material_name: string;
+  custom_material_name?: string;
+  storage_form: string;
+  custom_storage_form?: string;
+  frequency: string;
+  custom_frequency?: string;
+  transaction_type: 'donation' | 'purchase';
+  price_per_kg: string;
+  estimated_volume: string;
+  unit: string;
+}
+
+const newMaterialLine = (): FormMaterialLine => ({
+  id: Math.random().toString(36).slice(2),
+  material_name: '',
+  custom_material_name: '',
+  storage_form: '',
+  custom_storage_form: '',
+  frequency: '',
+  custom_frequency: '',
+  transaction_type: 'donation',
+  price_per_kg: '',
+  estimated_volume: '',
+  unit: 'kg'
+});
 import Link from 'next/link';
 
 export default function SuppliersPage() {
@@ -97,6 +130,12 @@ export default function SuppliersPage() {
     city: '',
     state: ''
   });
+
+  const [formMaterials, setFormMaterials] = useState<FormMaterialLine[]>([newMaterialLine()]);
+
+  const updMat = (id: string, field: keyof FormMaterialLine, value: any) => {
+    setFormMaterials(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  };
 
   const [isCepLoading, setIsCepLoading] = useState(false);
 
@@ -156,7 +195,7 @@ export default function SuppliersPage() {
   const handleCreateSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formSupplier.name || !formContact.name) {
-      alert('Preencha os campos obrigatórios (Razão Social e Nome do Contato).');
+      alert(language === 'pt' ? 'Preencha os campos obrigatórios (Razão Social e Nome do Contato).' : 'Please fill required fields (Company Name and Contact Name).');
       return;
     }
 
@@ -170,7 +209,7 @@ export default function SuppliersPage() {
       : formSupplier.lead_source;
 
     try {
-      await dbService.createSupplier(
+      const newSupplier = await dbService.createSupplier(
         {
           ...formSupplier,
           supplier_type: finalSegment,
@@ -181,6 +220,46 @@ export default function SuppliersPage() {
         formAddress,
         formContact
       );
+
+      // Save materials if provided
+      const validMaterials = formMaterials.filter(m => m.material_name.trim() !== '');
+      if (validMaterials.length > 0 && newSupplier?.id) {
+        await Promise.all(validMaterials.map(mat => {
+          const finalName = mat.material_name === 'Outro'
+            ? (mat.custom_material_name?.trim() || 'Material Diversos')
+            : mat.material_name;
+
+          const finalStorage = (mat.storage_form === 'Outro' || mat.storage_form === 'Outros')
+            ? (mat.custom_storage_form?.trim() ? `Outro: ${mat.custom_storage_form.trim()}` : 'Outro')
+            : (mat.storage_form || null);
+
+          const finalFrequency = (mat.frequency === 'Outros' || mat.frequency === 'Outro')
+            ? (mat.custom_frequency?.trim() ? `Outro: ${mat.custom_frequency.trim()}` : 'Outros')
+            : (mat.frequency || undefined);
+
+          return dbService.addSupplierMaterial({
+            supplier_id: newSupplier.id,
+            material_name: finalName,
+            category: finalName,
+            estimated_volume: Number(mat.estimated_volume) || 0,
+            unit: mat.unit || 'kg',
+            frequency: finalFrequency,
+            transaction_type: mat.transaction_type,
+            price_per_kg: mat.transaction_type === 'purchase' ? Number(mat.price_per_kg) || 0 : 0,
+            storage_form: finalStorage,
+            notes: null
+          });
+        }));
+      }
+
+      // Automatically register LogisticsAnalysis as FEASIBLE so it is an approved generator
+      if (newSupplier?.id) {
+        await dbService.createOrUpdateLogisticsAnalysis({
+          supplier_id: newSupplier.id,
+          feasibility: 'FEASIBLE',
+          notes: 'Cadastro direto de Gerador Homologado'
+        });
+      }
       
       setFormSupplier({
         name: '',
@@ -196,12 +275,13 @@ export default function SuppliersPage() {
       });
       setFormContact({ name: '', role: '', phone: '', whatsapp: '', email: '' });
       setFormAddress({ zip_code: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
+      setFormMaterials([newMaterialLine()]);
       
       setIsModalOpen(false);
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Error creating supplier:', err);
-      alert('Falha ao salvar gerador.');
+      alert(language === 'pt' ? 'Falha ao salvar gerador.' : 'Failed to save generator.');
     } finally {
       setIsSubmitting(false);
     }
@@ -728,25 +808,169 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100 dark:border-slate-800">
-              {language === 'pt' ? 'Credenciais MTR (Opcional)' : 'MTR Credentials (Optional)'}
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label={language === 'pt' ? 'Login do MTR' : 'MTR Login'}
-                value={formSupplier.mtr_login}
-                onChange={(e) => setFormSupplier(prev => ({ ...prev, mtr_login: e.target.value }))}
-                placeholder={language === 'pt' ? 'Ex: usuario.sigor ou email' : 'E.g. user.sigor or email'}
-              />
-              <Input
-                label={language === 'pt' ? 'Senha do MTR' : 'MTR Password'}
-                type="password"
-                value={formSupplier.mtr_password}
-                onChange={(e) => setFormSupplier(prev => ({ ...prev, mtr_password: e.target.value }))}
-                placeholder="••••••••"
-              />
+          {/* Seção de Materiais */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                {language === 'pt' ? 'Materiais do Gerador' : 'Generator Materials'}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setFormMaterials(p => [...p, newMaterialLine()])}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2098D1] hover:text-[#1883B5] bg-[#E5F5F8] border border-[#CCEAF1] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+              >
+                <Plus size={13} />
+                {language === 'pt' ? 'Adicionar Material' : 'Add Material'}
+              </button>
             </div>
+
+            {formMaterials.map((mat, idx) => (
+              <div key={mat.id} className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3 bg-slate-50/60 dark:bg-slate-900/40">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    {language === 'pt' ? `Material #${idx + 1}` : `Material #${idx + 1}`}
+                  </span>
+                  {formMaterials.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setFormMaterials(p => p.filter(m => m.id !== mat.id))}
+                      className="text-slate-400 hover:text-rose-500 transition-colors p-1 cursor-pointer"
+                      title={language === 'pt' ? 'Remover material' : 'Remove material'}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <MaterialSelectDropdown
+                    value={mat.material_name}
+                    customValue={mat.custom_material_name}
+                    onChange={val => updMat(mat.id, 'material_name', val)}
+                    onCustomChange={val => updMat(mat.id, 'custom_material_name', val)}
+                    language={language}
+                  />
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {language === 'pt' ? 'Armazenamento no Local' : 'On-Site Storage'}
+                    </label>
+                    <select
+                      value={mat.storage_form}
+                      onChange={e => updMat(mat.id, 'storage_form', e.target.value)}
+                      className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione o acondicionamento...' : 'Select storage type...'}</option>
+                      {STORAGE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                    {(mat.storage_form === 'Outro' || mat.storage_form === 'Outros') && (
+                      <input
+                        type="text"
+                        placeholder={language === 'pt' ? 'Especifique o armazenamento...' : 'Specify storage...'}
+                        value={mat.custom_storage_form || ''}
+                        onChange={e => updMat(mat.id, 'custom_storage_form', e.target.value)}
+                        className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-[#2098D1] rounded-lg outline-none"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {language === 'pt' ? 'Frequência Estimada' : 'Estimated Frequency'}
+                    </label>
+                    <select
+                      value={mat.frequency}
+                      onChange={e => updMat(mat.id, 'frequency', e.target.value)}
+                      className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione a frequência...' : 'Select frequency...'}</option>
+                      {FREQUENCY_OPTIONS.map(o => <option key={o} value={o}>{translateFrequency(o, language)}</option>)}
+                    </select>
+                    {(mat.frequency === 'Outros' || mat.frequency === 'Outro') && (
+                      <input
+                        type="text"
+                        placeholder={language === 'pt' ? 'Especifique a frequência...' : 'Specify frequency...'}
+                        value={mat.custom_frequency || ''}
+                        onChange={e => updMat(mat.id, 'custom_frequency', e.target.value)}
+                        className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-[#2098D1] rounded-lg outline-none"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {language === 'pt' ? 'Volume Estimado' : 'Estimated Volume'}
+                      </label>
+                      <input
+                        type="number"
+                        value={mat.estimated_volume}
+                        placeholder="Ex: 500"
+                        onChange={e => updMat(mat.id, 'estimated_volume', e.target.value)}
+                        className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1]"
+                      />
+                    </div>
+                    <div className="w-24 flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {language === 'pt' ? 'Unidade' : 'Unit'}
+                      </label>
+                      <select
+                        value={mat.unit}
+                        onChange={e => updMat(mat.id, 'unit', e.target.value)}
+                        className="px-2 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer"
+                      >
+                        <option value="kg">kg</option>
+                        <option value="ton">ton</option>
+                        <option value="un">un</option>
+                        <option value="m³">m³</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {language === 'pt' ? 'Modalidade Comercial *' : 'Commercial Modality *'}
+                    </label>
+                    <div className="flex gap-2">
+                      {(['donation', 'purchase'] as const).map(type => (
+                        <label
+                          key={type}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                            mat.transaction_type === type
+                              ? (type === 'donation' ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-amber-400 bg-amber-50 text-amber-700')
+                              : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            className="sr-only"
+                            checked={mat.transaction_type === type}
+                            onChange={() => updMat(mat.id, 'transaction_type', type)}
+                          />
+                          {type === 'donation' ? (language === 'pt' ? '🤝 Doação' : '🤝 Donation') : (language === 'pt' ? '💰 Compra' : '💰 Purchase')}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {mat.transaction_type === 'purchase' && (
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {language === 'pt' ? 'Preço Estimado por kg (R$)' : 'Est. Price per kg (R$)'}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={mat.price_per_kg}
+                        placeholder="Ex: 0.50"
+                        onChange={e => updMat(mat.id, 'price_per_kg', e.target.value)}
+                        className="px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1]"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="space-y-3">
