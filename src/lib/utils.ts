@@ -767,7 +767,7 @@ export const formatCityState = (city?: string | null, state?: string | null): st
 };
 
 export const formatPhone = (phone?: string | null): string => {
-  if (!phone || phone === '-') return '-';
+  if (!phone || phone.trim() === '' || phone === '-' || phone === '—') return '—';
   const digits = phone.replace(/\D/g, '');
   if (digits.length === 11) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
@@ -775,7 +775,53 @@ export const formatPhone = (phone?: string | null): string => {
   if (digits.length === 10) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   }
-  return phone;
+  if (digits.length >= 8) {
+    return digits;
+  }
+  return '—';
+};
+
+export const formatShortSegment = (type?: string | null, lang?: 'pt' | 'en'): string => {
+  if (!type || !type.trim()) return lang === 'en' ? 'Other' : 'Outro';
+  const raw = translateSupplierType(type, lang).trim();
+  const lower = raw.toLowerCase();
+
+  if (lower.includes('gestão de resíduos') || lower.includes('gestao de residuos') || lower.startsWith('empresa de')) {
+    return lang === 'en' ? 'Company' : 'Empresa';
+  }
+  if (lower.includes('cooperativa') || lower.includes('cooperative')) {
+    return lang === 'en' ? 'Cooperative' : 'Cooperativa';
+  }
+  if (lower.includes('comércio') || lower.includes('comercio') || lower.includes('commerce') || lower.includes('commercial')) {
+    return lang === 'en' ? 'Commerce' : 'Comércio';
+  }
+  if (lower.includes('indústria') || lower.includes('industria') || lower.includes('industry') || lower.includes('industrial')) {
+    return lang === 'en' ? 'Industry' : 'Indústria';
+  }
+  if (lower.includes('condomínio') || lower.includes('condominio') || lower.includes('condo')) {
+    return lang === 'en' ? 'Condo' : 'Condomínio';
+  }
+  if (lower.includes('escola') || lower.includes('colégio') || lower.includes('colegio') || lower.includes('school') || lower.includes('educa')) {
+    return lang === 'en' ? 'School' : 'Escola';
+  }
+  if (lower.includes('restaurante') || lower.includes('restaurant') || lower.includes('aliment')) {
+    return lang === 'en' ? 'Restaurant' : 'Restaurante';
+  }
+  if (lower.includes('agregador') || lower.includes('aggregator')) {
+    return lang === 'en' ? 'Aggregator' : 'Agregador';
+  }
+  if (lower.includes('hospital') || lower.includes('saúde') || lower.includes('saude')) {
+    return lang === 'en' ? 'Hospital' : 'Hospital';
+  }
+
+  // If it's short already (<= 16 chars), return formatted
+  if (raw.length <= 16) {
+    return formatTitleCase(raw);
+  }
+
+  // Fallback: first word
+  const firstWord = raw.split(/\s+/)[0];
+  return formatTitleCase(firstWord);
 };
 
 export const formatCnpj = (value: string): string => {
@@ -797,5 +843,6 @@ export const formatDocument = (value: string): string => {
   if (clean.length <= 9) return `${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`;
   return `${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9, 11)}`;
 };
+
 
 

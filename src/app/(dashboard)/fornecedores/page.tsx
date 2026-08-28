@@ -27,7 +27,8 @@ import {
   cleanContactName,
   formatCityState,
   formatPhone,
-  formatDocument
+  formatDocument,
+  formatShortSegment
 } from '@/lib/utils';
 import { 
   Building2, 
@@ -404,13 +405,13 @@ export default function SuppliersPage() {
               <thead>
                 <tr className="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="px-5 py-3.5 w-[28%] min-w-[250px]">{language === 'pt' ? 'Gerador / Razão Social' : 'Generator / Legal Name'}</th>
-                  <th className="px-4 py-3.5 w-[11%] min-w-[110px]">{language === 'pt' ? 'Segmento' : 'Segment'}</th>
+                  <th className="px-4 py-3.5 w-[11%] min-w-[105px]">{language === 'pt' ? 'Segmento' : 'Segment'}</th>
                   <th className="px-4 py-3.5 w-[13%] min-w-[125px]">{language === 'pt' ? 'Cidade/UF' : 'City/State'}</th>
-                  <th className="px-4 py-3.5 w-[14%] min-w-[135px]">{language === 'pt' ? 'Contato' : 'Contact'}</th>
+                  <th className="px-4 py-3.5 w-[13%] min-w-[130px]">{language === 'pt' ? 'Contato' : 'Contact'}</th>
                   <th className="px-4 py-3.5 w-[13%] min-w-[130px]">{language === 'pt' ? 'Etapa Atual' : 'Current Stage'}</th>
                   <th className="px-4 py-3.5 w-[10%] min-w-[105px]">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
                   <th className="px-4 py-3.5 w-[11%] min-w-[115px]">{language === 'pt' ? 'Responsável' : 'Responsible'}</th>
-                  <th className="px-5 py-3.5 w-[10%] min-w-[125px] text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
+                  <th className="px-5 py-3.5 w-[11%] min-w-[130px] text-right">{language === 'pt' ? 'Ficha 360°' : '360° View'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -420,7 +421,6 @@ export default function SuppliersPage() {
                   const formattedName = formatTitleCase(supplier.name, { isCompany: true });
                   const formattedTradeName = supplier.trade_name ? formatTitleCase(supplier.trade_name, { isCompany: true }) : '';
                   const mainTitle = formattedTradeName || formattedName;
-                  const contactClean = primaryContact ? formatTitleCase(cleanContactName(primaryContact.name), { isPerson: true }) : '';
                   const cityState = formatCityState(supplier.address?.city, supplier.address?.state);
                   const streetAddr = supplier.address?.street 
                     ? `${formatTitleCase(supplier.address.street, { isLocation: true })}${supplier.address.number ? `, ${supplier.address.number}` : ''}`
@@ -453,10 +453,13 @@ export default function SuppliersPage() {
                         </div>
                       </td>
 
-                      {/* Segmento */}
+                      {/* Segmento Resumido */}
                       <td className="px-4 py-3.5">
-                        <span className="inline-block text-xs font-semibold text-slate-700 bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/60 whitespace-nowrap">
-                          {translateSupplierType(supplier.supplier_type, language)}
+                        <span 
+                          className="inline-block text-xs font-semibold text-slate-700 bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/60 whitespace-nowrap"
+                          title={translateSupplierType(supplier.supplier_type, language)}
+                        >
+                          {formatShortSegment(supplier.supplier_type, language)}
                         </span>
                       </td>
 
@@ -476,21 +479,20 @@ export default function SuppliersPage() {
                         )}
                       </td>
 
-                      {/* Contato */}
+                      {/* Contato (Somente Telefone) */}
                       <td className="px-4 py-3.5">
-                        {primaryContact ? (
-                          <div className="flex flex-col text-xs">
-                            <span className="font-semibold text-slate-800 break-words" title={contactClean}>
-                              {contactClean}
+                        {(() => {
+                          const rawPhone = primaryContact?.whatsapp || primaryContact?.phone;
+                          const ph = formatPhone(rawPhone);
+                          if (ph === '—') {
+                            return <span className="text-slate-300 text-xs">—</span>;
+                          }
+                          return (
+                            <span className="text-xs text-slate-700 font-medium whitespace-nowrap">
+                              {ph}
                             </span>
-                            <span className="flex items-center gap-1.5 mt-0.5 text-slate-500 font-mono text-[11px] whitespace-nowrap">
-                              <Phone size={11} className="text-slate-400 shrink-0" />
-                              {formatPhone(primaryContact.whatsapp || primaryContact.phone)}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-300 text-xs italic">{language === 'pt' ? 'Nenhum' : 'None'}</span>
-                        )}
+                          );
+                        })()}
                       </td>
 
                       {/* Etapa Atual */}
@@ -594,7 +596,7 @@ export default function SuppliersPage() {
                         </div>
                       </td>
 
-                      {/* Ações / Ficha 360° */}
+                      {/* Ficha 360° / Ações */}
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' && canUserModifySupplier(supplier) && (
@@ -602,6 +604,7 @@ export default function SuppliersPage() {
                               <button 
                                 type="button"
                                 className="inline-flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg font-bold transition-all border border-amber-300 cursor-pointer shadow-2xs"
+                                title={language === 'pt' ? 'Responder Informações' : 'Respond Info'}
                               >
                                 💬 {language === 'pt' ? 'Responder' : 'Respond'}
                               </button>
@@ -610,8 +613,8 @@ export default function SuppliersPage() {
                           <Link href={`/fornecedores/${supplier.id}`}>
                             <button 
                               type="button"
-                              className="inline-flex items-center gap-1.5 text-xs text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg font-semibold transition-all border border-sky-200 cursor-pointer shadow-2xs hover:shadow-xs"
-                              title={language === 'pt' ? 'Ver Ficha 360°' : 'View 360° Details'}
+                              className="inline-flex items-center gap-1.5 text-xs text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg font-semibold transition-all border border-sky-200 cursor-pointer shadow-2xs hover:shadow-xs whitespace-nowrap"
+                              title={language === 'pt' ? 'Abrir Ficha 360°' : 'Open 360° Details'}
                             >
                               <Eye size={13} className="text-sky-600" />
                               <span>{language === 'pt' ? 'Ficha 360°' : 'Ficha 360°'}</span>
