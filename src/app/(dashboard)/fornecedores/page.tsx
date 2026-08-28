@@ -403,14 +403,14 @@ export default function SuppliersPage() {
             <table className="w-full text-left border-collapse min-w-[980px]">
               <thead>
                 <tr className="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="px-5 py-3.5 w-[28%] min-w-[260px]">{language === 'pt' ? 'Gerador / Razão Social' : 'Generator / Legal Name'}</th>
+                  <th className="px-5 py-3.5 w-[28%] min-w-[250px]">{language === 'pt' ? 'Gerador / Razão Social' : 'Generator / Legal Name'}</th>
                   <th className="px-4 py-3.5 w-[11%] min-w-[110px]">{language === 'pt' ? 'Segmento' : 'Segment'}</th>
-                  <th className="px-4 py-3.5 w-[13%] min-w-[130px]">{language === 'pt' ? 'Cidade/UF' : 'City/State'}</th>
-                  <th className="px-4 py-3.5 w-[14%] min-w-[140px]">{language === 'pt' ? 'Contato' : 'Contact'}</th>
+                  <th className="px-4 py-3.5 w-[13%] min-w-[125px]">{language === 'pt' ? 'Cidade/UF' : 'City/State'}</th>
+                  <th className="px-4 py-3.5 w-[14%] min-w-[135px]">{language === 'pt' ? 'Contato' : 'Contact'}</th>
                   <th className="px-4 py-3.5 w-[13%] min-w-[130px]">{language === 'pt' ? 'Etapa Atual' : 'Current Stage'}</th>
-                  <th className="px-4 py-3.5 w-[10%] min-w-[110px]">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
-                  <th className="px-4 py-3.5 w-[11%] min-w-[110px]">{language === 'pt' ? 'Responsável' : 'Responsible'}</th>
-                  <th className="px-5 py-3.5 w-[10%] min-w-[120px] text-right">{language === 'pt' ? 'Ficha 360°' : '360° Details'}</th>
+                  <th className="px-4 py-3.5 w-[10%] min-w-[105px]">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
+                  <th className="px-4 py-3.5 w-[11%] min-w-[115px]">{language === 'pt' ? 'Responsável' : 'Responsible'}</th>
+                  <th className="px-5 py-3.5 w-[10%] min-w-[125px] text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -418,7 +418,8 @@ export default function SuppliersPage() {
                   const primaryContact = supplier.contacts?.find(c => c.is_primary) || supplier.contacts?.[0];
                   const formattedCode = formatSupplierCode(supplier.code);
                   const formattedName = formatTitleCase(supplier.name, { isCompany: true });
-                  const formattedTradeName = formatTitleCase(supplier.trade_name, { isCompany: true });
+                  const formattedTradeName = supplier.trade_name ? formatTitleCase(supplier.trade_name, { isCompany: true }) : '';
+                  const mainTitle = formattedTradeName || formattedName;
                   const contactClean = primaryContact ? formatTitleCase(cleanContactName(primaryContact.name), { isPerson: true }) : '';
                   const cityState = formatCityState(supplier.address?.city, supplier.address?.state);
                   const streetAddr = supplier.address?.street 
@@ -434,28 +435,20 @@ export default function SuppliersPage() {
                       {/* Gerador / Razão Social */}
                       <td className="px-5 py-3.5">
                         <div className="flex flex-col pr-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[11px] font-bold font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200/90 shadow-2xs shrink-0">
-                              {formattedCode}
-                            </span>
-                            <Link 
-                              href={`/fornecedores/${supplier.id}`}
-                              className="font-bold text-slate-900 hover:text-[#0284c7] transition-colors leading-snug break-words"
-                              title={supplier.name}
-                            >
-                              {formattedName}
-                            </Link>
-                          </div>
-                          <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
-                            {formattedTradeName && (
-                              <>
-                                <span className="font-medium text-slate-500">{formattedTradeName}</span>
-                                <span>•</span>
-                              </>
-                            )}
-                            <span className="font-mono text-slate-400">
-                              {supplier.document ? formatDocument(supplier.document) : (language === 'pt' ? 'Sem CNPJ' : 'No Tax ID')}
-                            </span>
+                          <Link 
+                            href={`/fornecedores/${supplier.id}`}
+                            className="font-bold text-slate-900 hover:text-[#0284c7] transition-colors leading-snug line-clamp-2"
+                            title={mainTitle !== formattedName ? `${mainTitle} (${formattedName})` : formattedName}
+                          >
+                            {mainTitle}
+                          </Link>
+                          <div 
+                            className="text-xs text-slate-400 mt-1 truncate font-normal flex items-center gap-1.5"
+                            title={`${formattedName} • ${formattedCode}${supplier.document ? ` • ${formatDocument(supplier.document)}` : ''}`}
+                          >
+                            <span className="truncate">{formattedName}</span>
+                            <span className="text-slate-300 shrink-0">•</span>
+                            <span className="font-mono text-slate-500 font-medium shrink-0">{formattedCode}</span>
                           </div>
                         </div>
                       </td>
@@ -601,24 +594,32 @@ export default function SuppliersPage() {
                         </div>
                       </td>
 
-                      {/* Ficha 360° / Ações */}
+                      {/* Ações / Ficha 360° */}
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' && canUserModifySupplier(supplier) && (
                             <Link href={`/fornecedores/${supplier.id}`}>
-                              <button className="inline-flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-full font-bold transition-all border border-amber-300 cursor-pointer shadow-2xs">
-                                💬 {language === 'pt' ? 'Responder Info' : 'Respond Info'}
+                              <button 
+                                type="button"
+                                className="inline-flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg font-bold transition-all border border-amber-300 cursor-pointer shadow-2xs"
+                              >
+                                💬 {language === 'pt' ? 'Responder' : 'Respond'}
                               </button>
                             </Link>
                           )}
                           <Link href={`/fornecedores/${supplier.id}`}>
-                            <button className="inline-flex items-center gap-1 text-xs text-[#0284c7] hover:text-[#0369a1] bg-[#e0f2fe] hover:bg-[#bae6fd] px-3 py-1.5 rounded-full font-bold transition-all border border-[#7dd3fc] cursor-pointer shadow-2xs hover:shadow-xs">
-                              <Eye size={13} />
-                              <span>{language === 'pt' ? 'Ficha 360°' : '360°'}</span>
+                            <button 
+                              type="button"
+                              className="inline-flex items-center gap-1.5 text-xs text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg font-semibold transition-all border border-sky-200 cursor-pointer shadow-2xs hover:shadow-xs"
+                              title={language === 'pt' ? 'Ver Ficha 360°' : 'View 360° Details'}
+                            >
+                              <Eye size={13} className="text-sky-600" />
+                              <span>{language === 'pt' ? 'Ficha 360°' : 'Ficha 360°'}</span>
                             </button>
                           </Link>
                           {canUserModifySupplier(supplier) && (
                             <button
+                              type="button"
                               onClick={async () => {
                                 if (!confirm(language === 'pt' ? `Tem certeza que deseja apagar o gerador "${formattedName}" permanentemente?` : `Are you sure you want to permanently delete generator "${formattedName}"?`)) return;
                                 try {
@@ -629,7 +630,7 @@ export default function SuppliersPage() {
                                   alert(language === 'pt' ? 'Erro ao excluir gerador.' : 'Error deleting generator.');
                                 }
                               }}
-                              className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
+                              className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                               title={language === 'pt' ? 'Apagar Gerador' : 'Delete Generator'}
                             >
                               <Trash2 size={13} />
