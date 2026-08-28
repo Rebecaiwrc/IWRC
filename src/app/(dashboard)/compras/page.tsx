@@ -99,17 +99,6 @@ export default function ComprasPage() {
     return matchesSearch && matchesResp;
   });
 
-  // Calculate metrics
-  const totalPending = pendingSuppliers.length;
-  
-  const urgentCount = pendingSuppliers.filter(s => {
-    const act = s.logistics_analyses?.[0];
-    const dateStr = act?.created_at || s.updated_at;
-    if (!dateStr) return false;
-    const diffHours = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60);
-    return diffHours >= 48;
-  }).length;
-
   const handleOpenResponseModal = async (supplier: Supplier) => {
     setSelectedSupplier(supplier);
     setResponseText('');
@@ -214,7 +203,7 @@ export default function ComprasPage() {
             </div>
             <div>
               <h1 className="text-2xl font-black text-slate-900 leading-tight">
-                {language === 'pt' ? 'Compras • Resposta a Pendências' : 'Purchasing • Pending Information'}
+                {language === 'pt' ? 'Compras e Pendências' : 'Purchasing & Pending'}
               </h1>
               <p className="text-slate-500 text-sm mt-0.5">
                 {language === 'pt' 
@@ -224,57 +213,6 @@ export default function ComprasPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4 bg-white border border-slate-200/90 shadow-2xs rounded-2xl flex items-center gap-4">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
-            <AlertCircle size={24} />
-          </div>
-          <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-              {language === 'pt' ? 'Pendências Totais' : 'Total Pending'}
-            </span>
-            <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-2xl font-black text-slate-900">{totalPending}</span>
-              <span className="text-xs text-amber-700 font-medium">
-                {language === 'pt' ? 'aguardando Compras' : 'awaiting Purchasing'}
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4 bg-white border border-slate-200/90 shadow-2xs rounded-2xl flex items-center gap-4">
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100">
-            <Clock size={24} />
-          </div>
-          <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-              {language === 'pt' ? 'Aguardando há +48h' : 'Waiting > 48h'}
-            </span>
-            <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-2xl font-black text-rose-600">{urgentCount}</span>
-              <span className="text-xs text-rose-700 font-medium">
-                {language === 'pt' ? 'atenção prioritária' : 'high priority'}
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4 bg-white border border-slate-200/90 shadow-2xs rounded-2xl flex items-center gap-4">
-          <div className="p-3 bg-sky-50 text-sky-600 rounded-xl border border-sky-100">
-            <RotateCcw size={24} />
-          </div>
-          <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-              {language === 'pt' ? 'Fluxo Operacional' : 'Workflow'}
-            </span>
-            <span className="text-xs text-slate-600 font-medium mt-0.5 block">
-              Prospecção → Logística → <strong className="text-amber-700 font-bold">Compras</strong> → Logística → Geradores
-            </span>
-          </div>
-        </Card>
       </div>
 
       {/* Filters Card */}
