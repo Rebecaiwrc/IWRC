@@ -400,18 +400,18 @@ export default function SuppliersPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto lg:overflow-x-visible">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto lg:overflow-x-visible w-full">
+            <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="pl-4 lg:pl-5 pr-2 py-3 w-[27%]">{language === 'pt' ? 'Gerador / Razão Social' : 'Generator / Legal Name'}</th>
-                  <th className="px-2 py-3 w-[10%]">{language === 'pt' ? 'Segmento' : 'Segment'}</th>
-                  <th className="px-2 py-3 w-[12%]">{language === 'pt' ? 'Cidade/UF' : 'City/State'}</th>
-                  <th className="px-2 py-3 w-[11%]">{language === 'pt' ? 'Contato' : 'Contact'}</th>
-                  <th className="px-2 py-3 w-[13%]">{language === 'pt' ? 'Etapa Atual' : 'Current Stage'}</th>
-                  <th className="px-2 py-3 w-[11%]">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
-                  <th className="px-2 py-3 w-[10%]">{language === 'pt' ? 'Responsável' : 'Responsible'}</th>
-                  <th className="pl-2 pr-4 lg:pr-5 py-3 w-[6%] text-right">{language === 'pt' ? 'Ficha 360°' : '360° View'}</th>
+                  <th className="pl-4 lg:pl-5 pr-2 py-3.5 w-[24%]">{language === 'pt' ? 'Gerador / Razão Social' : 'Generator / Legal Name'}</th>
+                  <th className="px-2 py-3.5 w-[9%]">{language === 'pt' ? 'Segmento' : 'Segment'}</th>
+                  <th className="px-2 py-3.5 w-[11%]">{language === 'pt' ? 'Cidade/UF' : 'City/State'}</th>
+                  <th className="px-2 py-3.5 w-[10%]">{language === 'pt' ? 'Contato' : 'Contact'}</th>
+                  <th className="px-2 py-3.5 w-[12%]">{language === 'pt' ? 'Etapa Atual' : 'Current Stage'}</th>
+                  <th className="px-2 py-3.5 w-[10%]">{language === 'pt' ? 'Última Coleta' : 'Last Collection'}</th>
+                  <th className="px-2 py-3.5 w-[10%]">{language === 'pt' ? 'Responsável' : 'Responsible'}</th>
+                  <th className="pl-2 pr-4 lg:pr-5 py-3.5 w-[14%] text-right">{language === 'pt' ? 'Ficha 360°' : '360° View'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -433,8 +433,8 @@ export default function SuppliersPage() {
                       className="hover:bg-slate-50/70 transition-colors group"
                     >
                       {/* Gerador / Razão Social */}
-                      <td className="pl-4 lg:pl-5 pr-2 py-3">
-                        <div className="flex flex-col pr-1">
+                      <td className="pl-4 lg:pl-5 pr-2 py-3.5">
+                        <div className="flex flex-col pr-1 overflow-hidden">
                           <Link 
                             href={`/fornecedores/${supplier.id}`}
                             className="font-bold text-slate-900 hover:text-[#0284c7] transition-colors leading-snug line-clamp-2 text-xs lg:text-sm"
@@ -454,9 +454,9 @@ export default function SuppliersPage() {
                       </td>
 
                       {/* Segmento Resumido */}
-                      <td className="px-2 py-3">
+                      <td className="px-2 py-3.5">
                         <span 
-                          className="inline-block text-[11px] font-semibold text-slate-700 bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/60 whitespace-nowrap"
+                          className="inline-block text-[11px] font-semibold text-slate-700 bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/60 whitespace-nowrap truncate max-w-full"
                           title={translateSupplierType(supplier.supplier_type, language)}
                         >
                           {formatShortSegment(supplier.supplier_type, language)}
@@ -464,12 +464,12 @@ export default function SuppliersPage() {
                       </td>
 
                       {/* Cidade/UF */}
-                      <td className="px-2 py-3">
+                      <td className="px-2 py-3.5">
                         {supplier.address ? (
-                          <div className="flex flex-col text-xs text-slate-600">
-                            <span className="font-semibold text-slate-800 whitespace-nowrap">{cityState}</span>
+                          <div className="flex flex-col text-xs text-slate-600 overflow-hidden">
+                            <span className="font-semibold text-slate-800 whitespace-nowrap truncate" title={cityState}>{cityState}</span>
                             {streetAddr && (
-                              <span className="text-[10px] lg:text-[11px] text-slate-400 truncate max-w-[120px] lg:max-w-[140px] mt-0.5" title={streetAddr}>
+                              <span className="text-[10px] lg:text-[11px] text-slate-400 truncate max-w-full mt-0.5" title={streetAddr}>
                                 {streetAddr}
                               </span>
                             )}
@@ -480,7 +480,7 @@ export default function SuppliersPage() {
                       </td>
 
                       {/* Contato (Somente Telefone) */}
-                      <td className="px-2 py-3">
+                      <td className="px-2 py-3.5">
                         {(() => {
                           const rawPhone = primaryContact?.whatsapp || primaryContact?.phone;
                           const ph = formatPhone(rawPhone);
@@ -496,7 +496,7 @@ export default function SuppliersPage() {
                       </td>
 
                       {/* Etapa Atual */}
-                      <td className="px-2 py-3">
+                      <td className="px-2 py-3.5">
                         {(() => {
                           const scheduledCols = (supplier.collections || []).filter(c => c.status === 'SCHEDULED');
                           const nextCol = scheduledCols.length > 0 
@@ -504,10 +504,10 @@ export default function SuppliersPage() {
                             : null;
 
                           return (
-                            <div className="flex flex-col gap-0.5 items-start">
+                            <div className="flex flex-col gap-0.5 items-start overflow-hidden">
                               {nextCol ? (
                                 <>
-                                  <Badge variant="emerald" className="text-[10px] lg:text-[11px] px-2 py-0.5">
+                                  <Badge variant="emerald" className="text-[10px] lg:text-[11px] px-2 py-0.5 whitespace-nowrap">
                                     📅 {language === 'pt' ? 'Coleta Agendada' : 'Collection Scheduled'}
                                   </Badge>
                                   <span className="text-[10px] text-emerald-700 font-bold">
@@ -515,25 +515,25 @@ export default function SuppliersPage() {
                                   </span>
                                 </>
                               ) : supplier.current_stage === 'OPERATION' && supplier.current_status === 'APPROVED' ? (
-                                <Badge variant="success" className="text-[10px] lg:text-[11px] px-2 py-0.5">✓ {language === 'pt' ? 'Ativo' : 'Active'}</Badge>
+                                <Badge variant="success" className="text-[10px] lg:text-[11px] px-2 py-0.5 whitespace-nowrap">✓ {language === 'pt' ? 'Ativo' : 'Active'}</Badge>
                               ) : supplier.current_stage === 'COLLECTION' || (supplier.backlog_reason && supplier.backlog_reason.toLowerCase().includes('agendamento')) ? (
-                                <Badge variant="warning" className="text-[10px] lg:text-[11px] px-2 py-0.5">📅 {language === 'pt' ? 'Aguardando agendamento' : 'Awaiting scheduling'}</Badge>
+                                <Badge variant="warning" className="text-[10px] lg:text-[11px] px-2 py-0.5 whitespace-nowrap">📅 {language === 'pt' ? 'Agendamento' : 'Scheduling'}</Badge>
                               ) : supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' ? (
                                 <>
-                                  <Badge variant="purple" className="text-[10px] lg:text-[11px] px-2 py-0.5">⚠️ {language === 'pt' ? 'Precisa de Info' : 'Needs Info'}</Badge>
+                                  <Badge variant="purple" className="text-[10px] lg:text-[11px] px-2 py-0.5 whitespace-nowrap">⚠️ {language === 'pt' ? 'Precisa de Info' : 'Needs Info'}</Badge>
                                   {supplier.backlog_reason && (
-                                    <span className="text-[10px] text-amber-700 font-medium line-clamp-1 max-w-[140px]" title={supplier.backlog_reason}>
+                                    <span className="text-[10px] text-amber-700 font-medium truncate max-w-full" title={supplier.backlog_reason}>
                                       {supplier.backlog_reason}
                                     </span>
                                   )}
                                 </>
                               ) : (
                                 <>
-                                  <Badge variant={getStageColor(supplier.current_stage)} className="text-[10px] lg:text-[11px] px-2 py-0.5">
+                                  <Badge variant={getStageColor(supplier.current_stage)} className="text-[10px] lg:text-[11px] px-2 py-0.5 whitespace-nowrap">
                                     {translateStage(supplier.current_stage, language)}
                                   </Badge>
                                   {supplier.backlog_reason && (
-                                    <span className="text-[10px] text-slate-500 font-medium line-clamp-1 max-w-[140px]" title={supplier.backlog_reason}>
+                                    <span className="text-[10px] text-slate-500 font-medium truncate max-w-full" title={supplier.backlog_reason}>
                                       {supplier.backlog_reason}
                                     </span>
                                   )}
@@ -545,7 +545,7 @@ export default function SuppliersPage() {
                       </td>
 
                       {/* Última Coleta */}
-                      <td className="px-2 py-3">
+                      <td className="px-2 py-3.5">
                         {(() => {
                           const scheduledCols = (supplier.collections || []).filter(c => c.status === 'SCHEDULED');
                           const nextCol = scheduledCols.length > 0 
@@ -554,7 +554,7 @@ export default function SuppliersPage() {
 
                           if (nextCol) {
                             return (
-                              <div className="flex flex-col text-xs whitespace-nowrap">
+                              <div className="flex flex-col text-xs whitespace-nowrap overflow-hidden">
                                 <span className="font-bold text-slate-800 flex items-center gap-1 text-xs">
                                   📅 {formatDate(nextCol.scheduled_date)}
                                 </span>
@@ -569,7 +569,7 @@ export default function SuppliersPage() {
                             const freq = supplier.logistics_analyses?.[0]?.recommended_frequency || 'Mensal';
                             const nextDate = getNextCollectionDate(supplier.last_collection_date, freq);
                             return (
-                              <div className="flex flex-col text-xs whitespace-nowrap">
+                              <div className="flex flex-col text-xs whitespace-nowrap overflow-hidden">
                                 <span className="font-bold text-slate-800 flex items-center gap-1 text-xs">
                                   📅 {formatDate(supplier.last_collection_date)}
                                 </span>
@@ -589,16 +589,16 @@ export default function SuppliersPage() {
                       </td>
 
                       {/* Responsável */}
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-1 text-xs text-slate-700 whitespace-nowrap">
+                      <td className="px-2 py-3.5">
+                        <div className="flex items-center gap-1 text-xs text-slate-700 whitespace-nowrap overflow-hidden">
                           <UserCheck size={12} className="text-emerald-600 shrink-0" />
-                          <span className="font-medium truncate max-w-[100px] lg:max-w-[120px]" title={respName}>{respName}</span>
+                          <span className="font-medium truncate max-w-full" title={respName}>{respName}</span>
                         </div>
                       </td>
 
                       {/* Ficha 360° / Ações */}
-                      <td className="pl-2 pr-4 lg:pr-5 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="pl-2 pr-4 lg:pr-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           {supplier.logistics_analyses?.[0]?.feasibility === 'NEED_INFO' && canUserModifySupplier(supplier) && (
                             <Link href={`/fornecedores/${supplier.id}`}>
                               <button 
@@ -613,10 +613,10 @@ export default function SuppliersPage() {
                           <Link href={`/fornecedores/${supplier.id}`}>
                             <button 
                               type="button"
-                              className="inline-flex items-center gap-1 text-xs text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-md font-semibold transition-all border border-sky-200 cursor-pointer shadow-2xs hover:shadow-xs whitespace-nowrap"
+                              className="inline-flex items-center gap-1.5 text-xs text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg font-semibold transition-all border border-sky-200 cursor-pointer shadow-2xs hover:shadow-xs whitespace-nowrap shrink-0"
                               title={language === 'pt' ? 'Abrir Ficha 360°' : 'Open 360° Details'}
                             >
-                              <Eye size={12} className="text-sky-600" />
+                              <Eye size={13} className="text-sky-600 shrink-0" />
                               <span>{language === 'pt' ? 'Ficha 360°' : 'Ficha 360°'}</span>
                             </button>
                           </Link>
@@ -633,10 +633,10 @@ export default function SuppliersPage() {
                                   alert(language === 'pt' ? 'Erro ao excluir gerador.' : 'Error deleting generator.');
                                 }
                               }}
-                              className="inline-flex items-center justify-center h-6 w-6 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                              className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer shrink-0"
                               title={language === 'pt' ? 'Apagar Gerador' : 'Delete Generator'}
                             >
-                              <Trash2 size={12} />
+                              <Trash2 size={13} />
                             </button>
                           )}
                         </div>
