@@ -121,9 +121,9 @@ export const Sidebar: React.FC = () => {
   const navigationItems = isLogisticsRole
     ? [
         ...(isSuperAdmin ? [{ name: t('nav.masterPanel', 'Painel Master'), href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
-        { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
-        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: comprasQueueCount },
-        { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
+        { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], hasPending: logisticsQueueCount > 0 },
+        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], hasPending: comprasQueueCount > 0 },
+        { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
         { name: t('nav.dispatches', 'Saídas do Hub'), href: '/saidas', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS', 'BUYER'] },
@@ -133,9 +133,9 @@ export const Sidebar: React.FC = () => {
     : [
         ...(isSuperAdmin ? [{ name: t('nav.masterPanel', 'Painel Master'), href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
         { name: t('nav.prospecting', 'Prospecção'), href: '/prospeccao', icon: GitBranch, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER'] },
-        { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
-        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: comprasQueueCount },
-        { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
+        { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], hasPending: logisticsQueueCount > 0 },
+        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], hasPending: comprasQueueCount > 0 },
+        { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
         { name: t('nav.dispatches', 'Saídas do Hub'), href: '/saidas', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS', 'BUYER'] },
@@ -228,24 +228,23 @@ export const Sidebar: React.FC = () => {
                   {isExpanded && <span className="truncate">{item.name}</span>}
                 </div>
 
-                {/* Badge when expanded */}
-                {isExpanded && item.badge !== undefined && item.badge > 0 && (
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    isActive 
-                      ? 'bg-white text-[#2098D1]'
-                      : item.href === '/logistica'
-                        ? (logisticsOverdueCount > 0 ? 'bg-rose-500 text-white animate-pulse' : 'bg-amber-400 text-amber-950')
-                        : 'bg-[#EBF7D4] text-[#48780E]'
-                  }`}>
-                    {item.href === '/logistica' && logisticsOverdueCount > 0 ? `⚠️ ${item.badge}` : item.badge}
-                  </span>
+                {/* Minimalist Pending Dot when expanded */}
+                {isExpanded && item.hasPending && (
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      isActive ? 'bg-white' : 'bg-amber-500'
+                    }`}
+                    title="Possui pendências para ação"
+                  />
                 )}
 
-                {/* Badge dot when collapsed */}
-                {!isExpanded && item.badge !== undefined && item.badge > 0 && (
-                  <span className={`absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
-                    item.href === '/logistica' && logisticsOverdueCount > 0 ? 'bg-rose-500 animate-ping' : 'bg-amber-400'
-                  }`} />
+                {/* Minimalist Pending Dot when collapsed */}
+                {!isExpanded && item.hasPending && (
+                  <span
+                    className={`absolute top-2 right-2 h-2 w-2 rounded-full border border-white ${
+                      isActive ? 'bg-white' : 'bg-amber-500'
+                    }`}
+                  />
                 )}
               </Link>
             );
