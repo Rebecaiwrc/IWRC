@@ -846,19 +846,6 @@ export default function LogisticsPage() {
         </div>
       </div>
 
-      {/* Flow banner */}
-      <div className="flex items-center gap-2 text-xs font-medium text-slate-500 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-2.5 overflow-x-auto flex-nowrap">
-        <span className="flex items-center gap-1 text-indigo-600 font-bold whitespace-nowrap"><Truck size={12} /> {language === 'pt' ? 'Compras qualifica' : 'Commercial qualifies'}</span>
-        <ArrowRight size={12} className="text-indigo-300 shrink-0" />
-        <span className="font-bold text-indigo-700 whitespace-nowrap">{language === 'pt' ? 'Logística responde viabilidade' : 'Logistics evaluates feasibility'}</span>
-        <ArrowRight size={12} className="text-indigo-300 shrink-0" />
-        <span className="flex items-center gap-1 text-purple-700 font-bold whitespace-nowrap"><Building2 size={12} /> {language === 'pt' ? 'Exibição em Geradores' : 'Generator Registry'}</span>
-        <ArrowRight size={12} className="text-indigo-300 shrink-0" />
-        <span className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap"><CalendarCheck size={12} /> {language === 'pt' ? 'Agendamento de Coleta' : 'Collection Scheduled'}</span>
-        <ArrowRight size={12} className="text-indigo-300 shrink-0" />
-        <span className="flex items-center gap-1 text-purple-600 font-bold whitespace-nowrap"><TrendingUp size={12} /> {language === 'pt' ? 'Saídas e Vendas do Hub' : 'Outbound Dispatches'}</span>
-      </div>
-
       {/* Tabs Navigation */}
       <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 w-fit overflow-x-auto">
         <button onClick={() => setActiveTab('queue')}
@@ -893,68 +880,29 @@ export default function LogisticsPage() {
       {/* TAB 1: FILA DE ANÁLISE INICIAL */}
       {activeTab === 'queue' && (
         <div className="space-y-4">
-          {/* Overdue Gabs Alert Banner */}
-          {overdueQueueCount > 0 && (
-            <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0">
-                  <AlertTriangle size={22} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-rose-900 leading-tight">
-                    {language === 'pt' 
-                      ? `⚠️ Atenção Gabriel: Você possui ${overdueQueueCount} lead(s) com prazo de retorno de 5 dias vencido!` 
-                      : `⚠️ Attention Gabriel: You have ${overdueQueueCount} lead(s) with 5-day response deadline overdue!`}
-                  </h3>
-                  <p className="text-xs text-rose-700 mt-0.5 font-medium">
-                    {language === 'pt'
-                      ? 'O Comercial aguarda sua resposta para liberar a negociação. Por favor, priorize os geradores marcados como pendentes.'
-                      : 'Commercial team is awaiting your review. Please prioritize generators marked as overdue.'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setQueueSlaFilter(queueSlaFilter === 'OVERDUE' ? 'ALL' : 'OVERDUE')}
-                className={`px-4 py-2 text-xs font-bold rounded-xl shadow-xs transition-all shrink-0 cursor-pointer ${queueSlaFilter === 'OVERDUE' ? 'bg-slate-800 text-white hover:bg-slate-900' : 'bg-rose-600 hover:bg-rose-700 text-white'}`}
-              >
-                {queueSlaFilter === 'OVERDUE' 
-                  ? (language === 'pt' ? 'Mostrar Todos' : 'Show All')
-                  : (language === 'pt' ? 'Filtrar Vencidos' : 'Filter Overdue')}
-              </button>
-            </div>
-          )}
-
           {/* KPI Filter Pills */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-850 p-3 rounded-2xl border border-slate-200 shadow-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
-                {language === 'pt' ? 'Filtrar por Prazo (5 dias):' : 'Filter by SLA (5 days):'}
-              </span>
-              <button
-                onClick={() => setQueueSlaFilter('ALL')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${queueSlaFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-              >
-                {language === 'pt' ? 'Todos na Fila' : 'All in Queue'} ({queue.length})
-              </button>
-              <button
-                onClick={() => setQueueSlaFilter('OVERDUE')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${queueSlaFilter === 'OVERDUE' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'}`}
-              >
-                <AlertTriangle size={12} />
-                {language === 'pt' ? '🚨 Pendentes (> 5 dias)' : '🚨 Overdue (> 5 days)'} ({overdueQueueCount})
-              </button>
-              <button
-                onClick={() => setQueueSlaFilter('ON_TIME')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${queueSlaFilter === 'ON_TIME' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}`}
-              >
-                <Clock size={12} />
-                {language === 'pt' ? '⏳ No Prazo (≤ 5 dias)' : '⏳ On Time (≤ 5 days)'} ({onTimeQueueCount})
-              </button>
-            </div>
-
-            <div className="text-xs text-slate-400 font-medium pr-1">
-              {language === 'pt' ? 'Tempo de retorno padrão:' : 'Standard return time:'} <strong className="text-slate-700">5 {language === 'pt' ? 'dias corridos' : 'calendar days'}</strong>
-            </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-850 p-2.5 rounded-2xl border border-slate-200 shadow-2xs">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1 mr-1">
+              {language === 'pt' ? 'Filtrar por prazo:' : 'Filter by deadline:'}
+            </span>
+            <button
+              onClick={() => setQueueSlaFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${queueSlaFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              {language === 'pt' ? 'Todos' : 'All'} ({queue.length})
+            </button>
+            <button
+              onClick={() => setQueueSlaFilter('OVERDUE')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${queueSlaFilter === 'OVERDUE' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'}`}
+            >
+              {language === 'pt' ? 'Pendentes' : 'Pending'} ({overdueQueueCount})
+            </button>
+            <button
+              onClick={() => setQueueSlaFilter('ON_TIME')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${queueSlaFilter === 'ON_TIME' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}`}
+            >
+              {language === 'pt' ? 'No prazo' : 'On time'} ({onTimeQueueCount})
+            </button>
           </div>
 
           <Card className="overflow-hidden !p-0 border border-slate-200">
@@ -992,7 +940,7 @@ export default function LogisticsPage() {
                       return (
                         <tr 
                           key={supplier.id} 
-                          className={`transition-colors ${isOverdue ? 'bg-rose-50/40 hover:bg-rose-50/70 border-l-4 border-l-rose-500' : 'hover:bg-slate-50/60'}`}
+                          className="hover:bg-slate-50/60 transition-colors"
                         >
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
@@ -1031,18 +979,16 @@ export default function LogisticsPage() {
                           
                           {/* SLA / Prazo Column */}
                           <td className="px-6 py-4">
-                            {sla ? (
-                              <div className="flex flex-col gap-1">
-                                <Badge variant={sla.badgeVariant} className="w-fit font-black gap-1 text-[11px] shadow-xs">
-                                  {isOverdue ? <AlertTriangle size={12} className="animate-pulse" /> : <Clock size={11} />}
-                                  {sla.statusLabel}
-                                </Badge>
-                                <span className="text-[10px] text-slate-500 font-medium">
-                                  {language === 'pt' ? 'Enviado em: ' : 'Sent on: '} {formatDate(sla.sentAt.toISOString())}
-                                </span>
-                              </div>
+                            {isOverdue ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full border border-rose-200 shadow-2xs">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                {language === 'pt' ? 'Pendente' : 'Pending'}
+                              </span>
                             ) : (
-                              <Badge variant="purple">5 {language === 'pt' ? 'dias' : 'days'}</Badge>
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 shadow-2xs">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                {language === 'pt' ? 'No prazo' : 'On time'}
+                              </span>
                             )}
                           </td>
 
@@ -1073,7 +1019,7 @@ export default function LogisticsPage() {
                                 </button>
                               </Link>
 
-                              <Button size="sm" className={`gap-1 shadow-xs font-bold ${isOverdue ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
+                              <Button size="sm" className="gap-1 shadow-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
                                 onClick={() => handleOpenAnalysis(supplier)}>
                                 <FileEdit size={12} />
                                 {language === 'pt' ? 'Responder' : 'Respond'}

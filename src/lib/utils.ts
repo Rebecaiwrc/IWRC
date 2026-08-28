@@ -606,26 +606,11 @@ export const getLogisticsSlaInfo = (supplier?: Supplier | null, slaDays: number 
   let badgeVariant: 'warning' | 'danger' | 'info' | 'purple' | 'success' = 'purple';
 
   if (isOverdue) {
-    const overdueDays = Math.max(1, Math.abs(daysRemaining) || (daysElapsed - slaDays));
-    statusLabel = currentLang === 'pt' 
-      ? `🚨 Pendente (>5 dias: +${overdueDays}d)`
-      : `🚨 Overdue (>5 days: +${overdueDays}d)`;
+    statusLabel = currentLang === 'pt' ? 'Pendente' : 'Pending';
     badgeVariant = 'danger';
-  } else if (daysRemaining === 0) {
-    statusLabel = currentLang === 'pt'
-      ? `⚠️ Vence hoje (${daysElapsed}d decorrido)`
-      : `⚠️ Due today (${daysElapsed}d elapsed)`;
-    badgeVariant = 'warning';
-  } else if (daysRemaining === 1) {
-    statusLabel = currentLang === 'pt'
-      ? `⏳ Vence amanhã (1 dia rest.)`
-      : `⏳ Due tomorrow (1 day left)`;
-    badgeVariant = 'warning';
   } else {
-    statusLabel = currentLang === 'pt'
-      ? `⏳ No prazo (${daysRemaining} dias rest.)`
-      : `⏳ On time (${daysRemaining} days left)`;
-    badgeVariant = 'purple';
+    statusLabel = currentLang === 'pt' ? 'No prazo' : 'On time';
+    badgeVariant = 'success';
   }
 
   return {
