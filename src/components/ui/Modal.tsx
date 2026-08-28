@@ -9,6 +9,8 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  closeOnOverlayClick?: boolean;
+  closeOnEsc?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -16,7 +18,9 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
-  size = 'md'
+  size = 'md',
+  closeOnOverlayClick = true,
+  closeOnEsc = true
 }) => {
   useEffect(() => {
     if (isOpen) {
@@ -28,6 +32,17 @@ export const Modal: React.FC<ModalProps> = ({
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !closeOnEsc) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, closeOnEsc, onClose]);
 
   if (!isOpen) return null;
 
@@ -41,7 +56,10 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#081B2B]/40 backdrop-blur-xs transition-all duration-300 animate-fadeIn">
       {/* Backdrop click */}
-      <div className="absolute inset-0" onClick={onClose} />
+      <div 
+        className="absolute inset-0" 
+        onClick={closeOnOverlayClick ? onClose : undefined} 
+      />
       
       {/* Modal Box */}
       <div className={`relative w-full ${sizeClasses[size]} bg-white border border-[#D5EEF4] rounded-3xl shadow-2xl z-10 overflow-hidden transform transition-all duration-300 flex flex-col max-h-[90vh]`}>
@@ -58,8 +76,8 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 text-[#0D2439]">
+        {/* Content with clean slightly thicker scrollbar */}
+        <div className="p-6 overflow-y-auto flex-1 text-[#0D2439] custom-modal-scrollbar">
           {children}
         </div>
       </div>

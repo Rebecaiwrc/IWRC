@@ -132,9 +132,57 @@ export default function SuppliersPage() {
   });
 
   const [formMaterials, setFormMaterials] = useState<FormMaterialLine[]>([newMaterialLine()]);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const updMat = (id: string, field: keyof FormMaterialLine, value: any) => {
     setFormMaterials(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  };
+
+  const isFormDirty = () => {
+    if (formSupplier.name.trim()) return true;
+    if (formSupplier.trade_name.trim()) return true;
+    if (formSupplier.document.trim()) return true;
+    if (formSupplier.supplier_type && formSupplier.supplier_type !== 'Indústria') return true;
+    if (formSupplier.custom_supplier_type.trim()) return true;
+    if (formSupplier.custom_lead_source.trim()) return true;
+    if (formContact.name.trim()) return true;
+    if (formContact.whatsapp.trim()) return true;
+    if (formContact.email.trim()) return true;
+    if (formAddress.zip_code.trim()) return true;
+    if (formAddress.street.trim()) return true;
+    if (formAddress.number.trim()) return true;
+    if (formAddress.neighborhood.trim()) return true;
+    if (formAddress.city.trim()) return true;
+    if (formMaterials.some(m => m.material_name.trim() !== '' || m.estimated_volume.trim() !== '' || m.storage_form.trim() !== '')) return true;
+    return false;
+  };
+
+  const handleRequestClose = () => {
+    if (isFormDirty()) {
+      setShowExitConfirm(true);
+    } else {
+      resetAndCloseModal();
+    }
+  };
+
+  const resetAndCloseModal = () => {
+    setShowExitConfirm(false);
+    setIsModalOpen(false);
+    setFormSupplier({
+      name: '',
+      trade_name: '',
+      document: '',
+      supplier_type: 'Indústria',
+      custom_supplier_type: '',
+      lead_source: 'Busca própria',
+      custom_lead_source: '',
+      internal_responsible_id: currentUser?.id || '',
+      mtr_login: '',
+      mtr_password: ''
+    });
+    setFormContact({ name: '', role: '', phone: '', whatsapp: '', email: '' });
+    setFormAddress({ zip_code: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
+    setFormMaterials([newMaterialLine()]);
   };
 
   const [isCepLoading, setIsCepLoading] = useState(false);
@@ -704,9 +752,11 @@ export default function SuppliersPage() {
       {/* Cadastro Direto Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleRequestClose}
         title={language === 'pt' ? 'Cadastrar Gerador Homologado' : 'Register Approved Generator'}
         size="xl"
+        closeOnOverlayClick={false}
+        closeOnEsc={false}
       >
         <form onSubmit={handleCreateSupplier} className="space-y-6">
           
@@ -1059,7 +1109,7 @@ export default function SuppliersPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsModalOpen(false)}
+              onClick={handleRequestClose}
             >
               {language === 'pt' ? 'Cancelar' : 'Cancel'}
             </Button>
@@ -1071,6 +1121,48 @@ export default function SuppliersPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Confirmação de Saída sem Salvar */}
+      <Modal
+        isOpen={showExitConfirm}
+        onClose={() => setShowExitConfirm(false)}
+        title={language === 'pt' ? 'Informações não salvas' : 'Unsaved Information'}
+        size="sm"
+        closeOnOverlayClick={false}
+      >
+        <div className="space-y-5">
+          <div className="flex items-start gap-3.5 p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-2xl text-amber-900 text-xs shadow-2xs">
+            <AlertTriangle className="shrink-0 text-amber-600 mt-0.5" size={20} />
+            <div>
+              <p className="font-bold text-sm text-amber-950">
+                {language === 'pt' ? 'Atenção' : 'Warning'}
+              </p>
+              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                {language === 'pt' 
+                  ? 'Existem informações não salvas. Deseja realmente sair?' 
+                  : 'There are unsaved changes. Do you really want to exit?'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setShowExitConfirm(false)}
+              className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+            >
+              {language === 'pt' ? 'Continuar preenchendo' : 'Continue filling'}
+            </button>
+            <button
+              type="button"
+              onClick={resetAndCloseModal}
+              className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-all cursor-pointer shadow-xs shadow-rose-600/20"
+            >
+              {language === 'pt' ? 'Sair sem salvar' : 'Exit without saving'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

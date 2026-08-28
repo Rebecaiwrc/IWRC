@@ -41,6 +41,27 @@ body {
   background: #2098D1;
 }
 
+/* Modal specific vertical scrollbar - slightly thicker, highly visible and easy to drag */
+.custom-modal-scrollbar::-webkit-scrollbar {
+  width: 9px;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-track {
+  background: #F0FAFC;
+  border-radius: 8px;
+  margin: 6px 0;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #96D5E5;
+  border-radius: 8px;
+  border: 2px solid #F0FAFC;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #2098D1;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
