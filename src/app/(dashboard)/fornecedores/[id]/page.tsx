@@ -74,7 +74,11 @@ import {
   Edit2,
   Pencil,
   ChevronDown,
-  Check
+  Check,
+  Camera,
+  ZoomIn,
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import {
   DOC_CHECKLIST,
@@ -390,6 +394,7 @@ export default function SupplierDetailPage() {
     type: '' as AttachedDocument['type'],
     notes: ''
   });
+  const [selectedPhotoForLightbox, setSelectedPhotoForLightbox] = useState<AttachedDocument | null>(null);
 
   const [newInteraction, setNewInteraction] = useState({
     type: '',
@@ -624,7 +629,7 @@ export default function SupplierDetailPage() {
     try {
       await dbService.addSupplierDocument(supplier.id, {
         name: newDoc.name,
-        type: newDoc.type,
+        type: newDoc.type || 'other',
         notes: newDoc.notes
       });
       setNewDoc({ name: '', type: 'mtr', notes: '' });
@@ -645,13 +650,25 @@ export default function SupplierDetailPage() {
         ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
         : (file.size / 1024).toFixed(0) + ' KB';
 
-      let inferredType: AttachedDocument['type'] = 'other';
+      let inferredType: AttachedDocument['type'] = newDoc.type || 'other';
       const lower = file.name.toLowerCase();
-      if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
-      else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
-      else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) inferredType = 'partnership_agreement';
-      else if (lower.includes('licenca') || lower.includes('licença')) inferredType = 'env_license';
-      else if (lower.includes('cnpj')) inferredType = 'cnpj_card';
+      const isImg = file.type.startsWith('image/') || lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp');
+
+      if (isImg || lower.includes('foto') || lower.includes('bag') || lower.includes('cacamba') || lower.includes('caçamba') || lower.includes('conteiner') || lower.includes('contêiner') || lower.includes('armaz') || lower.includes('pallet') || lower.includes('tambor')) {
+        inferredType = 'storage_photo';
+      } else if (lower.includes('mtr') || lower.includes('manifesto')) {
+        inferredType = 'mtr';
+      } else if (lower.includes('nf') || lower.includes('nota') || lower.includes('fiscal') || lower.includes('invoice')) {
+        inferredType = 'invoice';
+      } else if (lower.includes('cnpj')) {
+        inferredType = 'cnpj_card';
+      } else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) {
+        inferredType = 'donation_letter';
+      } else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) {
+        inferredType = 'partnership_agreement';
+      } else if (lower.includes('licenca') || lower.includes('licença')) {
+        inferredType = 'env_license';
+      }
 
       reader.onload = async () => {
         await dbService.addSupplierDocument(supplier.id, {
@@ -659,7 +676,7 @@ export default function SupplierDetailPage() {
           size: sizeStr,
           file_data: reader.result as string,
           type: inferredType,
-          notes: 'Anexado diretamente na Ficha 360º'
+          notes: newDoc.notes || (inferredType === 'storage_photo' ? 'Foto do armazenamento/recipientes do gerador' : 'Anexado diretamente na Ficha 360º')
         });
         fetchSupplierData();
       };
@@ -1415,6 +1432,14 @@ export default function SupplierDetailPage() {
   const primaryContact = supplier.contacts?.find(c => c.is_primary) || supplier.contacts?.[0];
   const isLeadInEvaluation = ['PROSPECTING', 'QUALIFICATION', 'LOGISTICS'].includes(supplier.current_stage) && 
     (!activeLogistics || !activeLogistics.feasibility || activeLogistics.feasibility === 'PENDING' || activeLogistics.feasibility === 'IN_PROGRESS');
+
+  const storagePhotos = (supplier.attached_documents || []).filter(
+    d => d.type === 'storage_photo' || 
+         (Boolean(d.file_data && d.file_data.startsWith('data:image')) && !['mtr', 'invoice', 'cnpj_card', 'donation_letter', 'partnership_agreement', 'env_license'].includes(d.type))
+  );
+  const standardDocs = (supplier.attached_documents || []).filter(
+    d => !storagePhotos.some(sp => sp.id === d.id)
+  );
 
   return (
     <div className="space-y-6 font-sans">
@@ -2276,347 +2301,540 @@ export default function SupplierDetailPage() {
 
           {/* Tabs Navigation */}
           <div className="flex border-b border-slate-200 overflow-x-auto">
-            {[
-              { key: 'overview', label: language === 'pt' ? 'Visão Geral & MTR' : 'Overview & MTR', icon: Building2 },
-              { key: 'materials', label: `${language === 'pt' ? 'Materiais' : 'Materials'} (${supplier.materials?.length || 0})`, icon: Scale },
-              { key: 'documents', label: `${language === 'pt' ? 'Documentos' : 'Documents'} (${supplier.attached_documents?.length || 0})`, icon: FileText },
-              { key: 'logistics', label: language === 'pt' ? 'Logística' : 'Logistics', icon: Truck },
-              { key: 'collections', label: language === 'pt' ? 'Coletas / Entregas' : 'Collections / Deliveries', icon: Calendar },
-              { key: 'timeline', label: language === 'pt' ? 'Histórico' : 'History', icon: Clock }
-            ].map(tab => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
-                  className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all duration-200 cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? 'border-emerald-500 text-emerald-600 bg-emerald-50/20'
-                      : 'border-transparent text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  <Icon size={16} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Tab Panels */}
-          <div className="space-y-6">
-            
-            {/* Tab 1: Visão Geral */}
-            {activeTab === 'overview' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                <div className="md:col-span-2 space-y-6">
-                  {/* MTR & Credentials Card */}
-                  <Card className="border-l-4 border-l-indigo-600 bg-indigo-50/10">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                        <Key size={16} className="text-indigo-600" />
-                        {language === 'pt' ? 'Acesso e Credenciais do MTR (SIGOR / SINIR)' : 'MTR Access & Credentials (SIGOR / SINIR)'}
-                      </h3>
-                      <button 
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="text-xs text-indigo-600 hover:underline font-bold"
+                  {[
+                    { key: 'overview', label: language === 'pt' ? 'Visão Geral & MTR' : 'Overview & MTR', icon: Building2 },
+                    { key: 'materials', label: `${language === 'pt' ? 'Materiais' : 'Materials'} (${supplier.materials?.length || 0})`, icon: Scale },
+                    { key: 'documents', label: `${language === 'pt' ? 'Documentos & Fotos' : 'Docs & Photos'} (${supplier.attached_documents?.length || 0})`, icon: FileText },
+                    { key: 'logistics', label: language === 'pt' ? 'Logística' : 'Logistics', icon: Truck },
+                    { key: 'collections', label: language === 'pt' ? 'Coletas / Entregas' : 'Collections / Deliveries', icon: Calendar },
+                    { key: 'timeline', label: language === 'pt' ? 'Histórico' : 'History', icon: Clock }
+                  ].map(tab => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key as any)}
+                        className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                          isActive
+                            ? 'border-emerald-500 text-emerald-600 bg-emerald-50/20'
+                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                        }`}
                       >
-                        {language === 'pt' ? 'Editar Acesso' : 'Edit Access'}
+                        <Icon size={16} />
+                        {tab.label}
                       </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{language === 'pt' ? 'Login / Usuário MTR' : 'MTR Login / Username'}</p>
-                        <p className="font-bold text-slate-800 mt-1 font-mono text-sm">
-                          {supplier.mtr_login || <span className="text-slate-300 font-sans font-normal italic">{language === 'pt' ? 'Não cadastrado' : 'Not registered'}</span>}
-                        </p>
-                      </div>
-
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{language === 'pt' ? 'Senha do MTR' : 'MTR Password'}</p>
-                          {supplier.mtr_password && (
-                            <button 
-                              onClick={() => setShowMtrPassword(p => !p)}
-                              className="text-slate-400 hover:text-slate-600"
-                              title={showMtrPassword ? (language === 'pt' ? 'Ocultar' : 'Hide') : (language === 'pt' ? 'Exibir senha' : 'Show password')}
-                            >
-                              {showMtrPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                            </button>
-                          )}
-                        </div>
-                        <p className="font-bold text-slate-800 mt-1 font-mono text-sm">
-                          {supplier.mtr_password ? (
-                            showMtrPassword ? supplier.mtr_password : '••••••••••••'
-                          ) : (
-                            <span className="text-slate-300 font-sans font-normal italic">{language === 'pt' ? 'Não cadastrada' : 'Not registered'}</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Operational Dates */}
-                  <Card>
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                        <CalendarCheck size={16} className="text-emerald-600" />
-                        {language === 'pt' ? 'Histórico de Entregas e Coletas' : 'Delivery and Collection History'}
-                      </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="p-3 bg-slate-50 rounded-xl">
-                        <span className="font-bold text-slate-400 uppercase text-[10px]">{language === 'pt' ? 'Primeira Entrega / Coleta' : 'First Delivery / Collection'}</span>
-                        <p className="font-bold text-slate-800 text-sm mt-1">
-                          {supplier.first_collection_date ? formatDate(supplier.first_collection_date) : <span className="text-slate-400 font-normal italic">{language === 'pt' ? 'Nenhuma registrada' : 'None registered'}</span>}
-                        </p>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl">
-                        <span className="font-bold text-slate-400 uppercase text-[10px]">{language === 'pt' ? 'Última Entrega / Coleta' : 'Last Delivery / Collection'}</span>
-                        <p className="font-bold text-slate-800 text-sm mt-1">
-                          {supplier.last_collection_date ? formatDate(supplier.last_collection_date) : <span className="text-slate-400 font-normal italic">{language === 'pt' ? 'Nenhuma registrada' : 'None registered'}</span>}
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
+                    );
+                  })}
                 </div>
 
-                {/* Right Side Overview Column */}
+                {/* Tab Panels */}
                 <div className="space-y-6">
-                  {/* Contacts Summary */}
-                  <Card>
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                        <Phone size={16} className="text-emerald-600" />
-                        {language === 'pt' ? 'Contatos' : 'Contacts'}
-                      </h3>
-                    </div>
-                    {supplier.contacts && supplier.contacts.length > 0 ? (
-                      <div className="space-y-3">
-                        {supplier.contacts.map(c => (
-                          <div key={c.id} className="p-3 bg-slate-50 rounded-xl space-y-1">
-                            <p className="font-bold text-slate-800 text-xs">{c.name} {c.role ? `(${c.role})` : ''}</p>
-                            <p className="text-emerald-600 font-semibold text-xs flex items-center gap-1"><Phone size={12}/>{c.whatsapp || c.phone || '-'}</p>
-                            {c.email && <p className="text-slate-400 text-[11px]">{c.email}</p>}
+                  
+                  {/* Tab 1: Visão Geral */}
+                  {activeTab === 'overview' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      
+                      <div className="md:col-span-2 space-y-6">
+                        {/* MTR & Credentials Card */}
+                        <Card className="border-l-4 border-l-indigo-600 bg-indigo-50/10">
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                              <Key size={16} className="text-indigo-600" />
+                              {language === 'pt' ? 'Acesso e Credenciais do MTR (SIGOR / SINIR)' : 'MTR Access & Credentials (SIGOR / SINIR)'}
+                            </h3>
+                            <button 
+                              onClick={() => setIsEditModalOpen(true)}
+                              className="text-xs text-indigo-600 hover:underline font-bold"
+                            >
+                              {language === 'pt' ? 'Editar Acesso' : 'Edit Access'}
+                            </button>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-4 text-center text-slate-400 text-xs">{language === 'pt' ? 'Nenhum contato cadastrado.' : 'No contacts registered.'}</div>
-                    )}
-                  </Card>
 
-                  {/* Tasks Summary */}
-                  <Card>
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                      <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                        <ClipboardList size={16} className="text-emerald-600" />
-                        {language === 'pt' ? 'Tarefas e Pendências' : 'Tasks and Action Items'}
-                      </h3>
-                      <Button size="sm" variant="outline" onClick={() => setIsTaskModalOpen(true)} className="text-xs">
-                        {language === 'pt' ? '+ Tarefa' : '+ Task'}
-                      </Button>
-                    </div>
-
-                    {supplier.tasks && supplier.tasks.length > 0 ? (
-                      <div className="space-y-2">
-                        {supplier.tasks.map(task => (
-                          <div key={task.id} className="p-2.5 bg-slate-50 rounded-xl flex items-center justify-between text-xs gap-2">
-                            <div>
-                              <p className={`font-semibold text-slate-800 ${task.status === 'completed' ? 'line-through opacity-50' : ''}`}>
-                                {task.description}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{language === 'pt' ? 'Login / Usuário MTR' : 'MTR Login / Username'}</p>
+                              <p className="font-bold text-slate-800 mt-1 font-mono text-sm">
+                                {supplier.mtr_login || <span className="text-slate-300 font-sans font-normal italic">{language === 'pt' ? 'Não cadastrado' : 'Not registered'}</span>}
                               </p>
-                              {task.due_date && <span className="text-[10px] text-slate-400">{language === 'pt' ? 'Prazo:' : 'Due:'} {formatDate(task.due_date)}</span>}
                             </div>
-                            {task.status === 'pending' && (
-                              <button
-                                onClick={() => handleCompleteTask(task.id)}
-                                className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded font-bold cursor-pointer hover:bg-emerald-100"
-                              >
-                                {language === 'pt' ? 'Concluir' : 'Complete'}
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-4 text-center text-slate-400 text-xs">{language === 'pt' ? 'Nenhuma pendência ativa.' : 'No active tasks.'}</div>
-                    )}
-                  </Card>
-                </div>
-              </div>
-            )}
 
-            {/* Tab 2: Materiais */}
-            {activeTab === 'materials' && (
-              <Card>
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Scale size={16} className="text-emerald-600" />
-                    {language === 'pt' ? 'Materiais Declarados' : 'Declared Materials'}
-                  </h3>
-                  {canUserModifySupplier() && (
-                    <Button size="sm" className="gap-1.5" onClick={openFullMaterialsModal}>
-                      <Plus size={14} />
-                      {language === 'pt' ? 'Gerenciar / Adicionar Material' : 'Manage / Add Material'}
-                    </Button>
-                  )}
-                </div>
-
-                {supplier.materials && supplier.materials.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          <th className="px-4 py-3">{language === 'pt' ? 'Material' : 'Material'}</th>
-                          <th className="px-4 py-3">{language === 'pt' ? 'Est. Volume / Frequência' : 'Est. Volume / Frequency'}</th>
-                          <th className="px-4 py-3">{language === 'pt' ? 'Modalidade' : 'Modality'}</th>
-                          <th className="px-4 py-3">{language === 'pt' ? 'Acondicionamento' : 'Conditioning'}</th>
-                          {canUserModifySupplier() && (
-                            <th className="px-4 py-3 text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-sm">
-                        {supplier.materials.map(mat => (
-                          <tr key={mat.id} className="hover:bg-slate-50/50">
-                            <td className="px-4 py-3 font-semibold text-slate-800">{translateMaterialName(mat.material_name, language)}</td>
-                            <td className="px-4 py-3 font-medium text-slate-700">
-                              {formatVolume(mat.estimated_volume, mat.unit)} / {translateFrequency(mat.frequency, language)}
-                            </td>
-                            <td className="px-4 py-3">
-                              {mat.transaction_type === 'purchase' ? (
-                                <div className="flex flex-col text-xs text-amber-700">
-                                  <span className="font-bold">{language === 'pt' ? 'Compra' : 'Purchase'}</span>
-                                  <span className="text-[10px] text-slate-400">{formatCurrency(mat.price_per_kg)}/kg</span>
-                                </div>
-                              ) : (
-                                <Badge variant="success">{language === 'pt' ? 'Doação' : 'Donation'}</Badge>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-slate-500">
-                              <div className="flex flex-col gap-0.5">
-                                <span>{translateStorageForm(mat.storage_form, language)}</span>
-                                {mat.needs_storage_provision && (
-                                  <span className="inline-flex items-center gap-1 font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded text-[10px] border border-indigo-200 dark:border-indigo-800 w-fit">
-                                    📦 {language === 'pt' ? 'Fornecer' : 'Provide'}: {mat.storage_provision_quantity || 1}x {mat.storage_provision_type === 'Outros' ? mat.storage_provision_custom_type || 'Outros' : mat.storage_provision_type}
-                                  </span>
+                            <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                              <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{language === 'pt' ? 'Senha do MTR' : 'MTR Password'}</p>
+                                {supplier.mtr_password && (
+                                  <button 
+                                    onClick={() => setShowMtrPassword(p => !p)}
+                                    className="text-slate-400 hover:text-slate-600"
+                                    title={showMtrPassword ? (language === 'pt' ? 'Ocultar' : 'Hide') : (language === 'pt' ? 'Exibir senha' : 'Show password')}
+                                  >
+                                    {showMtrPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                                  </button>
                                 )}
                               </div>
-                            </td>
-                            {canUserModifySupplier() && (
-                              <td className="px-4 py-3 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button
-                                    onClick={openFullMaterialsModal}
-                                    className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-semibold text-xs"
-                                    title={language === 'pt' ? 'Editar Material' : 'Edit Material'}
-                                  >
-                                    <Edit2 size={15} />
-                                    <span>{language === 'pt' ? 'Editar' : 'Edit'}</span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteMaterial(mat.id)}
-                                    className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 p-1.5 rounded-lg transition-colors cursor-pointer"
-                                    title={language === 'pt' ? 'Excluir Material' : 'Delete Material'}
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-slate-400 text-sm">
-                    {language === 'pt' ? 'Nenhum material declarado para este gerador.' : 'No materials declared for this generator.'}
-                  </div>
-                )}
-              </Card>
-            )}
-
-            {/* Tab 3: Documentos & Anexos */}
-            {activeTab === 'documents' && (
-              <Card>
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                      <FileText size={16} className="text-emerald-600" />
-                      {language === 'pt' ? 'Documentos & Termos Homologados' : 'Approved Documents & Terms'}
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {language === 'pt' ? 'Termo de Parceria, MTRs, Cartas de Doação e Licenças Ambientais.' : 'Partnership Agreement, MTRs, Donation Letters and Environmental Licenses.'}
-                    </p>
-                  </div>
-                  {canUserModifySupplier() && (
-                    <Button size="sm" className="gap-1.5" onClick={() => setIsDocModalOpen(true)}>
-                      <Upload size={14} />
-                      {language === 'pt' ? 'Anexar Documento' : 'Attach Document'}
-                    </Button>
-                  )}
-                </div>
-
-                {supplier.attached_documents && supplier.attached_documents.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {supplier.attached_documents.map(doc => (
-                      <div key={doc.id} className="p-4 bg-[#F7FCFD] border border-[#CCEAF1] rounded-2xl space-y-2 relative group hover:border-[#2098D1] transition-all">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="h-9 w-9 rounded-xl bg-[#E5F5F8] text-[#2098D1] flex items-center justify-center font-bold shrink-0">
-                              <FileCheck size={18} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-xs text-[#0D2439] leading-tight truncate max-w-[160px]">{doc.name}</p>
-                              <span className="text-[10px] uppercase font-bold text-[#146A88] tracking-wider block mt-0.5">
-                                {doc.type === 'mtr' ? 'MTR' : doc.type === 'donation_letter' ? (language === 'pt' ? 'Carta de Doação' : 'Donation Letter') : doc.type === 'partnership_agreement' ? (language === 'pt' ? 'Termo de Parceria' : 'Partnership Agreement') : (language === 'pt' ? 'Documento' : 'Document')}
-                              </span>
+                              <p className="font-bold text-slate-800 mt-1 font-mono text-sm">
+                                {supplier.mtr_password ? (
+                                  showMtrPassword ? supplier.mtr_password : '••••••••••••'
+                                ) : (
+                                  <span className="text-slate-300 font-sans font-normal italic">{language === 'pt' ? 'Não cadastrada' : 'Not registered'}</span>
+                                )}
+                              </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleDownloadDoc(doc)}
-                              className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] p-1.5 rounded-full transition-colors"
-                              title={language === 'pt' ? 'Baixar / Visualizar documento' : 'Download / View document'}
-                            >
-                              <Download size={14} />
-                            </button>
+                        </Card>
+
+                        {/* Seção Visual: Fotos do Armazenamento */}
+                        <Card className="border-l-4 border-l-[#2098D1] bg-[#F7FCFD]/60 dark:bg-slate-900/60">
+                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                            <div className="flex items-center gap-2">
+                              <Camera size={17} className="text-[#2098D1]" />
+                              <h3 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wider">
+                                {language === 'pt' ? 'Fotos do Armazenamento (Bags / Caçambas / Local)' : 'Storage Photos (Bags / Dumpsters / Site)'}
+                              </h3>
+                              {storagePhotos.length > 0 && (
+                                <span className="text-[10px] font-black bg-[#E5F5F8] text-[#146A88] dark:bg-slate-800 dark:text-cyan-300 px-2.5 py-0.5 rounded-full border border-[#CCEAF1]">
+                                  {storagePhotos.length} {language === 'pt' ? 'foto(s)' : 'photo(s)'}
+                                </span>
+                              )}
+                            </div>
                             {canUserModifySupplier() && (
                               <button
-                                onClick={() => handleDeleteDocument(doc.id)}
-                                className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
-                                title={language === 'pt' ? 'Remover documento' : 'Delete document'}
+                                type="button"
+                                onClick={() => {
+                                  setNewDoc({ name: '', type: 'storage_photo', notes: '' });
+                                  setIsDocModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2098D1] hover:text-[#1883B5] bg-white dark:bg-slate-800 border border-[#CCEAF1] px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-2xs"
                               >
-                                <Trash2 size={14} />
+                                <Plus size={13} />
+                                <span>{language === 'pt' ? '+ Foto do Armazenamento' : '+ Storage Photo'}</span>
                               </button>
                             )}
                           </div>
-                        </div>
-                        {doc.notes && <p className="text-[11px] text-slate-500 bg-white p-2 rounded-xl border border-[#CCEAF1]">{doc.notes}</p>}
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-[#E5F4F7]">
-                          <span>{language === 'pt' ? 'Anexado em' : 'Attached on'} {formatDate(doc.uploaded_at)}</span>
-                          <span className="font-bold text-[#48780E] bg-[#EBF7D4] px-1.5 py-0.2 rounded-full">{language === 'pt' ? 'Válido' : 'Valid'}</span>
-                        </div>
+
+                          {storagePhotos.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+                              {storagePhotos.map(photo => (
+                                <div
+                                  key={photo.id}
+                                  onClick={() => setSelectedPhotoForLightbox(photo)}
+                                  className="group relative aspect-4/3 rounded-2xl overflow-hidden border border-[#CCEAF1] dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shadow-2xs hover:shadow-md hover:border-[#2098D1] transition-all cursor-pointer"
+                                >
+                                  {photo.file_data || photo.file_url ? (
+                                    <img
+                                      src={photo.file_data || photo.file_url}
+                                      alt={photo.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                      <Camera size={24} />
+                                    </div>
+                                  )}
+
+                                  {/* Hover Overlay */}
+                                  <div className="absolute inset-0 bg-[#081B2B]/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2.5 text-white">
+                                    <div className="flex justify-end">
+                                      <span className="p-1.5 bg-black/40 rounded-full text-white backdrop-blur-xs">
+                                        <ZoomIn size={14} />
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <p className="text-[11px] font-bold truncate leading-tight">{photo.name}</p>
+                                      <span className="text-[9px] text-slate-300">{formatDate(photo.uploaded_at)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-5 border border-dashed border-[#CCEAF1] dark:border-slate-800 rounded-2xl text-center space-y-2 bg-white/70 dark:bg-slate-950/40">
+                              <Camera size={28} className="mx-auto text-slate-300 dark:text-slate-600" />
+                              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                                {language === 'pt' 
+                                  ? 'Nenhuma foto do armazenamento anexada ainda. Adicione fotos de bags, caçambas, contêineres ou do local onde os recicláveis ficam acondicionados.' 
+                                  : 'No storage photos attached yet. Add pictures of bags, dumpsters, containers, or the storage location.'}
+                              </p>
+                              {canUserModifySupplier() && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setNewDoc({ name: '', type: 'storage_photo', notes: '' });
+                                    setIsDocModalOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2098D1] bg-[#E5F5F8] border border-[#CCEAF1] px-3.5 py-1.5 rounded-xl hover:bg-[#d6eff5] transition-all cursor-pointer"
+                                >
+                                  <Upload size={13} /> {language === 'pt' ? 'Anexar Fotos do Armazenamento' : 'Attach Storage Photos'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </Card>
+
+                        {/* Operational Dates */}
+                        <Card>
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                              <CalendarCheck size={16} className="text-emerald-600" />
+                              {language === 'pt' ? 'Histórico de Entregas e Coletas' : 'Delivery and Collection History'}
+                            </h3>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-3 bg-slate-50 rounded-xl">
+                              <span className="font-bold text-slate-400 uppercase text-[10px]">{language === 'pt' ? 'Primeira Entrega / Coleta' : 'First Delivery / Collection'}</span>
+                              <p className="font-bold text-slate-800 text-sm mt-1">
+                                {supplier.first_collection_date ? formatDate(supplier.first_collection_date) : <span className="text-slate-400 font-normal italic">{language === 'pt' ? 'Nenhuma registrada' : 'None registered'}</span>}
+                              </p>
+                            </div>
+
+                            <div className="p-3 bg-slate-50 rounded-xl">
+                              <span className="font-bold text-slate-400 uppercase text-[10px]">{language === 'pt' ? 'Última Entrega / Coleta' : 'Last Delivery / Collection'}</span>
+                              <p className="font-bold text-slate-800 text-sm mt-1">
+                                {supplier.last_collection_date ? formatDate(supplier.last_collection_date) : <span className="text-slate-400 font-normal italic">{language === 'pt' ? 'Nenhuma registrada' : 'None registered'}</span>}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-16 text-center text-slate-400 text-sm space-y-2">
-                    <FileText size={32} className="mx-auto text-slate-300" />
-                    <p>{language === 'pt' ? 'Nenhum documento ou termo anexado para este gerador.' : 'No documents or agreements attached for this generator.'}</p>
-                    <Button variant="outline" size="sm" onClick={() => setIsDocModalOpen(true)} className="mt-2 gap-1">
-                      <Upload size={12} /> {language === 'pt' ? 'Anexar Primeiro Documento' : 'Attach First Document'}
-                    </Button>
-                  </div>
-                )}
-              </Card>
-            )}
+
+                      {/* Right Side Overview Column */}
+                      <div className="space-y-6">
+                        {/* Contacts Summary */}
+                        <Card>
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                              <Phone size={16} className="text-emerald-600" />
+                              {language === 'pt' ? 'Contatos' : 'Contacts'}
+                            </h3>
+                          </div>
+                          {supplier.contacts && supplier.contacts.length > 0 ? (
+                            <div className="space-y-3">
+                              {supplier.contacts.map(c => (
+                                <div key={c.id} className="p-3 bg-slate-50 rounded-xl space-y-1">
+                                  <p className="font-bold text-slate-800 text-xs">{c.name} {c.role ? `(${c.role})` : ''}</p>
+                                  <p className="text-emerald-600 font-semibold text-xs flex items-center gap-1"><Phone size={12}/>{c.whatsapp || c.phone || '-'}</p>
+                                  {c.email && <p className="text-slate-400 text-[11px]">{c.email}</p>}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="py-4 text-center text-slate-400 text-xs">{language === 'pt' ? 'Nenhum contato cadastrado.' : 'No contacts registered.'}</div>
+                          )}
+                        </Card>
+
+                        {/* Tasks Summary */}
+                        <Card>
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                              <ClipboardList size={16} className="text-emerald-600" />
+                              {language === 'pt' ? 'Tarefas e Pendências' : 'Tasks and Action Items'}
+                            </h3>
+                            <Button size="sm" variant="outline" onClick={() => setIsTaskModalOpen(true)} className="text-xs">
+                              {language === 'pt' ? '+ Tarefa' : '+ Task'}
+                            </Button>
+                          </div>
+
+                          {supplier.tasks && supplier.tasks.length > 0 ? (
+                            <div className="space-y-2">
+                              {supplier.tasks.map(task => (
+                                <div key={task.id} className="p-2.5 bg-slate-50 rounded-xl flex items-center justify-between text-xs gap-2">
+                                  <div>
+                                    <p className={`font-semibold text-slate-800 ${task.status === 'completed' ? 'line-through opacity-50' : ''}`}>
+                                      {task.description}
+                                    </p>
+                                    {task.due_date && <span className="text-[10px] text-slate-400">{language === 'pt' ? 'Prazo:' : 'Due:'} {formatDate(task.due_date)}</span>}
+                                  </div>
+                                  {task.status === 'pending' && (
+                                    <button
+                                      onClick={() => handleCompleteTask(task.id)}
+                                      className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded font-bold cursor-pointer hover:bg-emerald-100"
+                                    >
+                                      {language === 'pt' ? 'Concluir' : 'Complete'}
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="py-4 text-center text-slate-400 text-xs">{language === 'pt' ? 'Nenhuma pendência ativa.' : 'No active tasks.'}</div>
+                          )}
+                        </Card>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tab 2: Materiais */}
+                  {activeTab === 'materials' && (
+                    <Card>
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                        <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                          <Scale size={16} className="text-emerald-600" />
+                          {language === 'pt' ? 'Materiais Declarados' : 'Declared Materials'}
+                        </h3>
+                        {canUserModifySupplier() && (
+                          <Button size="sm" className="gap-1.5" onClick={openFullMaterialsModal}>
+                            <Plus size={14} />
+                            {language === 'pt' ? 'Gerenciar / Adicionar Material' : 'Manage / Add Material'}
+                          </Button>
+                        )}
+                      </div>
+
+                      {supplier.materials && supplier.materials.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <th className="px-4 py-3">{language === 'pt' ? 'Material' : 'Material'}</th>
+                                <th className="px-4 py-3">{language === 'pt' ? 'Est. Volume / Frequência' : 'Est. Volume / Frequency'}</th>
+                                <th className="px-4 py-3">{language === 'pt' ? 'Modalidade' : 'Modality'}</th>
+                                <th className="px-4 py-3">{language === 'pt' ? 'Acondicionamento' : 'Conditioning'}</th>
+                                {canUserModifySupplier() && (
+                                  <th className="px-4 py-3 text-right">{language === 'pt' ? 'Ações' : 'Actions'}</th>
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-sm">
+                              {supplier.materials.map(mat => (
+                                <tr key={mat.id} className="hover:bg-slate-50/50">
+                                  <td className="px-4 py-3 font-semibold text-slate-800">{translateMaterialName(mat.material_name, language)}</td>
+                                  <td className="px-4 py-3 font-medium text-slate-700">
+                                    {formatVolume(mat.estimated_volume, mat.unit)} / {translateFrequency(mat.frequency, language)}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {mat.transaction_type === 'purchase' ? (
+                                      <div className="flex flex-col text-xs text-amber-700">
+                                        <span className="font-bold">{language === 'pt' ? 'Compra' : 'Purchase'}</span>
+                                        <span className="text-[10px] text-slate-400">{formatCurrency(mat.price_per_kg)}/kg</span>
+                                      </div>
+                                    ) : (
+                                      <Badge variant="success">{language === 'pt' ? 'Doação' : 'Donation'}</Badge>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-slate-500">
+                                    <div className="flex flex-col gap-0.5">
+                                      <span>{translateStorageForm(mat.storage_form, language)}</span>
+                                      {mat.needs_storage_provision && (
+                                        <span className="inline-flex items-center gap-1 font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded text-[10px] border border-indigo-200 dark:border-indigo-800 w-fit">
+                                          📦 {language === 'pt' ? 'Fornecer' : 'Provide'}: {mat.storage_provision_quantity || 1}x {mat.storage_provision_type === 'Outros' ? mat.storage_provision_custom_type || 'Outros' : mat.storage_provision_type}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  {canUserModifySupplier() && (
+                                    <td className="px-4 py-3 text-right">
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <button
+                                          onClick={openFullMaterialsModal}
+                                          className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-semibold text-xs"
+                                          title={language === 'pt' ? 'Editar Material' : 'Edit Material'}
+                                        >
+                                          <Edit2 size={15} />
+                                          <span>{language === 'pt' ? 'Editar' : 'Edit'}</span>
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteMaterial(mat.id)}
+                                          className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                          title={language === 'pt' ? 'Excluir Material' : 'Delete Material'}
+                                        >
+                                          <Trash2 size={15} />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="py-12 text-center text-slate-400 text-sm">
+                          {language === 'pt' ? 'Nenhum material declarado para este gerador.' : 'No materials declared for this generator.'}
+                        </div>
+                      )}
+                    </Card>
+                  )}
+
+                  {/* Tab 3: Documentos & Anexos (Separados por Fotos do Armazenamento vs Documentos) */}
+                  {activeTab === 'documents' && (
+                    <div className="space-y-6">
+                      
+                      {/* 1. SEÇÃO DE FOTOS DO ARMAZENAMENTO */}
+                      <Card className="border-l-4 border-l-[#2098D1]">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                          <div>
+                            <h3 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wider flex items-center gap-2">
+                              <Camera size={17} className="text-[#2098D1]" />
+                              {language === 'pt' ? 'Fotos do Armazenamento (Bags, Caçambas, Contêineres, Local)' : 'Storage Photos (Bags, Containers, Dumpsters, Site)'}
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {language === 'pt' ? 'Imagens do local de acondicionamento dos resíduos e recipientes utilizados pelo gerador.' : 'Pictures of the storage containers and on-site conditioning.'}
+                            </p>
+                          </div>
+                          {canUserModifySupplier() && (
+                            <Button 
+                              size="sm" 
+                              className="gap-1.5"
+                              onClick={() => {
+                                setNewDoc({ name: '', type: 'storage_photo', notes: '' });
+                                setIsDocModalOpen(true);
+                              }}
+                            >
+                              <Upload size={14} />
+                              {language === 'pt' ? 'Adicionar Foto' : 'Add Photo'}
+                            </Button>
+                          )}
+                        </div>
+
+                        {storagePhotos.length > 0 ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {storagePhotos.map(photo => (
+                              <div
+                                key={photo.id}
+                                className="group relative aspect-4/3 rounded-2xl overflow-hidden border border-[#CCEAF1] dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shadow-2xs hover:shadow-md hover:border-[#2098D1] transition-all"
+                              >
+                                {photo.file_data || photo.file_url ? (
+                                  <img
+                                    src={photo.file_data || photo.file_url}
+                                    alt={photo.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+                                    onClick={() => setSelectedPhotoForLightbox(photo)}
+                                  />
+                                ) : (
+                                  <div 
+                                    className="w-full h-full flex items-center justify-center text-slate-400 cursor-pointer"
+                                    onClick={() => setSelectedPhotoForLightbox(photo)}
+                                  >
+                                    <Camera size={24} />
+                                  </div>
+                                )}
+
+                                {/* Action Bar / Hover */}
+                                <div className="absolute inset-0 bg-[#081B2B]/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2.5 text-white">
+                                  <div className="flex items-center justify-between">
+                                    <span className="p-1.5 bg-black/40 rounded-full text-white backdrop-blur-xs cursor-pointer hover:bg-black/60" onClick={() => setSelectedPhotoForLightbox(photo)}>
+                                      <ZoomIn size={13} />
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDownloadDoc(photo);
+                                        }}
+                                        className="p-1.5 bg-black/40 hover:bg-[#2098D1] rounded-full text-white transition-colors cursor-pointer"
+                                        title="Baixar imagem"
+                                      >
+                                        <Download size={13} />
+                                      </button>
+                                      {canUserModifySupplier() && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteDocument(photo.id);
+                                          }}
+                                          className="p-1.5 bg-black/40 hover:bg-rose-600 rounded-full text-white transition-colors cursor-pointer"
+                                          title="Remover foto"
+                                        >
+                                          <Trash2 size={13} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="cursor-pointer" onClick={() => setSelectedPhotoForLightbox(photo)}>
+                                    <p className="text-[11px] font-bold truncate leading-tight">{photo.name}</p>
+                                    <span className="text-[9px] text-slate-300">{formatDate(photo.uploaded_at)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-8 text-center text-slate-400 text-xs space-y-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                            <Camera size={28} className="mx-auto text-slate-300" />
+                            <p>{language === 'pt' ? 'Nenhuma foto do armazenamento anexada.' : 'No storage photos attached.'}</p>
+                          </div>
+                        )}
+                      </Card>
+
+                      {/* 2. SEÇÃO DE DOCUMENTOS, TERMOS & MTRS */}
+                      <Card>
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                          <div>
+                            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                              <FileText size={16} className="text-emerald-600" />
+                              {language === 'pt' ? 'Documentos, Termos & Cadastros' : 'Documents, Agreements & Certifications'}
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {language === 'pt' ? 'MTRs, Notas Fiscais, Cartão CNPJ, Termos de Parceria, Cartas de Doação e Licenças.' : 'MTRs, Invoices, CNPJ Cards, Partnership Agreements, Donation Letters and Licenses.'}
+                            </p>
+                          </div>
+                          {canUserModifySupplier() && (
+                            <Button size="sm" className="gap-1.5" onClick={() => setIsDocModalOpen(true)}>
+                              <Upload size={14} />
+                              {language === 'pt' ? 'Anexar Documento' : 'Attach Document'}
+                            </Button>
+                          )}
+                        </div>
+
+                        {standardDocs.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {standardDocs.map(doc => (
+                              <div key={doc.id} className="p-4 bg-[#F7FCFD] border border-[#CCEAF1] rounded-2xl space-y-2 relative group hover:border-[#2098D1] transition-all">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="h-9 w-9 rounded-xl bg-[#E5F5F8] text-[#2098D1] flex items-center justify-center font-bold shrink-0">
+                                      <FileCheck size={18} />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-xs text-[#0D2439] leading-tight truncate max-w-[160px]">{doc.name}</p>
+                                      <span className="text-[10px] uppercase font-bold text-[#146A88] tracking-wider block mt-0.5">
+                                        {doc.type === 'mtr' ? 'MTR (Manifesto)' : doc.type === 'invoice' ? (language === 'pt' ? 'Nota Fiscal' : 'Invoice') : doc.type === 'cnpj_card' ? 'Cartão CNPJ' : doc.type === 'donation_letter' ? (language === 'pt' ? 'Carta de Doação' : 'Donation Letter') : doc.type === 'partnership_agreement' ? (language === 'pt' ? 'Termo de Parceria' : 'Partnership Agreement') : doc.type === 'env_license' ? (language === 'pt' ? 'Licença Ambiental' : 'Env License') : (language === 'pt' ? 'Documento' : 'Document')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => handleDownloadDoc(doc)}
+                                      className="text-slate-400 hover:text-[#2098D1] hover:bg-[#E5F5F8] p-1.5 rounded-full transition-colors"
+                                      title={language === 'pt' ? 'Baixar / Visualizar documento' : 'Download / View document'}
+                                    >
+                                      <Download size={14} />
+                                    </button>
+                                    {canUserModifySupplier() && (
+                                      <button
+                                        onClick={() => handleDeleteDocument(doc.id)}
+                                        className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
+                                        title={language === 'pt' ? 'Remover documento' : 'Delete document'}
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                {doc.notes && <p className="text-[11px] text-slate-500 bg-white p-2 rounded-xl border border-[#CCEAF1]">{doc.notes}</p>}
+                                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-[#E5F4F7]">
+                                  <span>{language === 'pt' ? 'Anexado em' : 'Attached on'} {formatDate(doc.uploaded_at)}</span>
+                                  <span className="font-bold text-[#48780E] bg-[#EBF7D4] px-1.5 py-0.2 rounded-full">{language === 'pt' ? 'Válido' : 'Valid'}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-12 text-center text-slate-400 text-sm space-y-2">
+                            <FileText size={32} className="mx-auto text-slate-300" />
+                            <p>{language === 'pt' ? 'Nenhum documento ou termo anexado para este gerador.' : 'No documents or agreements attached for this generator.'}</p>
+                            <Button variant="outline" size="sm" onClick={() => setIsDocModalOpen(true)} className="mt-2 gap-1">
+                              <Upload size={12} /> {language === 'pt' ? 'Anexar Primeiro Documento' : 'Attach First Document'}
+                            </Button>
+                          </div>
+                        )}
+                      </Card>
+
+                    </div>
+                  )}
 
             {/* Tab 4: Logística */}
             {activeTab === 'logistics' && (
@@ -2983,12 +3201,14 @@ export default function SupplierDetailPage() {
                 required
               >
                 <option value="">{language === 'pt' ? 'Selecione o tipo de documento...' : 'Select document type...'}</option>
-                <option value="mtr">{language === 'pt' ? 'MTR (Manifesto de Transporte)' : 'MTR (Transport Manifest)'}</option>
-                <option value="donation_letter">{language === 'pt' ? 'Carta de Doação' : 'Donation Letter'}</option>
-                <option value="partnership_agreement">{language === 'pt' ? 'Termo de Parceria / Contrato' : 'Partnership Agreement / Contract'}</option>
-                <option value="env_license">{language === 'pt' ? 'Licença Ambiental' : 'Environmental License'}</option>
-                <option value="cnpj_card">{language === 'pt' ? 'Cartão CNPJ' : 'Tax ID / CNPJ Card'}</option>
-                <option value="other">{language === 'pt' ? 'Outro Documento' : 'Other Document'}</option>
+                <option value="storage_photo">{language === 'pt' ? '📸 Fotos do Armazenamento (Bags / Caçambas / Local)' : '📸 Storage Photos (Bags / Dumpsters / Site)'}</option>
+                <option value="mtr">{language === 'pt' ? '📄 MTR (Manifesto de Transporte)' : '📄 MTR (Transport Manifest)'}</option>
+                <option value="invoice">{language === 'pt' ? '🧾 Nota Fiscal (NF)' : '🧾 Invoice'}</option>
+                <option value="cnpj_card">{language === 'pt' ? '🏢 Cartão CNPJ' : '🏢 Tax ID / CNPJ Card'}</option>
+                <option value="donation_letter">{language === 'pt' ? '📜 Carta de Doação' : '📜 Donation Letter'}</option>
+                <option value="partnership_agreement">{language === 'pt' ? '🤝 Termo de Parceria / Contrato' : '🤝 Partnership Agreement / Contract'}</option>
+                <option value="env_license">{language === 'pt' ? '🌱 Licença Ambiental' : '🌱 Environmental License'}</option>
+                <option value="other">{language === 'pt' ? '📁 Outro Documento' : '📁 Other Document'}</option>
               </select>
             </div>
             <Input
@@ -4069,6 +4289,78 @@ export default function SupplierDetailPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Lightbox / Visualização Ampliada de Foto do Armazenamento */}
+      {selectedPhotoForLightbox && (
+        <div 
+          className="fixed inset-0 z-50 bg-[#081B2B]/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setSelectedPhotoForLightbox(null)}
+        >
+          <div 
+            className="relative max-w-4xl w-full bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 bg-slate-950/80 border-b border-slate-800 text-white">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#2098D1]/20 text-[#2098D1] rounded-xl">
+                  <Camera size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white truncate max-w-md">
+                    {selectedPhotoForLightbox.name}
+                  </h3>
+                  <span className="text-[11px] text-slate-400">
+                    {language === 'pt' ? 'Foto do Armazenamento • Anexada em ' : 'Storage Photo • Attached on '}
+                    {formatDate(selectedPhotoForLightbox.uploaded_at)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadDoc(selectedPhotoForLightbox)}
+                  className="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                  title="Baixar imagem original"
+                >
+                  <Download size={15} />
+                  <span className="hidden sm:inline">{language === 'pt' ? 'Baixar' : 'Download'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPhotoForLightbox(null)}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+                  title="Fechar"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-black/40 min-h-[300px]">
+              {selectedPhotoForLightbox.file_data || selectedPhotoForLightbox.file_url ? (
+                <img 
+                  src={selectedPhotoForLightbox.file_data || selectedPhotoForLightbox.file_url} 
+                  alt={selectedPhotoForLightbox.name}
+                  className="max-h-[70vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
+                />
+              ) : (
+                <div className="text-center text-slate-500 py-12">
+                  <Camera size={48} className="mx-auto mb-2 text-slate-600" />
+                  <p>{language === 'pt' ? 'Imagem não disponível para pré-visualização' : 'Image preview unavailable'}</p>
+                </div>
+              )}
+            </div>
+
+            {selectedPhotoForLightbox.notes && (
+              <div className="px-6 py-3 bg-slate-950/90 border-t border-slate-800 text-xs text-slate-300">
+                <span className="font-bold text-[#2098D1]">{language === 'pt' ? 'Observação: ' : 'Notes: '}</span>
+                {selectedPhotoForLightbox.notes}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -75,12 +75,23 @@ export type CollectionStatus =
   | 'COMPLETED'
   | 'CANCELLED';
 
+export type DocumentType =
+  | 'mtr'
+  | 'invoice'
+  | 'cnpj_card'
+  | 'storage_photo'
+  | 'donation_letter'
+  | 'partnership_agreement'
+  | 'env_license'
+  | 'other';
+
 export interface AttachedDocument {
   id: string;
+  supplier_id?: string;
   name: string;
-  type: 'mtr' | 'donation_letter' | 'partnership_agreement' | 'env_license' | 'cnpj_card' | 'other';
+  type: DocumentType;
   file_url?: string;
-  file_data?: string; // base64 data for local storage download
+  file_data?: string; // base64 data for local preview / download
   uploaded_at: string;
   size?: string;
   notes?: string;

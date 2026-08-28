@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { dbService } from '@/features/shared/services/dbService';
-import { Supplier, Profile, ProspectingStatus, StorageProvisionItem } from '@/types';
+import { Supplier, Profile, ProspectingStatus, StorageProvisionItem, AttachedDocument, DocumentType } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -440,14 +440,7 @@ export default function ProspectingPage() {
     }
   };
 
-  const [attachedFiles, setAttachedFiles] = useState<{
-    id: string;
-    name: string;
-    size: string;
-    file_data: string;
-    type: 'mtr' | 'donation_letter' | 'partnership_agreement' | 'env_license' | 'cnpj_card' | 'other';
-    notes: string;
-  }[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedDocument[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -554,9 +547,10 @@ export default function ProspectingPage() {
           storage_provision_custom_type: m.storage_provision_custom_type || ''
         };
       }));
-    } else { 
-      setMaterials([newLine()]); 
+    } else {
+      setMaterials([newLine()]);
     }
+    setAttachedFiles(supplier.attached_documents || []);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -569,13 +563,25 @@ export default function ProspectingPage() {
         ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
         : (file.size / 1024).toFixed(0) + ' KB';
 
-      let inferredType: 'mtr' | 'donation_letter' | 'partnership_agreement' | 'env_license' | 'cnpj_card' | 'other' = 'other';
+      let inferredType: DocumentType = 'other';
       const lower = file.name.toLowerCase();
-      if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
-      else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
-      else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) inferredType = 'partnership_agreement';
-      else if (lower.includes('licenca') || lower.includes('licença')) inferredType = 'env_license';
-      else if (lower.includes('cnpj')) inferredType = 'cnpj_card';
+      const isImg = file.type.startsWith('image/') || lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp');
+      
+      if (isImg || lower.includes('foto') || lower.includes('bag') || lower.includes('cacamba') || lower.includes('caçamba') || lower.includes('conteiner') || lower.includes('contêiner') || lower.includes('armaz') || lower.includes('pallet') || lower.includes('tambor')) {
+        inferredType = 'storage_photo';
+      } else if (lower.includes('mtr') || lower.includes('manifesto')) {
+        inferredType = 'mtr';
+      } else if (lower.includes('nf') || lower.includes('nota') || lower.includes('fiscal') || lower.includes('invoice')) {
+        inferredType = 'invoice';
+      } else if (lower.includes('cnpj')) {
+        inferredType = 'cnpj_card';
+      } else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) {
+        inferredType = 'donation_letter';
+      } else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) {
+        inferredType = 'partnership_agreement';
+      } else if (lower.includes('licenca') || lower.includes('licença')) {
+        inferredType = 'env_license';
+      }
 
       reader.onload = () => {
         setAttachedFiles(prev => [
@@ -586,6 +592,7 @@ export default function ProspectingPage() {
             size: sizeStr,
             file_data: reader.result as string,
             type: inferredType,
+            uploaded_at: new Date().toISOString(),
             notes: ''
           }
         ]);
@@ -2268,38 +2275,51 @@ export default function ProspectingPage() {
               {attachedFiles.length > 0 ? (
                 <div className="space-y-2 pt-1">
                   {attachedFiles.map(file => (
-                    <div key={file.id} className="p-2.5 bg-white border border-[#CCEAF1] rounded-xl flex items-center justify-between gap-3 text-xs">
+                    <div key={file.id} className="p-2.5 bg-white border border-[#CCEAF1] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-7 w-7 rounded-lg bg-[#E5F5F8] text-[#2098D1] flex items-center justify-center font-bold text-xs shrink-0">
-                          <FileCheck size={14} />
-                        </div>
+                        {file.file_data && (file.type === 'storage_photo' || file.file_data.startsWith('data:image')) ? (
+                          <div className="h-10 w-10 rounded-lg overflow-hidden border border-[#CCEAF1] shrink-0 bg-slate-100 flex items-center justify-center">
+                            <img src={file.file_data} alt={file.name} className="h-full w-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="h-9 w-9 rounded-lg bg-[#E5F5F8] text-[#2098D1] flex items-center justify-center font-bold text-xs shrink-0">
+                            <FileCheck size={16} />
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <p className="font-bold text-[#0E2439] truncate max-w-[200px] sm:max-w-xs">{file.name}</p>
-                          <span className="text-[10px] text-slate-400">{file.size}</span>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                            <span>{file.size || 'Arquivo'}</span>
+                            {file.type === 'storage_photo' && (
+                              <span className="font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded">📸 Foto Armazenamento</span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 self-end sm:self-center">
                         <select
                           value={file.type}
                           onChange={e => {
                             const newType = e.target.value as any;
                             setAttachedFiles(prev => prev.map(f => f.id === file.id ? { ...f, type: newType } : f));
                           }}
-                          className="px-2 py-1 text-[11px] font-bold bg-[#F7FCFD] border border-[#CCEAF1] rounded-lg outline-none cursor-pointer"
+                          className="px-2.5 py-1 text-[11px] font-bold bg-[#F7FCFD] border border-[#CCEAF1] rounded-lg outline-none cursor-pointer text-slate-700"
                         >
-                          <option value="mtr">MTR (Manifesto)</option>
-                          <option value="donation_letter">Carta de Doação</option>
-                          <option value="partnership_agreement">Termo de Parceria</option>
-                          <option value="env_license">Licença Ambiental</option>
-                          <option value="cnpj_card">Cartão CNPJ</option>
-                          <option value="other">Outro Documento</option>
+                          <option value="storage_photo">📸 Fotos do Armazenamento (Bags / Caçambas / Local)</option>
+                          <option value="mtr">📄 MTR (Manifesto)</option>
+                          <option value="invoice">🧾 Nota Fiscal (NF)</option>
+                          <option value="cnpj_card">🏢 Cartão CNPJ</option>
+                          <option value="donation_letter">📜 Carta de Doação</option>
+                          <option value="partnership_agreement">🤝 Termo de Parceria</option>
+                          <option value="env_license">🌱 Licença Ambiental</option>
+                          <option value="other">📁 Outro Documento</option>
                         </select>
 
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(file.id)}
-                          className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors"
+                          className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                           title="Remover anexo"
                         >
                           <Trash2 size={14} />
@@ -2310,7 +2330,7 @@ export default function ProspectingPage() {
                 </div>
               ) : (
                 <div className="p-3 border border-dashed border-[#CCEAF1] rounded-xl text-center text-xs text-slate-400">
-                  Nenhum arquivo anexado ainda. Clique em "Buscar no PC" para selecionar arquivos.
+                  Nenhum arquivo anexado ainda. Clique em "Buscar no PC" para selecionar arquivos ou fotos do armazenamento.
                 </div>
               )}
             </div>

@@ -221,7 +221,11 @@ export const dbService = {
             ...col,
             items: col.items || []
           })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
-          receipts: s.receipts || []
+          receipts: s.receipts || [],
+          attached_documents: [
+            ...(s.attached_documents || []),
+            ...getLocalData<AttachedDocument & { supplier_id: string }>('documents', []).filter(d => d.supplier_id === s.id)
+          ].filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id))
         };
       });
     }
@@ -237,6 +241,7 @@ export const dbService = {
     const logistics = getLocalData<LogisticsAnalysis>('logistics', mockLogistics);
     const collections = getLocalData<Collection>('collections', mockCollections);
     const receipts = getLocalData<Receipt>('receipts', mockReceipts);
+    const storedDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
 
     return suppliers.map(s => ({
       ...s,
@@ -248,7 +253,11 @@ export const dbService = {
       tasks: tasks.filter(t => t.supplier_id === s.id),
       logistics_analyses: logistics.filter(l => l.supplier_id === s.id),
       collections: collections.filter(col => col.supplier_id === s.id),
-      receipts: receipts.filter(r => r.supplier_id === s.id)
+      receipts: receipts.filter(r => r.supplier_id === s.id),
+      attached_documents: [
+        ...(s.attached_documents || []),
+        ...storedDocs.filter(d => d.supplier_id === s.id)
+      ].filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id))
     })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
 
@@ -337,7 +346,11 @@ export const dbService = {
           items: col.items || []
         })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
         receipts: data.receipts || [],
-        status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+        attached_documents: [
+          ...(data.attached_documents || []),
+          ...getLocalData<AttachedDocument & { supplier_id: string }>('documents', []).filter(d => d.supplier_id === data.id)
+        ].filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id))
       };
     }
 
@@ -651,39 +664,71 @@ export const dbService = {
     saveLocalData('receipts', receipts);
   },
 
-  // Supplier Documents
-  async addSupplierDocument(supplierId: string, doc: Partial<AttachedDocument>): Promise<void> {
-    await this.addSupplierDocuments(supplierId, [doc]);
+  // Supplier Documents & Storage Photos
+  async getSupplierDocuments(supplierId: string): Promise<AttachedDocument[]> {
+    const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
+    const localMatches = allDocs.filter(d => d.supplier_id === supplierId);
+    
+    // Also check supplier in local memory
+    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+    const sup = suppliers.find(s => s.id === supplierId);
+    const supDocs = sup?.attached_documents || [];
+    
+    const combined = [...supDocs, ...localMatches];
+    return combined.filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id));
   },
 
-  async addSupplierDocuments(supplierId: string, docs: Partial<AttachedDocument>[]): Promise<void> {
-    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
-    const index = suppliers.findIndex(s => s.id === supplierId);
-    if (index === -1) return;
+  async addSupplierDocument(supplierId: string, doc: Partial<AttachedDocument>): Promise<AttachedDocument> {
+    const docs = await this.addSupplierDocuments(supplierId, [doc]);
+    return docs[0];
+  },
 
-    const newDocs: AttachedDocument[] = docs.map(doc => ({
+  async addSupplierDocuments(supplierId: string, docs: Partial<AttachedDocument>[]): Promise<AttachedDocument[]> {
+    if (!docs || docs.length === 0) return [];
+    const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
+    const now = new Date().toISOString();
+
+    const newDocs: (AttachedDocument & { supplier_id: string })[] = docs.map(doc => ({
       id: doc.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)),
+      supplier_id: supplierId,
       name: doc.name || 'Documento',
       type: doc.type || 'other',
       file_url: doc.file_url || '',
       file_data: doc.file_data || '',
-      uploaded_at: doc.uploaded_at || new Date().toISOString(),
+      uploaded_at: doc.uploaded_at || now,
       size: doc.size || 'Arquivo',
       notes: doc.notes || ''
     }));
 
-    const currentDocs = suppliers[index].attached_documents || [];
-    suppliers[index].attached_documents = [...currentDocs, ...newDocs];
-    saveLocalData('suppliers', suppliers);
+    // Update global documents collection
+    const existingOtherDocs = allDocs.filter(d => d.supplier_id !== supplierId || !newDocs.some(nd => nd.id === d.id));
+    const updatedDocs = [...existingOtherDocs, ...newDocs];
+    saveLocalData('documents', updatedDocs);
+
+    // Update supplier directly in local database
+    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+    const sIndex = suppliers.findIndex(s => s.id === supplierId);
+    if (sIndex !== -1) {
+      const currentSupDocs = suppliers[sIndex].attached_documents || [];
+      const updatedSupDocs = [...currentSupDocs.filter(cd => !newDocs.some(nd => nd.id === cd.id)), ...newDocs];
+      suppliers[sIndex].attached_documents = updatedSupDocs;
+      saveLocalData('suppliers', suppliers);
+    }
+
+    return newDocs;
   },
 
   async deleteSupplierDocument(supplierId: string, docId: string): Promise<void> {
-    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
-    const index = suppliers.findIndex(s => s.id === supplierId);
-    if (index === -1) return;
+    const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
+    const filtered = allDocs.filter(d => !(d.supplier_id === supplierId && d.id === docId));
+    saveLocalData('documents', filtered);
 
-    suppliers[index].attached_documents = (suppliers[index].attached_documents || []).filter(d => d.id !== docId);
-    saveLocalData('suppliers', suppliers);
+    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+    const sIndex = suppliers.findIndex(s => s.id === supplierId);
+    if (sIndex !== -1) {
+      suppliers[sIndex].attached_documents = (suppliers[sIndex].attached_documents || []).filter(d => d.id !== docId);
+      saveLocalData('suppliers', suppliers);
+    }
   },
   async addSupplierContact(contactData: Partial<SupplierContact>): Promise<SupplierContact> {
     const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
