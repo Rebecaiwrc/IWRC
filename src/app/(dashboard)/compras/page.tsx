@@ -232,7 +232,9 @@ export default function ComprasPage() {
             onChange={(e) => setResponsibleFilter(e.target.value)}
             options={[
               { value: '', label: language === 'pt' ? 'Todos os responsáveis' : 'All representatives' },
-              ...profiles.map(p => ({ value: p.id, label: formatTitleCase(p.name, { isPerson: true }) }))
+              ...profiles
+                .filter(p => p.role !== 'SUPER_ADMIN' && !p.email?.toLowerCase().includes('adm@123.com') && !p.name?.toLowerCase().includes('admin master'))
+                .map(p => ({ value: p.id, label: formatTitleCase(p.name, { isPerson: true }) }))
             ]}
           />
         </div>

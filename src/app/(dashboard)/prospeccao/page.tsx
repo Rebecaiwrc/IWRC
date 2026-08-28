@@ -1304,9 +1304,11 @@ export default function ProspectingPage() {
               className="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white cursor-pointer"
             >
               <option value="">{language === 'pt' ? 'Todos os responsáveis' : 'All responsibles'}</option>
-              {profiles.map(p => (
-                <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
-              ))}
+              {profiles
+                .filter(p => p.role !== 'SUPER_ADMIN' && !p.email?.toLowerCase().includes('adm@123.com') && !p.name?.toLowerCase().includes('admin master'))
+                .map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                ))}
             </select>
           </div>
 
