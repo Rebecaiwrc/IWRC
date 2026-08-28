@@ -19,7 +19,8 @@ import {
   Pin,
   PinOff,
   ShieldCheck,
-  Settings
+  Settings,
+  ShoppingBag
 } from 'lucide-react';
 import { dbService } from '@/features/shared/services/dbService';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
@@ -35,6 +36,7 @@ export const Sidebar: React.FC = () => {
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [logisticsQueueCount, setLogisticsQueueCount] = useState(0);
   const [logisticsOverdueCount, setLogisticsOverdueCount] = useState(0);
+  const [comprasQueueCount, setComprasQueueCount] = useState(0);
   const [geradoresCount, setGeradoresCount] = useState(0);
 
   // Pin & Auto-hide (Hover) states
@@ -68,10 +70,17 @@ export const Sidebar: React.FC = () => {
           dbService.getSuppliers()
         ]);
         setAllProfiles(profiles);
-        const inLog = suppliers.filter(s => s.current_stage === 'LOGISTICS');
+        const inLog = suppliers.filter(s => s.current_stage === 'LOGISTICS' && s.logistics_analyses?.[0]?.feasibility !== 'NEED_INFO');
         setLogisticsQueueCount(inLog.length);
         setLogisticsOverdueCount(inLog.filter(s => getLogisticsSlaInfo(s, 5)?.isOverdue).length);
-        setGeradoresCount(suppliers.filter(s => ['DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage)).length);
+        
+        const inCompras = suppliers.filter(s => s.logistics_analyses?.[0]?.feasibility === 'NEED_INFO');
+        setComprasQueueCount(inCompras.length);
+
+        setGeradoresCount(suppliers.filter(s => 
+          ['DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage) &&
+          s.logistics_analyses?.[0]?.feasibility === 'FEASIBLE'
+        ).length);
       } catch (err) {
         console.error(err);
       }
@@ -113,6 +122,7 @@ export const Sidebar: React.FC = () => {
     ? [
         ...(isSuperAdmin ? [{ name: t('nav.masterPanel', 'Painel Master'), href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
         { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
+        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: comprasQueueCount },
         { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
         { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
@@ -123,8 +133,9 @@ export const Sidebar: React.FC = () => {
     : [
         ...(isSuperAdmin ? [{ name: t('nav.masterPanel', 'Painel Master'), href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
         { name: t('nav.prospecting', 'Prospecção'), href: '/prospeccao', icon: GitBranch, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER'] },
-        { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
         { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], badge: logisticsQueueCount },
+        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: comprasQueueCount },
+        { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], badge: geradoresCount },
         { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
         { name: t('nav.dispatches', 'Saídas do Hub'), href: '/saidas', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS', 'BUYER'] },

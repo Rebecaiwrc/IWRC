@@ -221,15 +221,13 @@ export default function SuppliersPage() {
 
   const filteredSuppliers = suppliers.filter(s => {
     const activeLogistics = s.logistics_analyses?.[0];
-    const isLogisticsEligible = Boolean(
-      activeLogistics && 
-      activeLogistics.feasibility && 
-      (activeLogistics.feasibility === 'FEASIBLE' || activeLogistics.feasibility === 'NEED_INFO')
-    );
+    const isLogisticsFeasible = activeLogistics?.feasibility === 'FEASIBLE';
     const isGeradorConfirmed = ['DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage);
     
-    // Only show if logistics has responded FEASIBLE / NEED_INFO OR if it's already in confirmed stages
-    if (!isLogisticsEligible && !isGeradorConfirmed) return false;
+    // Only show if logistics has approved (FEASIBLE) or if it's already in confirmed stages
+    // Specifically exclude any supplier that is still waiting for info (NEED_INFO)
+    if (activeLogistics?.feasibility === 'NEED_INFO') return false;
+    if (!isLogisticsFeasible && !isGeradorConfirmed) return false;
 
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || (
@@ -242,7 +240,7 @@ export default function SuppliersPage() {
     );
 
     const matchesStage = !stageFilter ? true : 
-      ['DOCUMENTATION', 'COLLECTION', 'OPERATION', 'LOGISTICS'].includes(stageFilter)
+      ['DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(stageFilter)
         ? s.current_stage === stageFilter
         : s.logistics_analyses?.[0]?.feasibility === stageFilter;
 
@@ -250,8 +248,6 @@ export default function SuppliersPage() {
 
     return matchesSearch && matchesStage && matchesResponsible;
   });
-
-  const needInfoSuppliers = suppliers.filter(s => s.logistics_analyses?.[0]?.feasibility === 'NEED_INFO');
 
   const getNextCollectionDate = (baseDateStr: string, frequency?: string | null): Date => {
     const date = new Date(baseDateStr + 'T00:00:00');
@@ -283,13 +279,11 @@ export default function SuppliersPage() {
   };
 
   const stageOptions = [
-    { value: '', label: language === 'pt' ? 'Todas as etapas e pareceres' : 'All stages and opinions' },
+    { value: '', label: language === 'pt' ? 'Todas as etapas homologadas' : 'All approved stages' },
     { value: 'OPERATION', label: language === 'pt' ? 'Ativo / Operacional' : 'Active / Operational' },
     { value: 'COLLECTION', label: language === 'pt' ? 'Em Preparação de Coleta' : 'Preparing Collection' },
     { value: 'DOCUMENTATION', label: language === 'pt' ? 'Documentação Pendente' : 'Pending Documentation' },
-    { value: 'FEASIBLE', label: language === 'pt' ? 'Logística: Viável ✓' : 'Logistics: Feasible ✓' },
-    { value: 'NEED_INFO', label: language === 'pt' ? 'Logística: Precisa de Info ⚠️' : 'Logistics: Needs Info ⚠️' },
-    { value: 'INFEASIBLE', label: language === 'pt' ? 'Logística: Inviável ❌' : 'Logistics: Infeasible ❌' }
+    { value: 'FEASIBLE', label: language === 'pt' ? 'Logística: Viável ✓' : 'Logistics: Feasible ✓' }
   ];
 
   if (loading) {
@@ -316,7 +310,7 @@ export default function SuppliersPage() {
             </span>
           </div>
           <p className="text-slate-500 text-sm mt-1">
-            {t('suppliers.subtitle', 'Empresas e condomínios com retorno da Logística ou homologados para rotinas de coleta e documentação.')}
+            {t('suppliers.subtitle', 'Empresas e condomínios com aprovação da Logística e homologados para rotinas de coleta e operação.')}
           </p>
         </div>
         
@@ -327,31 +321,6 @@ export default function SuppliersPage() {
           </Button>
         )}
       </div>
-
-      {/* Compras Notification Banner for NEED_INFO */}
-      {needInfoSuppliers.length > 0 && (currentUser?.role === 'ADMIN' || currentUser?.role === 'BUYER') && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 border-2 border-amber-300 p-4 rounded-xl text-xs text-amber-900 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-200/80 rounded-lg text-amber-800 shrink-0">
-              <AlertTriangle size={20} />
-            </div>
-            <div>
-              <span className="font-bold text-sm text-amber-950 block">
-                🔔 {language === 'pt' ? `Atenção Compras: ${needInfoSuppliers.length} gerador(es) aguardando informações adicionais!` : `Notice Commercial: ${needInfoSuppliers.length} generator(s) awaiting additional information!`}
-              </span>
-              <span className="text-amber-800 text-xs mt-0.5 block">
-                {language === 'pt' ? 'A Logística respondeu a análise solicitando esclarecimentos adicionais de acesso ou documentação.' : 'Logistics requested additional access or documentation details.'}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => setStageFilter('NEED_INFO')}
-            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs transition-colors shrink-0 cursor-pointer shadow-xs"
-          >
-            {language === 'pt' ? `Filtrar Pendências de Info (${needInfoSuppliers.length})` : `Filter Pending Info (${needInfoSuppliers.length})`}
-          </button>
-        </div>
-      )}
 
       {/* Filters Card */}
       <Card className="flex flex-col md:flex-row gap-4 items-end">

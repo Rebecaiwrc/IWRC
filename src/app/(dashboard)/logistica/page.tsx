@@ -291,10 +291,13 @@ export default function LogisticsPage() {
       const isLogisticsStage = s.current_stage === 'LOGISTICS' || s.prospecting_status === 'WAITING_LOGISTICS';
       if (!isLogisticsStage) return false;
 
+      // If feasibility is NEED_INFO, it is currently waiting in the Compras tab
+      if (act?.feasibility === 'NEED_INFO') return false;
+
       const isCompleted = Boolean(
         act && 
         act.feasibility && 
-        (act.feasibility === 'FEASIBLE' || act.feasibility === 'NEED_INFO' || act.feasibility === 'INFEASIBLE') &&
+        (act.feasibility === 'FEASIBLE' || act.feasibility === 'INFEASIBLE') &&
         s.current_stage !== 'LOGISTICS' && s.prospecting_status !== 'WAITING_LOGISTICS'
       );
       return !isCompleted;
@@ -994,6 +997,11 @@ export default function LogisticsPage() {
                             <div className="flex flex-col">
                               <span className="font-bold text-slate-900 leading-snug">{supplier.name}</span>
                               <span className="text-xs text-slate-400">{translateSupplierType(supplier.supplier_type, language)} • {translateLeadSource(supplier.lead_source, language)}</span>
+                              {(supplier.backlog_reason?.toLowerCase().includes('respondido por compras') || supplier.logistics_analyses?.[0]?.notes?.includes('Resposta de Compras')) && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300 w-fit mt-1 shadow-2xs">
+                                  🔄 {language === 'pt' ? 'Respondido por Compras' : 'Answered by Purchasing'}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-slate-500">
@@ -1561,6 +1569,21 @@ export default function LogisticsPage() {
                       <FileCheck size={12} /> {d.name}
                     </span>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Compras Reply Box if lead returned from Compras */}
+            {(selectedSupplier.backlog_reason?.toLowerCase().includes('respondido por compras') || selectedSupplier.logistics_analyses?.[0]?.notes?.includes('Resposta de Compras')) && (
+              <div className="p-3.5 bg-amber-50/90 border-2 border-amber-300 rounded-xl space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-amber-950 font-bold text-xs">
+                  <MessageSquare size={15} className="text-amber-700" />
+                  <span>{language === 'pt' ? '💬 Retorno e Esclarecimentos Enviados por Compras:' : '💬 Response from Purchasing Team:'}</span>
+                </div>
+                <div className="bg-white/95 p-3 rounded-lg border border-amber-200 text-xs text-slate-800 whitespace-pre-wrap font-medium leading-relaxed">
+                  {selectedSupplier.logistics_analyses?.[0]?.notes?.includes('[Resposta de Compras por')
+                    ? selectedSupplier.logistics_analyses?.[0]?.notes?.split('[Resposta de Compras por').pop()?.split(']:').slice(1).join(']:').trim()
+                    : selectedSupplier.backlog_reason}
                 </div>
               </div>
             )}

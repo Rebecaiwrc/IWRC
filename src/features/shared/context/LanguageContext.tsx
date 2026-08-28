@@ -15,8 +15,9 @@ const translations: Record<Language, Record<string, string>> = {
   pt: {
     // Nav Items
     'nav.prospecting': 'Prospecção',
-    'nav.suppliers': 'Geradores',
     'nav.logistics': 'Logística',
+    'nav.purchasing': 'Compras',
+    'nav.suppliers': 'Geradores',
     'nav.collections': 'Coletas',
     'nav.receipts': 'Recebimentos',
     'nav.dispatches': 'Saídas do Hub',
@@ -194,8 +195,9 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // Nav Items
     'nav.prospecting': 'Prospecting',
-    'nav.suppliers': 'Waste Generators',
     'nav.logistics': 'Logistics',
+    'nav.purchasing': 'Purchasing',
+    'nav.suppliers': 'Waste Generators',
     'nav.collections': 'Collections',
     'nav.receipts': 'Weighbridge / Receipts',
     'nav.dispatches': 'Hub Dispatches',
