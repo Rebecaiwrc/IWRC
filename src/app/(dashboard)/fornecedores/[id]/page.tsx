@@ -1076,6 +1076,8 @@ export default function SupplierDetailPage() {
       let newStage = supplier.current_stage;
       let newStatus = supplier.current_status;
       let backlogReason = null;
+      let newDeadline: string | null = null;
+      let isExtension = false;
 
       if (logisticsForm.feasibility === 'FEASIBLE') {
         if (finalPendingDocs.length > 0) {
@@ -1094,10 +1096,6 @@ export default function SupplierDetailPage() {
           newStatus = 'APPROVED';
           backlogReason = null;
         }
-      } else if (logisticsForm.feasibility === 'INFEASIBLE') {
-        newStage = 'LOGISTICS';
-        newStatus = 'REJECTED';
-        backlogReason = 'Inviável para coleta: ' + (logisticsForm.notes || '-');
       } else if (logisticsForm.feasibility === 'NEED_INFO') {
         newStage = 'LOGISTICS';
         newStatus = 'PENDING';
@@ -1107,13 +1105,38 @@ export default function SupplierDetailPage() {
           description: `Logística precisa de info: ${backlogReason}`,
           due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         });
+      } else if (logisticsForm.feasibility === 'PENDING' || logisticsForm.feasibility === 'IN_PROGRESS') {
+        newStage = 'LOGISTICS';
+        newStatus = 'IN_PROGRESS';
+        isExtension = true;
+
+        // Prorroga automaticamente o prazo por mais 5 dias a partir do prazo atual
+        const baseTime = supplier.logistics_deadline
+          ? new Date(supplier.logistics_deadline).getTime()
+          : (supplier.sent_to_logistics_at
+              ? new Date(supplier.sent_to_logistics_at).getTime() + 5 * 24 * 60 * 60 * 1000
+              : Date.now());
+
+        const extendedTime = Math.max(baseTime, Date.now()) + 5 * 24 * 60 * 60 * 1000;
+        const extendedDate = new Date(extendedTime);
+        newDeadline = extendedDate.toISOString();
+        const formattedDate = extendedDate.toLocaleDateString('pt-BR');
+
+        backlogReason = `Em análise pela Logística (prazo prorrogado até ${formattedDate})`;
       }
 
-      await dbService.updateSupplier(supplier.id, {
+      const updatePayload: Partial<Supplier> = {
         current_stage: newStage,
         current_status: newStatus,
         backlog_reason: backlogReason
-      });
+      };
+      if (newDeadline) {
+        updatePayload.logistics_deadline = newDeadline;
+      }
+
+      await dbService.updateSupplier(supplier.id, updatePayload);
+
+      const formattedDeadline = newDeadline ? new Date(newDeadline).toLocaleDateString('pt-BR') : '';
 
       await dbService.addSupplierStatusHistory({
         supplier_id: supplier.id,
@@ -1122,14 +1145,18 @@ export default function SupplierDetailPage() {
         old_status: supplier.current_status,
         new_status: newStatus,
         user_id: currentUser.id,
-        notes: `Parecer logístico registrado: ${translateFeasibility(logisticsForm.feasibility as any)}.${finalPendingDocs.length > 0 ? ' Pendências: ' + finalPendingDocs.join(', ') : ''}`
+        notes: isExtension
+          ? `Prazo de análise prorrogado por mais 5 dias (novo prazo: ${formattedDeadline}). Decisão: Em Análise.${logisticsForm.notes ? ' Notas: ' + logisticsForm.notes : ''}`
+          : `Parecer logístico registrado: ${translateFeasibility(logisticsForm.feasibility as any)}.${finalPendingDocs.length > 0 ? ' Pendências: ' + finalPendingDocs.join(', ') : ''}`
       });
 
       await dbService.addSupplierInteraction({
         supplier_id: supplier.id,
         user_id: currentUser.id,
         type: 'internal_obs',
-        description: `Logística respondeu análise. Decisão: ${translateFeasibility(logisticsForm.feasibility as any)}. Notas: ${logisticsForm.notes || '-'}`
+        description: isExtension
+          ? `Logística manteve o gerador em análise. Prazo prorrogado em +5 dias (novo prazo: ${formattedDeadline}). ${logisticsForm.notes ? 'Observações: ' + logisticsForm.notes : ''}`
+          : `Logística respondeu análise. Decisão: ${translateFeasibility(logisticsForm.feasibility as any)}. Notas: ${logisticsForm.notes || '-'}`
       });
 
       setIsLogisticsModalOpen(false);

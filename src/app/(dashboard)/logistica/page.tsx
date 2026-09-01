@@ -93,7 +93,6 @@ export const frequencyOptions = [
 export const feasibilityOptions = [
   { value: 'FEASIBLE', label: '✓ Viável para Coleta — Aprovar' },
   { value: 'NEED_INFO', label: '⚠️ Necessita Informação Adicional do Comercial' },
-  { value: 'INFEASIBLE', label: '❌ Inviável — Reprovar' },
   { value: 'PENDING', label: '⏳ Em Análise' }
 ];
 
@@ -582,10 +581,11 @@ export default function LogisticsPage() {
         pending_docs: finalPendingDocs
       } as any);
 
-      // Stage transition according to decision
       let newStage = selectedSupplier.current_stage;
       let newStatus = selectedSupplier.current_status;
       let backlogReason = null;
+      let newDeadline: string | null = null;
+      let isExtension = false;
 
       if (analysisForm.feasibility === 'FEASIBLE') {
         if (finalPendingDocs.length > 0) {
@@ -604,10 +604,6 @@ export default function LogisticsPage() {
           newStatus = 'APPROVED';
           backlogReason = null;
         }
-      } else if (analysisForm.feasibility === 'INFEASIBLE') {
-        newStage = 'LOGISTICS';
-        newStatus = 'REJECTED';
-        backlogReason = 'Inviável para coleta: ' + (analysisForm.notes || '-');
       } else if (analysisForm.feasibility === 'NEED_INFO') {
         newStage = 'LOGISTICS';
         newStatus = 'PENDING';
@@ -617,16 +613,38 @@ export default function LogisticsPage() {
           description: `Logística precisa de info: ${backlogReason}`,
           due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         });
-      } else if (analysisForm.feasibility === 'PENDING') {
-        newStatus = 'PENDING';
-        backlogReason = 'Análise logística em andamento';
+      } else if (analysisForm.feasibility === 'PENDING' || analysisForm.feasibility === 'IN_PROGRESS') {
+        newStage = 'LOGISTICS';
+        newStatus = 'IN_PROGRESS';
+        isExtension = true;
+
+        // Prorroga automaticamente o prazo por mais 5 dias a partir do prazo atual
+        const baseTime = selectedSupplier.logistics_deadline
+          ? new Date(selectedSupplier.logistics_deadline).getTime()
+          : (selectedSupplier.sent_to_logistics_at
+              ? new Date(selectedSupplier.sent_to_logistics_at).getTime() + 5 * 24 * 60 * 60 * 1000
+              : Date.now());
+
+        const extendedTime = Math.max(baseTime, Date.now()) + 5 * 24 * 60 * 60 * 1000;
+        const extendedDate = new Date(extendedTime);
+        newDeadline = extendedDate.toISOString();
+        const formattedDate = extendedDate.toLocaleDateString('pt-BR');
+
+        backlogReason = `Em análise pela Logística (prazo prorrogado até ${formattedDate})`;
       }
 
-      await dbService.updateSupplier(selectedSupplier.id, {
+      const updatePayload: Partial<Supplier> = {
         current_stage: newStage, 
         current_status: newStatus, 
         backlog_reason: backlogReason
-      });
+      };
+      if (newDeadline) {
+        updatePayload.logistics_deadline = newDeadline;
+      }
+
+      await dbService.updateSupplier(selectedSupplier.id, updatePayload);
+
+      const formattedDeadline = newDeadline ? new Date(newDeadline).toLocaleDateString('pt-BR') : '';
 
       await dbService.addSupplierStatusHistory({
         supplier_id: selectedSupplier.id,
@@ -635,14 +653,18 @@ export default function LogisticsPage() {
         old_status: selectedSupplier.current_status, 
         new_status: newStatus,
         user_id: currentUser.id,
-        notes: `Parecer logístico: ${translateFeasibility(analysisForm.feasibility as any)}.${finalPendingDocs.length > 0 ? ' Pendências: ' + finalPendingDocs.join(', ') : ''}`
+        notes: isExtension
+          ? `Prazo de análise prorrogado por mais 5 dias (novo prazo: ${formattedDeadline}). Decisão: Em Análise.${analysisForm.notes ? ' Notas: ' + analysisForm.notes : ''}`
+          : `Parecer logístico: ${translateFeasibility(analysisForm.feasibility as any)}.${finalPendingDocs.length > 0 ? ' Pendências: ' + finalPendingDocs.join(', ') : ''}`
       });
 
       await dbService.addSupplierInteraction({
         supplier_id: selectedSupplier.id, 
         user_id: currentUser.id, 
         type: 'internal_obs',
-        description: `Logística concluiu análise. Decisão: ${translateFeasibility(analysisForm.feasibility as any)}. Notas: ${analysisForm.notes || '-'}`
+        description: isExtension
+          ? `Logística manteve o gerador em análise. Prazo prorrogado em +5 dias (novo prazo: ${formattedDeadline}). ${analysisForm.notes ? 'Observações: ' + analysisForm.notes : ''}`
+          : `Logística concluiu análise. Decisão: ${translateFeasibility(analysisForm.feasibility as any)}. Notas: ${analysisForm.notes || '-'}`
       });
       setIsModalOpen(false);
       fetchData();
