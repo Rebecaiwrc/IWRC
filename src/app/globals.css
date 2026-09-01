@@ -23,43 +23,56 @@ body {
 
 /* Custom smooth scrollbar in iWrc cyan */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #E2F4F7;
+  background: #EAF7FA;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #A6DEEB;
+  background: #9BD7E6;
   border-radius: 9999px;
+  border: 1.5px solid #EAF7FA;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #2098D1;
 }
 
-/* Modal specific vertical scrollbar - slightly thicker, highly visible and easy to drag */
+/* Modal specific vertical scrollbar - comfortable thickness, highly visible and easy to grab */
+.custom-modal-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #6BBFD4 #EEF8FA;
+}
+
 .custom-modal-scrollbar::-webkit-scrollbar {
-  width: 9px;
+  width: 11px;
+  height: 11px;
 }
 
 .custom-modal-scrollbar::-webkit-scrollbar-track {
-  background: #F0FAFC;
-  border-radius: 8px;
-  margin: 6px 0;
+  background: #EEF8FA;
+  border-radius: 9999px;
+  margin: 6px 2px;
 }
 
 .custom-modal-scrollbar::-webkit-scrollbar-thumb {
-  background: #96D5E5;
-  border-radius: 8px;
-  border: 2px solid #F0FAFC;
+  background: #6BBFD4;
+  border-radius: 9999px;
+  border: 2px solid #EEF8FA;
+  min-height: 44px;
 }
 
 .custom-modal-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #2098D1;
+  border-color: #E2F4F7;
+}
+
+.custom-modal-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #147BAA;
 }
 
 @keyframes fadeIn {
