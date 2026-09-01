@@ -23,7 +23,8 @@ import {
   ShieldCheck, 
   UserCheck,
   ChevronDown,
-  Check
+  Check,
+  CheckCircle2
 } from 'lucide-react';
 
 const MATERIAL_OPTIONS = [
@@ -274,6 +275,7 @@ export default function ReceiptsPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Form state
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
@@ -489,61 +491,93 @@ export default function ReceiptsPage() {
     }
 
     setIsSubmitting(true);
+
+    const targetSupplierId = selectedSupplierId;
+    const targetColId = selectedCollectionId;
+    const currentReceivedDate = receivedDate;
+    const currentNotes = notes;
+    const targetSupplierObj = visibleSuppliers.find(s => s.id === targetSupplierId);
+
+    const itemsToSave = weighItems.map(row => {
+      const finalName = (row.material_name === 'Outro' && row.custom_material_name?.trim())
+        ? row.custom_material_name.trim()
+        : row.material_name;
+      
+      const finalUnit = (row.unit === 'Outros' && row.custom_unit?.trim())
+        ? row.custom_unit.trim()
+        : (row.unit || 'fardos');
+
+      return {
+        material_name: finalName || 'Material Diverso',
+        quantity: Number(row.quantity) || 0,
+        unit: finalUnit,
+        weight_kg: Number(row.weight_kg),
+        notes: row.notes || null
+      };
+    });
+
     try {
-      const itemsToSave = weighItems.map(row => {
-        const finalName = (row.material_name === 'Outro' && row.custom_material_name?.trim())
-          ? row.custom_material_name.trim()
-          : row.material_name;
-        
-        const finalUnit = (row.unit === 'Outros' && row.custom_unit?.trim())
-          ? row.custom_unit.trim()
-          : (row.unit || 'fardos');
-
-        return {
-          material_name: finalName || 'Material Diverso',
-          quantity: Number(row.quantity) || 0,
-          unit: finalUnit,
-          weight_kg: Number(row.weight_kg),
-          notes: row.notes || null
-        };
-      });
-
-      // 1. Save weighing receipt
-      await dbService.createReceipt(
+      // 1. Save weighing receipt in DB
+      const createdReceipt = await dbService.createReceipt(
         {
-          supplier_id: selectedSupplierId,
-          collection_id: selectedCollectionId || null,
-          received_date: receivedDate,
-          notes: notes || null
+          supplier_id: targetSupplierId,
+          collection_id: targetColId || null,
+          received_date: currentReceivedDate,
+          notes: currentNotes || null
         },
         itemsToSave
       );
 
-      // 2. Add interaction log
-      let list = '';
-      itemsToSave.forEach(i => {
-        list += `${i.material_name} (${i.weight_kg}kg - ${i.unit}), `;
-      });
-      await dbService.addSupplierInteraction({
-        supplier_id: selectedSupplierId,
-        user_id: currentUser?.id || 'd3b07384-d113-4e4e-9b2f-123456789013',
-        type: 'internal_obs',
-        description: `Balança: Carga recebida e pesada. Itens: ${list.slice(0, -2)}. Notas: ${notes || '-'}`
-      });
+      // 2. Immediately update local state without delay
+      const fullReceipt: Receipt = {
+        ...createdReceipt,
+        supplier: targetSupplierObj,
+        items: itemsToSave.map((it, idx) => ({
+          id: `item-${Date.now()}-${idx}`,
+          receipt_id: createdReceipt.id,
+          material_name: it.material_name,
+          quantity: it.quantity,
+          unit: it.unit,
+          weight_kg: it.weight_kg,
+          notes: it.notes
+        }))
+      };
 
-      // Clear search and form
+      setReceipts(prev => [fullReceipt, ...prev.filter(r => r.id !== fullReceipt.id)]);
+
+      if (targetColId) {
+        setCollections(prev => prev.map(c => c.id === targetColId ? { ...c, status: 'COMPLETED' } : c));
+      }
+
+      // 3. Reset form immediately
       setSelectedSupplierId('');
       setSelectedCollectionId('');
       setNotes('');
       setWeighItems([]);
-      
-      // Clean query parameter from URL
+
+      // 4. Show non-blocking toast
+      setToastMessage(language === 'pt' ? 'Pesagem registrada com sucesso.' : 'Weighing recorded successfully.');
+      setTimeout(() => {
+        setToastMessage(null);
+      }, 4000);
+
+      // 5. Clean query param from URL if redirected from collections
       if (targetCollectionId) {
         router.replace('/recebimentos');
       }
 
-      await fetchData(); // reload lists
-      alert(language === 'pt' ? 'Pesagem e recebimento registrados com sucesso!' : 'Weighing and receipt registered successfully!');
+      // 6. Interaction log in background
+      let list = '';
+      itemsToSave.forEach(i => {
+        list += `${i.material_name} (${i.weight_kg}kg - ${i.unit}), `;
+      });
+      dbService.addSupplierInteraction({
+        supplier_id: targetSupplierId,
+        user_id: currentUser?.id || 'd3b07384-d113-4e4e-9b2f-123456789013',
+        type: 'internal_obs',
+        description: `Balança: Carga recebida e pesada. Itens: ${list.slice(0, -2)}. Notas: ${currentNotes || '-'}`
+      }).catch(console.error);
+
     } catch (err: any) {
       console.error(err);
       alert(`Falha ao salvar recebimento: ${err.message || err.details || 'Erro desconhecido.'}`);
@@ -581,8 +615,16 @@ export default function ReceiptsPage() {
   );
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans relative">
       
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 bg-emerald-600 text-white font-bold text-xs rounded-2xl shadow-xl shadow-emerald-600/30 animate-in fade-in slide-in-from-top-2 duration-300">
+          <CheckCircle2 size={18} className="shrink-0 text-white" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
