@@ -911,152 +911,153 @@ export default function ReceiptsPage() {
 
         {/* Right Column: Historical logs of recent weighings */}
         <div>
-          <Card className={`flex flex-col transition-all border border-[#CCEAF1] dark:border-slate-800 ${isHistoryOpen ? 'h-full' : ''}`}>
-            {/* Header with collapse toggle and counters */}
-            <div className={`flex items-center justify-between ${isHistoryOpen ? 'border-b border-slate-100 dark:border-slate-800 pb-3 mb-3' : ''}`}>
+          <Card className="h-full flex flex-col border border-[#CCEAF1] dark:border-slate-800">
+            {/* Header: Title and counter (Always visible) */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
               <div className="flex items-center gap-2">
                 <ClipboardCheck size={16} className="text-[#2098D1]" />
                 <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">
-                  {language === 'pt' ? 'Últimas Pesagens' : 'Recent Weighings'}
+                  {language === 'pt' ? 'Últimas Pesagens (Balança)' : 'Recent Weighings (Hub Scale)'}
                 </h3>
-                <span className="text-[10px] font-bold text-slate-600 bg-[#EAF7FA] px-2 py-0.5 rounded-full border border-[#CCEAF1]">
-                  {filteredReceipts.length}
-                </span>
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 bg-[#EAF7FA] px-2.5 py-0.5 rounded-full border border-[#CCEAF1]">
+                {filteredReceipts.length} {filteredReceipts.length === 1 ? (language === 'pt' ? 'pesagem' : 'weighing') : (language === 'pt' ? 'pesagens' : 'weighings')}
+              </span>
+            </div>
+
+            {/* Filtrar Histórico Collapsible Sub-Block */}
+            <div className="mb-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden transition-all">
+              {/* Filter Header with toggle arrow */}
+              <div className="flex items-center justify-between p-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsHistoryOpen(prev => !prev)}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:text-[#2098D1] transition-colors cursor-pointer text-left"
+                >
+                  <Filter size={12} className="text-[#2098D1]" />
+                  <span>{language === 'pt' ? 'Filtrar Histórico' : 'Filter History'}</span>
+                  {isHistoryOpen ? (
+                    <ChevronUp size={13} className="text-slate-400 ml-0.5" />
+                  ) : (
+                    <ChevronDown size={13} className="text-slate-400 ml-0.5" />
+                  )}
+                  {hasActiveHistoryFilters && (
+                    <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-200 ml-1">
+                      ● {language === 'pt' ? 'Ativo' : 'Active'}
+                    </span>
+                  )}
+                </button>
+
                 {hasActiveHistoryFilters && (
-                  <span className="w-2 h-2 rounded-full bg-amber-500" title="Filtros aplicados" />
+                  <button
+                    type="button"
+                    onClick={handleClearHistoryFilters}
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                  >
+                    <RotateCcw size={10} />
+                    {language === 'pt' ? 'Limpar' : 'Clear'}
+                  </button>
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsHistoryOpen(prev => !prev)}
-                className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-[#2098D1] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
-                title={isHistoryOpen ? (language === 'pt' ? 'Recolher histórico' : 'Collapse history') : (language === 'pt' ? 'Expandir histórico' : 'Expand history')}
-              >
-                {isHistoryOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                <span className="text-[11px]">{isHistoryOpen ? (language === 'pt' ? 'Ocultar' : 'Hide') : (language === 'pt' ? 'Ver' : 'Show')}</span>
-              </button>
-            </div>
-
-            {/* Expanded Body: Filters + Items */}
-            {isHistoryOpen && (
-              <div className="space-y-3 flex-1 flex flex-col animate-fadeIn">
-                {/* Filters Row */}
-                <div className="space-y-2 p-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                    <span className="flex items-center gap-1">
-                      <Filter size={12} className="text-[#2098D1]" />
-                      {language === 'pt' ? 'Filtrar Histórico' : 'Filter History'}
-                    </span>
-                    {hasActiveHistoryFilters && (
+              {/* Filter Inputs (Expandable) */}
+              {isHistoryOpen && (
+                <div className="px-2.5 pb-2.5 pt-0 space-y-2 border-t border-slate-200/60 dark:border-slate-800 mt-1 pt-2 animate-fadeIn">
+                  {/* Search Generator */}
+                  <div className="relative">
+                    <Search size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={language === 'pt' ? 'Buscar gerador / empresa...' : 'Search company...'}
+                      value={historySearchSupplier}
+                      onChange={e => setHistorySearchSupplier(e.target.value)}
+                      className="w-full pl-7 pr-7 py-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-[#2098D1] font-medium"
+                    />
+                    {historySearchSupplier && (
                       <button
                         type="button"
-                        onClick={handleClearHistoryFilters}
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                        onClick={() => setHistorySearchSupplier('')}
+                        className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
-                        <RotateCcw size={10} />
-                        {language === 'pt' ? 'Limpar' : 'Clear'}
+                        <X size={12} />
                       </button>
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    {/* Search Generator */}
-                    <div className="relative">
-                      <Search size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder={language === 'pt' ? 'Buscar gerador / empresa...' : 'Search company...'}
-                        value={historySearchSupplier}
-                        onChange={e => setHistorySearchSupplier(e.target.value)}
-                        className="w-full pl-7 pr-7 py-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-[#2098D1] font-medium"
-                      />
-                      {historySearchSupplier && (
-                        <button
-                          type="button"
-                          onClick={() => setHistorySearchSupplier('')}
-                          className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Filter Material */}
-                    <div>
-                      <select
-                        value={historyFilterMaterial}
-                        onChange={e => setHistoryFilterMaterial(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-[#2098D1] font-medium cursor-pointer"
-                      >
-                        <option value="ALL">{language === 'pt' ? 'Todos os materiais' : 'All materials'}</option>
-                        {historyAvailableMaterials.map(mat => (
-                          <option key={mat} value={mat}>{mat}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Filter Material */}
+                  <div>
+                    <select
+                      value={historyFilterMaterial}
+                      onChange={e => setHistoryFilterMaterial(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-[#2098D1] font-medium cursor-pointer"
+                    >
+                      <option value="ALL">{language === 'pt' ? 'Todos os materiais' : 'All materials'}</option>
+                      {historyAvailableMaterials.map(mat => (
+                        <option key={mat} value={mat}>{mat}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
+              )}
+            </div>
 
-                {/* List of Receipts */}
-                {filteredReceipts.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-xs text-center py-8">
-                    <p className="font-semibold">
-                      {hasActiveHistoryFilters
-                        ? (language === 'pt' ? 'Nenhuma pesagem encontrada com esses filtros.' : 'No weighings match the filters.')
-                        : (language === 'pt' ? 'Nenhum recebimento registrado recentemente.' : 'No receipts registered recently.')}
-                    </p>
-                    {hasActiveHistoryFilters && (
-                      <button
-                        onClick={handleClearHistoryFilters}
-                        className="mt-1 text-[#2098D1] font-bold hover:underline cursor-pointer"
-                      >
-                        {language === 'pt' ? 'Limpar filtros' : 'Clear filters'}
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex-1 space-y-3 overflow-y-auto max-h-[520px] pr-1 custom-modal-scrollbar">
-                    {filteredReceipts.map((rec) => (
-                      <div 
-                        key={rec.id} 
-                        className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2 text-xs hover:border-[#CCEAF1] transition-colors"
-                      >
-                        <div className="flex items-center justify-between font-bold">
-                          <span className="text-slate-900 dark:text-white truncate max-w-[150px]">{rec.supplier?.name || 'Fornecedor'}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-400 text-[11px]">{formatDate(rec.received_date)}</span>
-                            {!isBuyer && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteReceipt(rec.id, rec.supplier?.name)}
-                                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-colors cursor-pointer"
-                                title={language === 'pt' ? 'Apagar Pesagem' : 'Delete Receipt'}
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-1 text-slate-600 dark:text-slate-300 font-medium">
-                          {rec.items?.map((item, idx) => (
-                            <p key={idx} className="flex justify-between items-center bg-white dark:bg-slate-950 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                              <span className="truncate max-w-[140px]">{item.material_name} <span className="text-slate-400">({item.quantity} {item.unit})</span></span>
-                              <span className="font-bold text-emerald-600">{formatVolume(item.weight_kg, 'kg')}</span>
-                            </p>
-                          ))}
-                        </div>
-                        
-                        {rec.notes && (
-                          <p className="text-[10px] text-slate-400 border-t border-slate-150 dark:border-slate-800 pt-1 leading-normal italic">
-                            &quot;{rec.notes}&quot;
-                          </p>
+            {/* List of Receipts (ALWAYS VISIBLE) */}
+            {filteredReceipts.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-xs text-center py-8">
+                <p className="font-semibold">
+                  {hasActiveHistoryFilters
+                    ? (language === 'pt' ? 'Nenhuma pesagem encontrada com esses filtros.' : 'No weighings match the filters.')
+                    : (language === 'pt' ? 'Nenhum recebimento registrado recentemente.' : 'No receipts registered recently.')}
+                </p>
+                {hasActiveHistoryFilters && (
+                  <button
+                    onClick={handleClearHistoryFilters}
+                    className="mt-1 text-[#2098D1] font-bold hover:underline cursor-pointer"
+                  >
+                    {language === 'pt' ? 'Limpar filtros' : 'Clear filters'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex-1 space-y-3 overflow-y-auto max-h-[520px] pr-1 custom-modal-scrollbar">
+                {filteredReceipts.map((rec) => (
+                  <div 
+                    key={rec.id} 
+                    className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2 text-xs hover:border-[#CCEAF1] transition-colors"
+                  >
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="text-slate-900 dark:text-white truncate max-w-[150px]">{rec.supplier?.name || 'Fornecedor'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 text-[11px]">{formatDate(rec.received_date)}</span>
+                        {!isBuyer && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReceipt(rec.id, rec.supplier?.name)}
+                            className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-colors cursor-pointer"
+                            title={language === 'pt' ? 'Apagar Pesagem' : 'Delete Receipt'}
+                          >
+                            <Trash2 size={13} />
+                          </button>
                         )}
                       </div>
-                    ))}
+                    </div>
+                    
+                    <div className="space-y-1 text-slate-600 dark:text-slate-300 font-medium">
+                      {rec.items?.map((item, idx) => (
+                        <p key={idx} className="flex justify-between items-center bg-white dark:bg-slate-950 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                          <span className="truncate max-w-[140px]">{item.material_name} <span className="text-slate-400">({item.quantity} {item.unit})</span></span>
+                          <span className="font-bold text-emerald-600">{formatVolume(item.weight_kg, 'kg')}</span>
+                        </p>
+                      ))}
+                    </div>
+                    
+                    {rec.notes && (
+                      <p className="text-[10px] text-slate-400 border-t border-slate-150 dark:border-slate-800 pt-1 leading-normal italic">
+                        &quot;{rec.notes}&quot;
+                      </p>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
             )}
           </Card>
