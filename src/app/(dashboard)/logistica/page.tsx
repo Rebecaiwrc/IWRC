@@ -1579,16 +1579,21 @@ export default function LogisticsPage() {
             )}
 
             {/* Compras Reply Box if lead returned from Compras */}
-            {(selectedSupplier.backlog_reason?.toLowerCase().includes('respondido por compras') || selectedSupplier.logistics_analyses?.[0]?.notes?.includes('Resposta de Compras')) && (
+            {(selectedSupplier.backlog_reason?.toLowerCase().includes('respondido por compras') || 
+              selectedSupplier.logistics_analyses?.[0]?.notes?.includes('Resposta de Compras') ||
+              selectedSupplier.logistics_analyses?.[0]?.notes?.includes('Retorno de Compras') ||
+              selectedSupplier.logistics_analyses?.[0]?.notes?.includes('Esclarecimento de Compras')) && (
               <div className="p-3.5 bg-amber-50/90 border-2 border-amber-300 rounded-xl space-y-1.5 shadow-2xs">
                 <div className="flex items-center gap-2 text-amber-950 font-bold text-xs">
                   <MessageSquare size={15} className="text-amber-700" />
                   <span>{language === 'pt' ? '💬 Retorno e Esclarecimentos Enviados por Compras:' : '💬 Response from Purchasing Team:'}</span>
                 </div>
                 <div className="bg-white/95 p-3 rounded-lg border border-amber-200 text-xs text-slate-800 whitespace-pre-wrap font-medium leading-relaxed">
-                  {selectedSupplier.logistics_analyses?.[0]?.notes?.includes('[Resposta de Compras por')
-                    ? selectedSupplier.logistics_analyses?.[0]?.notes?.split('[Resposta de Compras por').pop()?.split(']:').slice(1).join(']:').trim()
-                    : selectedSupplier.backlog_reason}
+                  {selectedSupplier.logistics_analyses?.[0]?.notes?.includes('Retorno de Compras por')
+                    ? selectedSupplier.logistics_analyses?.[0]?.notes?.split('Retorno de Compras por').pop()?.split(']:').slice(1).join(']:').trim()
+                    : selectedSupplier.logistics_analyses?.[0]?.notes?.includes('Resposta de Compras por')
+                      ? selectedSupplier.logistics_analyses?.[0]?.notes?.split('Resposta de Compras por').pop()?.split(']:').slice(1).join(']:').trim()
+                      : selectedSupplier.backlog_reason}
                 </div>
               </div>
             )}

@@ -23,7 +23,12 @@ import {
   Calendar,
   Sparkles,
   ShoppingBag,
-  RotateCcw
+  RotateCcw,
+  Upload,
+  Paperclip,
+  FileCheck,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { 
   formatSupplierCode, 
@@ -55,6 +60,14 @@ export default function ComprasPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [isResponseModalOpen, setIsResponseModalOpen] = useState(false);
   const [responseText, setResponseText] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<{
+    id: string;
+    name: string;
+    size: string;
+    file_data: string;
+    type: 'mtr' | 'invoice' | 'donation_letter' | 'other';
+    notes?: string;
+  }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [supplierInteractions, setSupplierInteractions] = useState<SupplierInteraction[]>([]);
 
@@ -102,6 +115,7 @@ export default function ComprasPage() {
   const handleOpenResponseModal = async (supplier: Supplier) => {
     setSelectedSupplier(supplier);
     setResponseText('');
+    setAttachedFiles([]);
     setIsResponseModalOpen(true);
 
     try {
@@ -113,11 +127,53 @@ export default function ComprasPage() {
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      const sizeStr = file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+        : (file.size / 1024).toFixed(0) + ' KB';
+
+      let inferredType: 'mtr' | 'invoice' | 'donation_letter' | 'other' = 'other';
+      const lower = file.name.toLowerCase();
+      if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
+      else if (lower.includes('nf') || lower.includes('nota') || lower.includes('fiscal') || lower.includes('danfe')) inferredType = 'invoice';
+      else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
+
+      reader.onload = () => {
+        setAttachedFiles(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(2, 9),
+            name: file.name,
+            size: sizeStr,
+            file_data: reader.result as string,
+            type: inferredType,
+            notes: ''
+          }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
   const handleSendResponse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSupplier || !currentUser) return;
-    if (!responseText.trim()) {
-      alert(language === 'pt' ? 'Por favor, escreva os detalhes da resposta para a Logística.' : 'Please enter the response details for Logistics.');
+
+    if (!responseText.trim() && attachedFiles.length === 0) {
+      alert(language === 'pt' 
+        ? 'Por favor, escreva uma resposta OU anexe pelo menos um documento para enviar à Logística.' 
+        : 'Please enter a written response or attach at least one document for Logistics.');
       return;
     }
 
@@ -126,18 +182,42 @@ export default function ComprasPage() {
       const activeAnalysis = selectedSupplier.logistics_analyses?.[0];
       const supplierName = selectedSupplier.trade_name || selectedSupplier.name;
 
-      // 1. Add interaction in Ficha 360 timeline
+      // 1. Save attached documents to lead permanently (Visible in 360° Ficha)
+      if (attachedFiles.length > 0) {
+        await dbService.addSupplierDocuments(selectedSupplier.id, attachedFiles.map(f => ({
+          name: f.name,
+          size: f.size,
+          file_data: f.file_data,
+          type: f.type as any,
+          notes: `Anexado por Compras (${currentUser.name}) em resposta à Logística`,
+          uploaded_at: new Date().toISOString()
+        })));
+      }
+
+      // 2. Add interaction in Ficha 360 timeline
+      const responseDesc = responseText.trim() ? `Texto: "${responseText.trim()}"` : 'Sem mensagem de texto';
+      const docsDesc = attachedFiles.length > 0 
+        ? `Documentos anexados (${attachedFiles.length}): ${attachedFiles.map(f => `${f.name} [${f.type === 'mtr' ? 'MTR' : f.type === 'invoice' ? 'Nota Fiscal' : f.type === 'donation_letter' ? 'Carta de Doação' : 'Outro'}]`).join(', ')}`
+        : '';
+      const fullDesc = `💬 [Esclarecimento de Compras para Logística por ${currentUser.name}]: ${responseDesc}. ${docsDesc}`.trim();
+
       await dbService.addSupplierInteraction({
         supplier_id: selectedSupplier.id,
         user_id: currentUser.id,
         type: 'internal_obs',
-        description: `💬 [Resposta de Compras para Logística]: ${responseText.trim()}`
+        description: fullDesc
       });
 
-      // 2. Update logistics analysis: return feasibility to PENDING with updated notes
+      // 3. Update logistics analysis: return feasibility to PENDING with updated notes
+      const docNames = attachedFiles.length > 0 
+        ? ` | Anexos: ${attachedFiles.map(f => f.name).join(', ')}` 
+        : '';
+      const writtenResp = responseText.trim() ? ` "${responseText.trim()}"` : ' [Documentação anexada]';
+      const noteEntry = `[${new Date().toLocaleDateString('pt-BR')} - Retorno de Compras por ${currentUser.name}]:${writtenResp}${docNames}`;
+
       if (activeAnalysis?.id) {
         const previousNotes = activeAnalysis.notes ? `${activeAnalysis.notes}\n\n` : '';
-        const updatedNotes = `${previousNotes}[${new Date().toLocaleDateString('pt-BR')} - Resposta de Compras por ${currentUser.name}]: ${responseText.trim()}`;
+        const updatedNotes = `${previousNotes}${noteEntry}`;
         
         await dbService.createOrUpdateLogisticsAnalysis({
           id: activeAnalysis.id,
@@ -145,16 +225,26 @@ export default function ComprasPage() {
           feasibility: 'PENDING',
           notes: updatedNotes
         });
+      } else {
+        await dbService.createOrUpdateLogisticsAnalysis({
+          supplier_id: selectedSupplier.id,
+          feasibility: 'PENDING',
+          notes: noteEntry
+        });
       }
 
-      // 3. Update supplier stage/status to return to Logistics queue
+      // 4. Update supplier stage/status to return to Logistics queue
+      const docSummary = attachedFiles.length > 0 
+        ? ` (${attachedFiles.length} doc(s) anexado(s))`
+        : '';
+
       await dbService.updateSupplier(selectedSupplier.id, {
         current_stage: 'LOGISTICS',
         current_status: 'IN_PROGRESS',
-        backlog_reason: `Respondido por Compras (${currentUser.name}) - Aguardando reanálise logística`
+        backlog_reason: `Respondido por Compras (${currentUser.name})${docSummary} - Aguardando reanálise logística`
       });
 
-      // 4. Add status history
+      // 5. Add status history
       await dbService.addSupplierStatusHistory({
         supplier_id: selectedSupplier.id,
         old_stage: selectedSupplier.current_stage,
@@ -162,16 +252,17 @@ export default function ComprasPage() {
         old_status: selectedSupplier.current_status,
         new_status: 'IN_PROGRESS',
         user_id: currentUser.id,
-        notes: `Compras respondeu à solicitação da Logística: "${responseText.trim().slice(0, 100)}..."`
+        notes: `Compras respondeu à solicitação da Logística (${responseText.trim().slice(0, 60) || `${attachedFiles.length} anexo(s) enviado(s)`})`
       });
 
       setIsResponseModalOpen(false);
       setSelectedSupplier(null);
       setResponseText('');
+      setAttachedFiles([]);
       await fetchData();
 
       alert(language === 'pt' 
-        ? `Sucesso! A resposta para "${supplierName}" foi enviada e o registro retornou para a fila da Logística.` 
+        ? `Sucesso! O retorno para "${supplierName}" foi enviado e o lead voltou automaticamente para a fila da Logística.` 
         : `Success! Response for "${supplierName}" sent. Returned to Logistics queue.`
       );
     } catch (err: any) {
@@ -454,25 +545,105 @@ export default function ComprasPage() {
               </div>
             )}
 
-            {/* Response Input Area */}
+            {/* Documents & Attachments Area */}
+            <div className="p-3.5 bg-[#F0F9FB] border border-[#CCEAF1] rounded-2xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0E2439]">
+                  <Upload size={15} className="text-[#2098D1]" />
+                  <span>{language === 'pt' ? 'Anexar Documentos (MTR, Nota Fiscal, Carta de Doação, etc.)' : 'Attach Documents'}</span>
+                </div>
+                <label className="inline-flex items-center gap-1.5 bg-white hover:bg-[#E5F5F8] text-[#2098D1] border border-[#CCEAF1] px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs">
+                  <Plus size={13} />
+                  <span>{language === 'pt' ? 'Buscar no PC' : 'Browse PC'}</span>
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                </label>
+              </div>
+
+              <p className="text-[11px] text-[#4F7891]">
+                {language === 'pt' 
+                  ? 'Anexe os documentos solicitados pela Logística. Eles ficarão salvos na Ficha 360° do lead e disponíveis imediatamente para a Logística.' 
+                  : 'Attach the documents requested by Logistics. They will be saved to the lead 360° record.'}
+              </p>
+
+              {/* List of Attached Files */}
+              {attachedFiles.length > 0 ? (
+                <div className="space-y-1.5 pt-1">
+                  {attachedFiles.map(file => (
+                    <div key={file.id} className="p-2 bg-white border border-[#CCEAF1] rounded-xl flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="h-6 w-6 rounded-lg bg-[#E5F5F8] text-[#2098D1] flex items-center justify-center font-bold text-xs shrink-0">
+                          <FileCheck size={13} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-[#0E2439] truncate text-xs">{file.name}</p>
+                          <span className="text-[10px] text-slate-400">{file.size}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <select
+                          value={file.type}
+                          onChange={e => {
+                            const newType = e.target.value as any;
+                            setAttachedFiles(prev => prev.map(f => f.id === file.id ? { ...f, type: newType } : f));
+                          }}
+                          className="px-2 py-1 text-[11px] font-bold bg-[#F7FCFD] border border-[#CCEAF1] rounded-lg outline-none cursor-pointer"
+                        >
+                          <option value="mtr">MTR (Manifesto)</option>
+                          <option value="invoice">Nota Fiscal (NF-e)</option>
+                          <option value="donation_letter">Carta de Doação</option>
+                          <option value="other">Outro Documento</option>
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(file.id)}
+                          className="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors cursor-pointer"
+                          title={language === 'pt' ? 'Remover anexo' : 'Remove attachment'}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-2.5 border border-dashed border-[#CCEAF1] rounded-xl text-center text-xs text-slate-400 bg-white/50">
+                  {language === 'pt' 
+                    ? 'Nenhum arquivo anexado ainda. Clique em "Buscar no PC" se houver documentos para enviar.' 
+                    : 'No files attached yet. Click "Browse PC" to add documents.'}
+                </div>
+              )}
+            </div>
+
+            {/* Response Input Area (Optional) */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block">
-                {language === 'pt' ? 'Resposta e Esclarecimentos de Compras *' : 'Purchasing Response & Clarifications *'}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 block">
+                  {language === 'pt' ? 'Resposta e Esclarecimentos de Compras (Opcional)' : 'Purchasing Response & Clarifications (Optional)'}
+                </label>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {language === 'pt' ? 'Opcional se anexar documentos' : 'Optional if documents attached'}
+                </span>
+              </div>
               <textarea
-                required
-                rows={4}
+                rows={3}
                 value={responseText}
                 onChange={(e) => setResponseText(e.target.value)}
                 placeholder={language === 'pt' 
-                  ? 'Ex: Confirmado com o cliente que o galpão aceita caminhão Truck de até 12m. Horário de carga permitido: segunda a sexta das 8h às 17h. Telefone direto do encarregado: (11) 98888-7777...'
-                  : 'Example: Confirmed with client that warehouse accommodates 12m truck. Loading hours 8am to 5pm...'}
+                  ? 'Ex: Dados do MTR confirmados com o gerador e anexados acima. Rota liberada para caminhão Truck...'
+                  : 'Example: MTR details confirmed and attached above. Route cleared for Truck...'}
                 className="w-full rounded-xl border border-slate-300 p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-slate-900 bg-white leading-relaxed resize-none"
               />
               <p className="text-[11px] text-slate-400">
                 {language === 'pt' 
-                  ? 'Ao enviar, o fornecedor sairá desta aba e retornará automaticamente para a fila de análise da Logística.' 
-                  : 'Upon submission, this supplier will return to the Logistics analysis queue.'}
+                  ? 'Ao enviar, o lead sairá desta fila e retornará automaticamente para a Logística realizar a análise.' 
+                  : 'Upon submission, this lead will return to the Logistics analysis queue.'}
               </p>
             </div>
 
@@ -489,7 +660,7 @@ export default function ComprasPage() {
 
               <Button
                 type="submit"
-                disabled={isSubmitting || !responseText.trim()}
+                disabled={isSubmitting || (!responseText.trim() && attachedFiles.length === 0)}
                 className="gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold"
               >
                 {isSubmitting ? (
