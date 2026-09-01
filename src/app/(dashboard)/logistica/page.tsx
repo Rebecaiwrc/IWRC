@@ -29,6 +29,7 @@ import {
   MapPin,
   FileEdit,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   AlertTriangle,
   Clock,
@@ -205,6 +206,7 @@ export default function LogisticsPage() {
   // Scheduling Form
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [schedulingSupplier, setSchedulingSupplier] = useState<Supplier | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [scheduleForm, setScheduleForm] = useState({
     scheduled_date: '',
     frequency: 'Mensal',
@@ -694,7 +696,7 @@ export default function LogisticsPage() {
       .join(', ');
 
     setScheduleForm({
-      scheduled_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      scheduled_date: '',
       frequency: isSelfDeliveryWithStorage ? 'Entrega única' : (isStdFreq ? initialFreq : 'Outros'),
       custom_frequency: isStdFreq ? '' : initialFreq,
       material_name: isSelfDeliveryWithStorage ? (containerSummary || 'Meios de Armazenamento (Recipientes)') : (mainMaterial ? mainMaterial.material_name : ''),
@@ -710,6 +712,10 @@ export default function LogisticsPage() {
   const handleSaveSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!schedulingSupplier) return;
+    if (!scheduleForm.scheduled_date) {
+      alert(language === 'pt' ? 'Por favor, selecione a data da coleta.' : 'Please select the collection date.');
+      return;
+    }
 
     const isSelfDeliveryWithStorage = Boolean(
       (
@@ -724,47 +730,82 @@ export default function LogisticsPage() {
       .map(m => `${m.storage_provision_quantity || 1}x ${m.storage_provision_type === 'Outros' ? (m.storage_provision_custom_type || 'Recipiente') : (m.storage_provision_type || 'Bag')}`)
       .join(', ');
 
+    const targetSupplier = schedulingSupplier;
+    const currentScheduleForm = { ...scheduleForm };
+
+    // Close modal immediately and show non-blocking toast
+    setIsScheduleModalOpen(false);
+    setSchedulingSupplier(null);
+
+    const msg = isSelfDeliveryWithStorage 
+      ? (language === 'pt' ? 'Entrega de recipientes agendada com sucesso.' : 'Container delivery scheduled successfully.')
+      : (language === 'pt' ? 'Coleta agendada com sucesso.' : 'Collection scheduled successfully.');
+    
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+
     try {
-      await dbService.createCollection(
-        {
-          supplier_id: schedulingSupplier.id,
-          scheduled_date: scheduleForm.scheduled_date,
-          driver_name: scheduleForm.driver_name || null,
-          carrier_name: scheduleForm.carrier_name || null,
-          notes: scheduleForm.notes || (isSelfDeliveryWithStorage ? `Entrega de meios de armazenamento: ${containerSummary}` : null),
-          status: 'SCHEDULED'
-        },
-        [
+      // Parallel fast execution
+      await Promise.all([
+        dbService.createCollection(
           {
-            material_name: scheduleForm.material_name,
-            estimated_volume: Number(scheduleForm.estimated_volume) || 0,
-            unit: scheduleForm.unit
-          }
-        ]
-      );
+            supplier_id: targetSupplier.id,
+            scheduled_date: currentScheduleForm.scheduled_date,
+            driver_name: currentScheduleForm.driver_name || null,
+            carrier_name: currentScheduleForm.carrier_name || null,
+            notes: currentScheduleForm.notes || (isSelfDeliveryWithStorage ? `Entrega de meios de armazenamento: ${containerSummary}` : null),
+            status: 'SCHEDULED'
+          },
+          [
+            {
+              material_name: currentScheduleForm.material_name,
+              estimated_volume: Number(currentScheduleForm.estimated_volume) || 0,
+              unit: currentScheduleForm.unit
+            }
+          ]
+        ),
+        dbService.updateSupplier(targetSupplier.id, {
+          current_stage: 'OPERATION',
+          current_status: 'APPROVED',
+          last_collection_date: currentScheduleForm.scheduled_date,
+          first_collection_date: targetSupplier.first_collection_date || currentScheduleForm.scheduled_date,
+          backlog_reason: null
+        }),
+        dbService.addSupplierStatusHistory({
+          supplier_id: targetSupplier.id,
+          old_stage: targetSupplier.current_stage,
+          new_stage: 'OPERATION',
+          old_status: targetSupplier.current_status,
+          new_status: 'APPROVED',
+          user_id: currentUser?.id || 'usr-logistics',
+          notes: isSelfDeliveryWithStorage
+            ? `Entrega de meios de armazenamento (${containerSummary || 'Recipientes'}) agendada para ${formatDate(currentScheduleForm.scheduled_date)}. Responsável: ${currentScheduleForm.driver_name || '-'}, Veículo: ${currentScheduleForm.carrier_name || '-'}`
+            : `Coleta agendada para ${formatDate(currentScheduleForm.scheduled_date)} (Recorrência: ${currentScheduleForm.frequency}). Motorista: ${currentScheduleForm.driver_name || '-'}, Transportadora: ${currentScheduleForm.carrier_name || '-'}`
+        }),
+        dbService.addSupplierInteraction({
+          supplier_id: targetSupplier.id,
+          user_id: currentUser?.id || 'usr-logistics',
+          type: 'internal_obs',
+          description: isSelfDeliveryWithStorage
+            ? `Entrega de meios de armazenamento (${containerSummary || 'Recipientes'}) programada para ${formatDate(currentScheduleForm.scheduled_date)}.`
+            : `Coleta operacional agendada para ${formatDate(currentScheduleForm.scheduled_date)} (${currentScheduleForm.material_name}, ${currentScheduleForm.estimated_volume}${currentScheduleForm.unit}, Recorrência: ${currentScheduleForm.frequency}).`
+        })
+      ]);
 
-      // Update supplier status and last collection / delivery date
-      await dbService.updateSupplier(schedulingSupplier.id, {
-        current_stage: 'OPERATION',
-        current_status: 'APPROVED',
-        last_collection_date: scheduleForm.scheduled_date,
-        first_collection_date: schedulingSupplier.first_collection_date || scheduleForm.scheduled_date,
-        backlog_reason: null
-      });
-
-      // Update logistics analysis frequency & storage provision delivery date
-      const existingLog = schedulingSupplier.logistics_analyses?.[0];
+      const existingLog = targetSupplier.logistics_analyses?.[0];
       if (existingLog) {
         await dbService.saveLogisticsAnalysis({
-          supplier_id: schedulingSupplier.id,
+          supplier_id: targetSupplier.id,
           distance_km: existingLog.distance_km,
           transport_type: existingLog.transport_type,
           estimated_cost: existingLog.estimated_cost,
-          recommended_frequency: scheduleForm.frequency,
+          recommended_frequency: currentScheduleForm.frequency,
           transport_responsible: existingLog.transport_responsible,
           conditioning_infrastructure_needed: existingLog.conditioning_infrastructure_needed,
           storage_provision_cost: existingLog.storage_provision_cost,
-          storage_provision_delivery_date: isSelfDeliveryWithStorage ? scheduleForm.scheduled_date : existingLog.storage_provision_delivery_date,
+          storage_provision_delivery_date: isSelfDeliveryWithStorage ? currentScheduleForm.scheduled_date : existingLog.storage_provision_delivery_date,
           feasibility: existingLog.feasibility,
           notes: existingLog.notes,
           analyst_id: existingLog.analyst_id,
@@ -772,34 +813,11 @@ export default function LogisticsPage() {
         } as any);
       }
 
-      await dbService.addSupplierStatusHistory({
-        supplier_id: schedulingSupplier.id,
-        old_stage: schedulingSupplier.current_stage,
-        new_stage: 'OPERATION',
-        old_status: schedulingSupplier.current_status,
-        new_status: 'APPROVED',
-        user_id: currentUser?.id || 'usr-logistics',
-        notes: isSelfDeliveryWithStorage
-          ? `Entrega de meios de armazenamento (${containerSummary || 'Recipientes'}) agendada para ${formatDate(scheduleForm.scheduled_date)}. Responsável: ${scheduleForm.driver_name || '-'}, Veículo: ${scheduleForm.carrier_name || '-'}`
-          : `Coleta agendada para ${formatDate(scheduleForm.scheduled_date)} (Recorrência: ${scheduleForm.frequency}). Motorista: ${scheduleForm.driver_name || '-'}, Transportadora: ${scheduleForm.carrier_name || '-'}`
-      });
-
-      await dbService.addSupplierInteraction({
-        supplier_id: schedulingSupplier.id,
-        user_id: currentUser?.id || 'usr-logistics',
-        type: 'internal_obs',
-        description: isSelfDeliveryWithStorage
-          ? `Entrega de meios de armazenamento (${containerSummary || 'Recipientes'}) programada para ${formatDate(scheduleForm.scheduled_date)}.`
-          : `Coleta operacional agendada para ${formatDate(scheduleForm.scheduled_date)} (${scheduleForm.material_name}, ${scheduleForm.estimated_volume}${scheduleForm.unit}, Recorrência: ${scheduleForm.frequency}).`
-      });
-
-      setIsScheduleModalOpen(false);
-      setSchedulingSupplier(null);
       await fetchData();
-      alert(isSelfDeliveryWithStorage ? 'Entrega de recipientes agendada com sucesso! Gerador agora está Ativo.' : 'Coleta agendada com sucesso! Gerador agora está Ativo.');
     } catch (err: any) {
       console.error(err);
       alert(`Erro ao salvar agendamento: ${err.message || err.details || 'Tente novamente.'}`);
+      await fetchData();
     }
   };
 
@@ -837,7 +855,15 @@ export default function LogisticsPage() {
   );
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans relative">
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 bg-emerald-600 text-white font-bold text-xs rounded-2xl shadow-xl shadow-emerald-600/30 animate-in fade-in slide-in-from-top-2 duration-300">
+          <CheckCircle2 size={18} className="shrink-0 text-white" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
