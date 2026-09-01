@@ -325,13 +325,13 @@ const newLine = (): MaterialLine => ({
   storage_provision_quantity: '',
   storage_provision_custom_type: ''
 });
-
 export default function SupplierDetailPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromModule = searchParams?.get('from');
-  const supplierId = params.id as string;
+  const rawId = params?.id;
+  const supplierId = Array.isArray(rawId) ? rawId[0] : ((rawId as string) || '');
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
   const { showSuccess, showError } = useToast();
@@ -390,8 +390,8 @@ export default function SupplierDetailPage() {
     mtr_password: '',
     first_collection_date: '',
     last_collection_date: '',
-    current_stage: '' as SupplierStage,
-    current_status: '' as SupplierStatus,
+    current_stage: 'PROSPECTING' as SupplierStage,
+    current_status: 'PENDING' as SupplierStatus,
     backlog_reason: ''
   });
 
@@ -472,11 +472,16 @@ export default function SupplierDetailPage() {
   };
 
   const fetchSupplierData = async () => {
+    if (!supplierId) {
+      setLoading(false);
+      return;
+    }
     try {
+      setLoading(true);
       const data = await dbService.getSupplier(supplierId);
       if (!data) {
-        alert('Gerador não encontrado');
-        router.push('/fornecedores');
+        setSupplier(null);
+        setLoading(false);
         return;
       }
       setSupplier(data);
@@ -524,7 +529,20 @@ export default function SupplierDetailPage() {
     );
   }
 
-  if (!supplier) return null;
+  if (!supplier) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-slate-900 border border-[#CCEAF1] dark:border-slate-800 rounded-3xl space-y-4">
+        <Building2 size={48} className="text-slate-300 mx-auto" />
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white">Gerador não localizado</h2>
+          <p className="text-xs text-slate-500">Este gerador pode ter sido excluído ou você não possui permissão para visualizá-lo.</p>
+        </div>
+        <Link href="/fornecedores" className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#2098D1] text-white rounded-xl font-bold text-xs hover:bg-[#1883B5] transition-all">
+          ← Voltar para Lista de Geradores
+        </Link>
+      </div>
+    );
+  }
 
   // Actions
   const handleUpdateSupplier = async (e: React.FormEvent) => {

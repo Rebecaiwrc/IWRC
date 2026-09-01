@@ -306,9 +306,9 @@ export const dbService = {
         `)
         .eq('id', id)
         .single();
-      if (error || !data) return null;
-
-      let pStatus: ProspectingStatus = 'NEW_LEAD';
+      
+      if (!error && data) {
+        let pStatus: ProspectingStatus = 'NEW_LEAD';
       if (data.current_stage === 'LOGISTICS') {
         pStatus = 'WAITING_LOGISTICS';
       } else if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(data.current_stage)) {
@@ -375,6 +375,7 @@ export const dbService = {
         status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
         attached_documents: await this.getSupplierDocuments(data.id)
       };
+      }
     }
 
     const suppliers = await this.getSuppliers();
