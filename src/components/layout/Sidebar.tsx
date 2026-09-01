@@ -46,16 +46,20 @@ export const Sidebar: React.FC = () => {
 
   useEffect(() => {
     // Load pin preference from localStorage
-    const saved = localStorage.getItem('iwrc_sidebar_pinned');
-    if (saved !== null) {
-      setIsPinned(saved === 'true');
-    }
+    try {
+      const saved = localStorage.getItem('iwrc_sidebar_pinned');
+      if (saved !== null) {
+        setIsPinned(saved === 'true');
+      }
+    } catch (e) {}
   }, []);
 
   const togglePin = () => {
     const next = !isPinned;
     setIsPinned(next);
-    localStorage.setItem('iwrc_sidebar_pinned', String(next));
+    try {
+      localStorage.setItem('iwrc_sidebar_pinned', String(next));
+    } catch (e) {}
     if (!next) {
       setIsHovered(false);
     }

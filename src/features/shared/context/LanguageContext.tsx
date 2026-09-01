@@ -384,17 +384,21 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguageState] = useState<Language>('pt');
 
   useEffect(() => {
-    const saved = localStorage.getItem('iwrc_lang') as Language;
-    if (saved === 'en' || saved === 'pt') {
-      setLanguageState(saved);
-      document.documentElement.lang = saved === 'pt' ? 'pt-BR' : 'en-US';
-    }
+    try {
+      const saved = localStorage.getItem('iwrc_lang') as Language;
+      if (saved === 'en' || saved === 'pt') {
+        setLanguageState(saved);
+        document.documentElement.lang = saved === 'pt' ? 'pt-BR' : 'en-US';
+      }
+    } catch (e) {}
   }, []);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('iwrc_lang', lang);
-    document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en-US';
+    try {
+      localStorage.setItem('iwrc_lang', lang);
+      document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en-US';
+    } catch (e) {}
   };
 
   const toggleLanguage = () => {

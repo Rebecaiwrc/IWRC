@@ -2028,7 +2028,9 @@ export default function SupplierDetailPage() {
               {supplier.attached_documents && supplier.attached_documents.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {supplier.attached_documents.map(doc => {
-                    const isPhoto = doc.type === 'storage_photo' || (Boolean(doc.file_data && doc.file_data.startsWith('data:image')) || Boolean(doc.file_url && (doc.file_url.endsWith('.png') || doc.file_url.endsWith('.jpg') || doc.file_url.endsWith('.jpeg') || doc.file_url.endsWith('.webp'))));
+                    const isPhoto = doc.type === 'storage_photo' || 
+                      (typeof doc.file_data === 'string' && doc.file_data.startsWith('data:image')) || 
+                      (typeof doc.file_url === 'string' && /\.(png|jpe?g|webp|heic|gif)/i.test(doc.file_url));
                     return (
                       <div key={doc.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2 hover:border-indigo-300 transition-colors">
                         <div 

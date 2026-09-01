@@ -83,40 +83,66 @@ const isBrowser = typeof window !== 'undefined';
 
 function getLocalData<T>(key: string, defaultVal: T[]): T[] {
   if (!isBrowser) {
-    return memoryDb[key as keyof typeof memoryDb] as unknown as T[];
+    return (memoryDb[key as keyof typeof memoryDb] as unknown as T[]) || defaultVal;
   }
-  const data = localStorage.getItem(`iwrc_${key}`);
-  if (!data) {
-    localStorage.setItem(`iwrc_${key}`, JSON.stringify(defaultVal));
+  try {
+    const raw = localStorage.getItem(`iwrc_${key}`);
+    if (!raw || raw === 'undefined' || raw === 'null') {
+      try {
+        localStorage.setItem(`iwrc_${key}`, JSON.stringify(defaultVal));
+      } catch (e) {}
+      return defaultVal;
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) && Array.isArray(defaultVal)) {
+      try {
+        localStorage.setItem(`iwrc_${key}`, JSON.stringify(defaultVal));
+      } catch (e) {}
+      return defaultVal;
+    }
+    return parsed;
+  } catch (err) {
+    console.warn(`[LocalDB] Self-healing corrupted localStorage key 'iwrc_${key}':`, err);
+    try {
+      localStorage.setItem(`iwrc_${key}`, JSON.stringify(defaultVal));
+    } catch (e) {}
     return defaultVal;
   }
-  return JSON.parse(data);
 }
 
 function saveLocalData<T>(key: string, data: T[]): void {
   if (isBrowser) {
-    localStorage.setItem(`iwrc_${key}`, JSON.stringify(data));
+    try {
+      localStorage.setItem(`iwrc_${key}`, JSON.stringify(data));
+    } catch (e) {
+      console.warn(`[LocalDB] Quota exceeded or error saving 'iwrc_${key}':`, e);
+    }
   } else {
     (memoryDb as any)[key] = data;
   }
 }
 
-// Initialise Local Database on load in browser
+// Initialise and sanitize Local Database on load in browser
 if (isBrowser) {
-  // Always update profiles with latest mockProfiles definitions
-  saveLocalData('profiles', mockProfiles);
-  getLocalData('suppliers', mockSuppliers);
-  getLocalData('addresses', mockAddresses);
-  getLocalData('contacts', mockContacts);
-  getLocalData('materials', mockMaterials);
-  getLocalData('interactions', mockInteractions);
-  getLocalData('statusHistory', mockStatusHistory);
-  getLocalData('tasks', mockTasks);
-  getLocalData('logistics', mockLogistics);
-  getLocalData('collections', mockCollections);
-  getLocalData('collectionItems', mockCollectionItems);
-  getLocalData('receipts', mockReceipts);
-  getLocalData('receiptItems', mockReceiptItems);
+  try {
+    // Always update profiles with latest mockProfiles definitions
+    saveLocalData('profiles', mockProfiles);
+    getLocalData('suppliers', mockSuppliers);
+    getLocalData('addresses', mockAddresses);
+    getLocalData('contacts', mockContacts);
+    getLocalData('materials', mockMaterials);
+    getLocalData('interactions', mockInteractions);
+    getLocalData('statusHistory', mockStatusHistory);
+    getLocalData('tasks', mockTasks);
+    getLocalData('logistics', mockLogistics);
+    getLocalData('collections', mockCollections);
+    getLocalData('collectionItems', mockCollectionItems);
+    getLocalData('receipts', mockReceipts);
+    getLocalData('receiptItems', mockReceiptItems);
+    getLocalData('documents', []);
+  } catch (initErr) {
+    console.warn('[LocalDB] Init error handled gracefully:', initErr);
+  }
 }
 
 // --- DATABASE SERVICE IMPLEMENTATION ---

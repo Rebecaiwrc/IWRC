@@ -12,8 +12,10 @@ import {
 const getActiveLang = (lang?: 'pt' | 'en'): 'pt' | 'en' => {
   if (lang) return lang;
   if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('iwrc_lang');
-    if (saved === 'en' || saved === 'pt') return saved;
+    try {
+      const saved = localStorage.getItem('iwrc_lang');
+      if (saved === 'en' || saved === 'pt') return saved;
+    } catch (e) {}
   }
   return 'pt';
 };
