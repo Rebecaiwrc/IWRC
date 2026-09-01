@@ -691,16 +691,17 @@ export const dbService = {
   // Supplier Documents & Storage Photos
   async getSupplierDocuments(supplierId: string): Promise<AttachedDocument[]> {
     let cloudDocs: AttachedDocument[] = [];
-    if (isSupabaseConfigured && supabase) {
+    if (isBrowser) {
       try {
-        const metaPath = `${supplierId}/_docs_list.json`;
-        const { data, error } = await supabase.storage.from('documents').download(metaPath);
-        if (data && !error) {
-          const text = await data.text();
-          cloudDocs = JSON.parse(text);
+        const res = await fetch(`/api/documents?supplierId=${encodeURIComponent(supplierId)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.documents)) {
+            cloudDocs = json.documents;
+          }
         }
-      } catch (err) {
-        // Fallback gracefully if file does not exist yet
+      } catch (e) {
+        // Fallback gracefully
       }
     }
 
@@ -724,35 +725,34 @@ export const dbService = {
     notes: string = ''
   ): Promise<AttachedDocument> {
     const docId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const cleanName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const now = new Date().toISOString();
     const sizeStr = file.size > 1024 * 1024 
       ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
       : (file.size / 1024).toFixed(0) + ' KB';
 
-    let fileUrl = '';
-    let storagePath = '';
-
-    if (isSupabaseConfigured && supabase) {
+    if (isBrowser) {
       try {
-        storagePath = `${supplierId}/${docId}/${cleanName}`;
-        const { error: upErr } = await supabase.storage
-          .from('documents')
-          .upload(storagePath, file, {
-            contentType: (file as File).type || 'application/octet-stream',
-            upsert: true
-          });
+        const formData = new FormData();
+        formData.append('file', file, fileName);
+        formData.append('supplierId', supplierId);
+        formData.append('type', type || 'other');
+        formData.append('notes', notes || '');
+        formData.append('id', docId);
 
-        if (upErr) {
-          console.warn('Storage upload error, falling back:', upErr);
-        } else {
-          const { data: pubData } = supabase.storage
-            .from('documents')
-            .getPublicUrl(storagePath);
-          fileUrl = pubData?.publicUrl || '';
+        const res = await fetch('/api/documents', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.document) {
+            // Update local memory cache as well
+            await this.addSupplierDocuments(supplierId, [json.document]);
+            return json.document;
+          }
         }
       } catch (err) {
-        console.error('Error uploading file to storage:', err);
+        console.error('API document upload failed, falling back to local:', err);
       }
     }
 
@@ -760,15 +760,11 @@ export const dbService = {
       id: docId,
       name: fileName,
       type: type || 'other',
-      file_url: fileUrl || undefined,
-      file_data: fileUrl || undefined,
-      file_path: storagePath || undefined,
-      uploaded_at: now,
+      uploaded_at: new Date().toISOString(),
       size: sizeStr,
       notes: notes || ''
     };
 
-    // Save into cloud metadata and local data
     await this.addSupplierDocuments(supplierId, [newDoc]);
     return newDoc;
   },
@@ -794,30 +790,6 @@ export const dbService = {
       size: doc.size || 'Arquivo',
       notes: doc.notes || ''
     }));
-
-    // Save to Cloud _docs_list.json if Supabase is enabled
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const metaPath = `${supplierId}/_docs_list.json`;
-        let currentList: AttachedDocument[] = [];
-        const { data: existingData } = await supabase.storage.from('documents').download(metaPath);
-        if (existingData) {
-          try {
-            const text = await existingData.text();
-            currentList = JSON.parse(text);
-          } catch(e) {}
-        }
-
-        const mergedCloud = [...currentList.filter(cd => !newDocs.some(nd => nd.id === cd.id)), ...newDocs];
-        await supabase.storage.from('documents').upload(
-          metaPath,
-          new Blob([JSON.stringify(mergedCloud)], { type: 'application/json' }),
-          { contentType: 'application/json', upsert: true }
-        );
-      } catch (err) {
-        console.warn('Error saving cloud docs list:', err);
-      }
-    }
 
     // Save local cache (without huge base64 strings to prevent QuotaExceededError)
     try {
@@ -847,31 +819,13 @@ export const dbService = {
   },
 
   async deleteSupplierDocument(supplierId: string, docId: string): Promise<void> {
-    if (isSupabaseConfigured && supabase) {
+    if (isBrowser) {
       try {
-        const metaPath = `${supplierId}/_docs_list.json`;
-        let currentList: AttachedDocument[] = [];
-        const { data: existingData } = await supabase.storage.from('documents').download(metaPath);
-        if (existingData) {
-          try {
-            const text = await existingData.text();
-            currentList = JSON.parse(text);
-          } catch(e) {}
-        }
-
-        const docToDelete = currentList.find(d => d.id === docId);
-        if (docToDelete && (docToDelete as any).file_path) {
-          await supabase.storage.from('documents').remove([(docToDelete as any).file_path]);
-        }
-
-        const filteredCloud = currentList.filter(d => d.id !== docId);
-        await supabase.storage.from('documents').upload(
-          metaPath,
-          new Blob([JSON.stringify(filteredCloud)], { type: 'application/json' }),
-          { contentType: 'application/json', upsert: true }
-        );
-      } catch (err) {
-        console.warn('Error deleting cloud document:', err);
+        await fetch(`/api/documents?supplierId=${encodeURIComponent(supplierId)}&docId=${encodeURIComponent(docId)}`, {
+          method: 'DELETE'
+        });
+      } catch (e) {
+        console.warn('API document delete error:', e);
       }
     }
 
