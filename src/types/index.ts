@@ -92,6 +92,7 @@ export interface AttachedDocument {
   type: DocumentType;
   file_url?: string;
   file_data?: string; // base64 data for local preview / download
+  file_path?: string; // storage bucket path
   uploaded_at: string;
   size?: string;
   notes?: string;

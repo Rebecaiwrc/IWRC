@@ -347,10 +347,7 @@ export const dbService = {
         })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
         receipts: data.receipts || [],
         status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
-        attached_documents: [
-          ...(data.attached_documents || []),
-          ...getLocalData<AttachedDocument & { supplier_id: string }>('documents', []).filter(d => d.supplier_id === data.id)
-        ].filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id))
+        attached_documents: await this.getSupplierDocuments(data.id)
       };
     }
 
@@ -666,6 +663,20 @@ export const dbService = {
 
   // Supplier Documents & Storage Photos
   async getSupplierDocuments(supplierId: string): Promise<AttachedDocument[]> {
+    let cloudDocs: AttachedDocument[] = [];
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const metaPath = `${supplierId}/_docs_list.json`;
+        const { data, error } = await supabase.storage.from('documents').download(metaPath);
+        if (data && !error) {
+          const text = await data.text();
+          cloudDocs = JSON.parse(text);
+        }
+      } catch (err) {
+        // Fallback gracefully if file does not exist yet
+      }
+    }
+
     const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
     const localMatches = allDocs.filter(d => d.supplier_id === supplierId);
     
@@ -674,8 +685,65 @@ export const dbService = {
     const sup = suppliers.find(s => s.id === supplierId);
     const supDocs = sup?.attached_documents || [];
     
-    const combined = [...supDocs, ...localMatches];
+    const combined = [...cloudDocs, ...supDocs, ...localMatches];
     return combined.filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id));
+  },
+
+  async uploadSupplierFile(
+    supplierId: string,
+    file: File | Blob,
+    fileName: string,
+    type: AttachedDocument['type'] = 'other',
+    notes: string = ''
+  ): Promise<AttachedDocument> {
+    const docId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const cleanName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const now = new Date().toISOString();
+    const sizeStr = file.size > 1024 * 1024 
+      ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+      : (file.size / 1024).toFixed(0) + ' KB';
+
+    let fileUrl = '';
+    let storagePath = '';
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        storagePath = `${supplierId}/${docId}/${cleanName}`;
+        const { error: upErr } = await supabase.storage
+          .from('documents')
+          .upload(storagePath, file, {
+            contentType: (file as File).type || 'application/octet-stream',
+            upsert: true
+          });
+
+        if (upErr) {
+          console.warn('Storage upload error, falling back:', upErr);
+        } else {
+          const { data: pubData } = supabase.storage
+            .from('documents')
+            .getPublicUrl(storagePath);
+          fileUrl = pubData?.publicUrl || '';
+        }
+      } catch (err) {
+        console.error('Error uploading file to storage:', err);
+      }
+    }
+
+    const newDoc: AttachedDocument = {
+      id: docId,
+      name: fileName,
+      type: type || 'other',
+      file_url: fileUrl || undefined,
+      file_data: fileUrl || undefined,
+      file_path: storagePath || undefined,
+      uploaded_at: now,
+      size: sizeStr,
+      notes: notes || ''
+    };
+
+    // Save into cloud metadata and local data
+    await this.addSupplierDocuments(supplierId, [newDoc]);
+    return newDoc;
   },
 
   async addSupplierDocument(supplierId: string, doc: Partial<AttachedDocument>): Promise<AttachedDocument> {
@@ -685,50 +753,113 @@ export const dbService = {
 
   async addSupplierDocuments(supplierId: string, docs: Partial<AttachedDocument>[]): Promise<AttachedDocument[]> {
     if (!docs || docs.length === 0) return [];
-    const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
     const now = new Date().toISOString();
 
     const newDocs: (AttachedDocument & { supplier_id: string })[] = docs.map(doc => ({
-      id: doc.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)),
+      id: doc.id || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       supplier_id: supplierId,
       name: doc.name || 'Documento',
       type: doc.type || 'other',
       file_url: doc.file_url || '',
-      file_data: doc.file_data || '',
+      file_data: doc.file_data || doc.file_url || '',
+      file_path: (doc as any).file_path || '',
       uploaded_at: doc.uploaded_at || now,
       size: doc.size || 'Arquivo',
       notes: doc.notes || ''
     }));
 
-    // Update global documents collection
-    const existingOtherDocs = allDocs.filter(d => d.supplier_id !== supplierId || !newDocs.some(nd => nd.id === d.id));
-    const updatedDocs = [...existingOtherDocs, ...newDocs];
-    saveLocalData('documents', updatedDocs);
+    // Save to Cloud _docs_list.json if Supabase is enabled
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const metaPath = `${supplierId}/_docs_list.json`;
+        let currentList: AttachedDocument[] = [];
+        const { data: existingData } = await supabase.storage.from('documents').download(metaPath);
+        if (existingData) {
+          try {
+            const text = await existingData.text();
+            currentList = JSON.parse(text);
+          } catch(e) {}
+        }
 
-    // Update supplier directly in local database
-    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
-    const sIndex = suppliers.findIndex(s => s.id === supplierId);
-    if (sIndex !== -1) {
-      const currentSupDocs = suppliers[sIndex].attached_documents || [];
-      const updatedSupDocs = [...currentSupDocs.filter(cd => !newDocs.some(nd => nd.id === cd.id)), ...newDocs];
-      suppliers[sIndex].attached_documents = updatedSupDocs;
-      saveLocalData('suppliers', suppliers);
+        const mergedCloud = [...currentList.filter(cd => !newDocs.some(nd => nd.id === cd.id)), ...newDocs];
+        await supabase.storage.from('documents').upload(
+          metaPath,
+          new Blob([JSON.stringify(mergedCloud)], { type: 'application/json' }),
+          { contentType: 'application/json', upsert: true }
+        );
+      } catch (err) {
+        console.warn('Error saving cloud docs list:', err);
+      }
+    }
+
+    // Save local cache (without huge base64 strings to prevent QuotaExceededError)
+    try {
+      const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
+      const sanitizedDocs = newDocs.map(d => ({
+        ...d,
+        file_data: (d.file_data && d.file_data.length < 500000) ? d.file_data : (d.file_url || '')
+      }));
+
+      const existingOtherDocs = allDocs.filter(d => d.supplier_id !== supplierId || !sanitizedDocs.some(nd => nd.id === d.id));
+      const updatedDocs = [...existingOtherDocs, ...sanitizedDocs];
+      saveLocalData('documents', updatedDocs);
+
+      const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+      const sIndex = suppliers.findIndex(s => s.id === supplierId);
+      if (sIndex !== -1) {
+        const currentSupDocs = suppliers[sIndex].attached_documents || [];
+        const updatedSupDocs = [...currentSupDocs.filter(cd => !sanitizedDocs.some(nd => nd.id === cd.id)), ...sanitizedDocs];
+        suppliers[sIndex].attached_documents = updatedSupDocs;
+        saveLocalData('suppliers', suppliers);
+      }
+    } catch (localErr) {
+      console.warn('Local storage cache update skipped:', localErr);
     }
 
     return newDocs;
   },
 
   async deleteSupplierDocument(supplierId: string, docId: string): Promise<void> {
-    const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
-    const filtered = allDocs.filter(d => !(d.supplier_id === supplierId && d.id === docId));
-    saveLocalData('documents', filtered);
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const metaPath = `${supplierId}/_docs_list.json`;
+        let currentList: AttachedDocument[] = [];
+        const { data: existingData } = await supabase.storage.from('documents').download(metaPath);
+        if (existingData) {
+          try {
+            const text = await existingData.text();
+            currentList = JSON.parse(text);
+          } catch(e) {}
+        }
 
-    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
-    const sIndex = suppliers.findIndex(s => s.id === supplierId);
-    if (sIndex !== -1) {
-      suppliers[sIndex].attached_documents = (suppliers[sIndex].attached_documents || []).filter(d => d.id !== docId);
-      saveLocalData('suppliers', suppliers);
+        const docToDelete = currentList.find(d => d.id === docId);
+        if (docToDelete && (docToDelete as any).file_path) {
+          await supabase.storage.from('documents').remove([(docToDelete as any).file_path]);
+        }
+
+        const filteredCloud = currentList.filter(d => d.id !== docId);
+        await supabase.storage.from('documents').upload(
+          metaPath,
+          new Blob([JSON.stringify(filteredCloud)], { type: 'application/json' }),
+          { contentType: 'application/json', upsert: true }
+        );
+      } catch (err) {
+        console.warn('Error deleting cloud document:', err);
+      }
     }
+
+    try {
+      const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
+      const filtered = allDocs.filter(d => !(d.supplier_id === supplierId && d.id === docId));
+      saveLocalData('documents', filtered);
+
+      const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+      const sIndex = suppliers.findIndex(s => s.id === supplierId);
+      if (sIndex !== -1) {
+        suppliers[sIndex].attached_documents = (suppliers[sIndex].attached_documents || []).filter(d => d.id !== docId);
+        saveLocalData('suppliers', suppliers);
+      }
+    } catch (e) {}
   },
   async addSupplierContact(contactData: Partial<SupplierContact>): Promise<SupplierContact> {
     const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);

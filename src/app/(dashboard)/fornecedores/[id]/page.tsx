@@ -629,77 +629,95 @@ export default function SupplierDetailPage() {
     }
   };
 
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+
   const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newDoc.name) return;
+    if (!newDoc.name || !supplier) return;
     try {
+      setIsUploadingDoc(true);
       await dbService.addSupplierDocument(supplier.id, {
         name: newDoc.name,
         type: newDoc.type || 'other',
         notes: newDoc.notes
       });
-      setNewDoc({ name: '', type: 'mtr', notes: '' });
+      setNewDoc({ name: '', type: '' as any, notes: '' });
       setIsDocModalOpen(false);
-      fetchSupplierData();
-    } catch (err) {
+      await fetchSupplierData();
+      showSuccess(language === 'pt' ? 'Documento registrado com sucesso.' : 'Document registered successfully.');
+    } catch (err: any) {
       console.error(err);
+      showError(language === 'pt' ? 'Erro ao salvar documento.' : 'Error saving document.');
+    } finally {
+      setIsUploadingDoc(false);
     }
   };
 
-  const handleFileSelectFromPC = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelectFromPC = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || !supplier) return;
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      const sizeStr = file.size > 1024 * 1024 
-        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        : (file.size / 1024).toFixed(0) + ' KB';
+    try {
+      setIsUploadingDoc(true);
+      const fileList = Array.from(files);
 
-      let inferredType: AttachedDocument['type'] = newDoc.type || 'other';
-      const lower = file.name.toLowerCase();
-      const isImg = file.type.startsWith('image/') || lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp');
+      for (const file of fileList) {
+        let inferredType: AttachedDocument['type'] = newDoc.type || 'other';
+        const lower = file.name.toLowerCase();
+        const isImg = file.type.startsWith('image/') || lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp') || lower.endsWith('.heic');
 
-      if (isImg || lower.includes('foto') || lower.includes('bag') || lower.includes('cacamba') || lower.includes('caçamba') || lower.includes('conteiner') || lower.includes('contêiner') || lower.includes('armaz') || lower.includes('pallet') || lower.includes('tambor')) {
-        inferredType = 'storage_photo';
-      } else if (lower.includes('mtr') || lower.includes('manifesto')) {
-        inferredType = 'mtr';
-      } else if (lower.includes('nf') || lower.includes('nota') || lower.includes('fiscal') || lower.includes('invoice')) {
-        inferredType = 'invoice';
-      } else if (lower.includes('cnpj')) {
-        inferredType = 'cnpj_card';
-      } else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) {
-        inferredType = 'donation_letter';
-      } else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) {
-        inferredType = 'partnership_agreement';
-      } else if (lower.includes('licenca') || lower.includes('licença')) {
-        inferredType = 'env_license';
+        if (isImg || lower.includes('foto') || lower.includes('bag') || lower.includes('cacamba') || lower.includes('caçamba') || lower.includes('conteiner') || lower.includes('contêiner') || lower.includes('armaz') || lower.includes('pallet') || lower.includes('tambor')) {
+          inferredType = 'storage_photo';
+        } else if (lower.includes('mtr') || lower.includes('manifesto')) {
+          inferredType = 'mtr';
+        } else if (lower.includes('nf') || lower.includes('nota') || lower.includes('fiscal') || lower.includes('invoice')) {
+          inferredType = 'invoice';
+        } else if (lower.includes('cnpj')) {
+          inferredType = 'cnpj_card';
+        } else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) {
+          inferredType = 'donation_letter';
+        } else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) {
+          inferredType = 'partnership_agreement';
+        } else if (lower.includes('licenca') || lower.includes('licença')) {
+          inferredType = 'env_license';
+        }
+
+        await dbService.uploadSupplierFile(
+          supplier.id,
+          file,
+          file.name,
+          inferredType,
+          newDoc.notes || (inferredType === 'storage_photo' ? 'Foto do armazenamento/recipientes do gerador' : 'Anexado diretamente na Ficha 360º')
+        );
       }
 
-      reader.onload = async () => {
-        await dbService.addSupplierDocument(supplier.id, {
-          name: file.name,
-          size: sizeStr,
-          file_data: reader.result as string,
-          type: inferredType,
-          notes: newDoc.notes || (inferredType === 'storage_photo' ? 'Foto do armazenamento/recipientes do gerador' : 'Anexado diretamente na Ficha 360º')
-        });
-        fetchSupplierData();
-      };
-      reader.readAsDataURL(file);
-    });
-
-    e.target.value = '';
-    setIsDocModalOpen(false);
+      await fetchSupplierData();
+      showSuccess(
+        fileList.length === 1
+          ? (language === 'pt' ? 'Arquivo anexado com sucesso.' : 'File attached successfully.')
+          : (language === 'pt' ? `${fileList.length} arquivos anexados com sucesso.` : `${fileList.length} files attached successfully.`)
+      );
+      setIsDocModalOpen(false);
+      setNewDoc({ name: '', type: '' as any, notes: '' });
+    } catch (err: any) {
+      console.error('Error uploading files:', err);
+      showError(language === 'pt' ? `Erro ao anexar arquivo: ${err.message || 'Falha no envio'}` : 'Error uploading file.');
+    } finally {
+      setIsUploadingDoc(false);
+      e.target.value = '';
+    }
   };
 
   const handleDeleteDocument = async (docId: string) => {
-    if (!confirm('Deseja remover este documento?')) return;
+    if (!supplier) return;
+    if (!confirm(language === 'pt' ? 'Deseja realmente remover este documento anexado?' : 'Do you really want to delete this document?')) return;
     try {
       await dbService.deleteSupplierDocument(supplier.id, docId);
-      fetchSupplierData();
+      await fetchSupplierData();
+      showSuccess(language === 'pt' ? 'Documento removido com sucesso.' : 'Document deleted successfully.');
     } catch (err) {
       console.error(err);
+      showError(language === 'pt' ? 'Erro ao remover documento.' : 'Error deleting document.');
     }
   };
 
@@ -2009,36 +2027,75 @@ export default function SupplierDetailPage() {
 
               {supplier.attached_documents && supplier.attached_documents.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {supplier.attached_documents.map(doc => (
-                    <div key={doc.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FileCheck size={16} className="text-indigo-600 shrink-0" />
-                        <div className="min-w-0">
-                          <p className="font-bold text-xs text-slate-800 truncate" title={doc.name}>{doc.name}</p>
-                          <span className="text-[9px] uppercase font-semibold text-slate-400">
-                            {doc.type === 'mtr' 
-                              ? 'MTR' 
-                              : doc.type === 'donation_letter' 
-                                ? (language === 'pt' ? 'Carta de Doação' : 'Donation Letter')
-                                : doc.type === 'cnpj_card' 
-                                  ? (language === 'pt' ? 'Cartão CNPJ' : 'CNPJ / Tax Card') 
-                                  : (language === 'pt' ? 'Anexo' : 'Attachment')}
-                          </span>
+                  {supplier.attached_documents.map(doc => {
+                    const isPhoto = doc.type === 'storage_photo' || (Boolean(doc.file_data && doc.file_data.startsWith('data:image')) || Boolean(doc.file_url && (doc.file_url.endsWith('.png') || doc.file_url.endsWith('.jpg') || doc.file_url.endsWith('.jpeg') || doc.file_url.endsWith('.webp'))));
+                    return (
+                      <div key={doc.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2 hover:border-indigo-300 transition-colors">
+                        <div 
+                          className="flex items-center gap-2 min-w-0 cursor-pointer flex-1"
+                          onClick={() => {
+                            if (isPhoto) setSelectedPhotoForLightbox(doc);
+                            else handleDownloadDoc(doc);
+                          }}
+                        >
+                          <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            {isPhoto ? <Camera size={16} /> : <FileCheck size={16} />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-xs text-slate-800 truncate" title={doc.name}>{doc.name}</p>
+                            <span className="text-[9px] uppercase font-semibold text-slate-400 block">
+                              {doc.type === 'storage_photo'
+                                ? (language === 'pt' ? '📸 Foto do Local' : '📸 Storage Photo')
+                                : doc.type === 'mtr' 
+                                  ? '📄 MTR' 
+                                  : doc.type === 'invoice'
+                                    ? '🧾 Nota Fiscal'
+                                    : doc.type === 'donation_letter' 
+                                      ? (language === 'pt' ? '📜 Carta de Doação' : '📜 Donation Letter')
+                                      : doc.type === 'cnpj_card' 
+                                        ? (language === 'pt' ? '🏢 Cartão CNPJ' : '🏢 CNPJ Card') 
+                                        : (language === 'pt' ? '📁 Anexo' : '📁 Attachment')}
+                              {doc.size ? ` • ${doc.size}` : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isPhoto && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPhotoForLightbox(doc)}
+                              className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
+                              title={language === 'pt' ? 'Visualizar Imagem' : 'View Image'}
+                            >
+                              <ZoomIn size={14} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadDoc(doc)}
+                            className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
+                            title={language === 'pt' ? 'Baixar / Visualizar' : 'Download / View'}
+                          >
+                            <Download size={14} />
+                          </button>
+                          {canUserModifySupplier() && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                              title={language === 'pt' ? 'Remover anexo' : 'Delete attachment'}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDownloadDoc(doc)}
-                        className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors shrink-0"
-                        title={language === 'pt' ? 'Baixar / Visualizar' : 'Download / View'}
-                      >
-                        <Download size={14} />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="py-8 text-center text-slate-400 text-xs">
-                  {language === 'pt' ? 'Nenhum documento anexado pelo Comercial.' : 'No documents attached by Commercial yet.'}
+                  {language === 'pt' ? 'Nenhum documento anexado ainda.' : 'No documents attached yet.'}
                 </div>
               )}
             </Card>
@@ -4306,36 +4363,46 @@ export default function SupplierDetailPage() {
               <input
                 type="file"
                 multiple
-                onChange={(e) => {
+                disabled={isUploadingDoc}
+                onChange={async (e) => {
                   const files = e.target.files;
                   if (!files || files.length === 0 || !supplier) return;
 
-                  Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    const sizeStr = file.size > 1024 * 1024 
-                      ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-                      : (file.size / 1024).toFixed(0) + ' KB';
+                  try {
+                    setIsUploadingDoc(true);
+                    const fileList = Array.from(files);
 
-                    let inferredType: AttachedDocument['type'] = 'other';
-                    const lower = file.name.toLowerCase();
-                    if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
-                    else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
-                    else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) inferredType = 'partnership_agreement';
-                    else if (lower.includes('licenca') || lower.includes('licença')) inferredType = 'env_license';
-                    else if (lower.includes('cnpj')) inferredType = 'cnpj_card';
+                    for (const file of fileList) {
+                      let inferredType: AttachedDocument['type'] = 'other';
+                      const lower = file.name.toLowerCase();
+                      if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
+                      else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
+                      else if (lower.includes('termo') || lower.includes('contrato') || lower.includes('parceria')) inferredType = 'partnership_agreement';
+                      else if (lower.includes('licenca') || lower.includes('licença')) inferredType = 'env_license';
+                      else if (lower.includes('cnpj')) inferredType = 'cnpj_card';
 
-                    reader.onload = async () => {
-                      await dbService.addSupplierDocument(supplier.id, {
-                        name: file.name,
-                        size: sizeStr,
-                        file_data: reader.result as string,
-                        type: inferredType,
-                        notes: language === 'pt' ? 'Anexado em resposta à solicitação da Logística' : 'Attached in response to Logistics request'
-                      });
-                      fetchSupplierData();
-                    };
-                    reader.readAsDataURL(file);
-                  });
+                      await dbService.uploadSupplierFile(
+                        supplier.id,
+                        file,
+                        file.name,
+                        inferredType,
+                        language === 'pt' ? 'Anexado em resposta à solicitação da Logística' : 'Attached in response to Logistics request'
+                      );
+                    }
+
+                    await fetchSupplierData();
+                    showSuccess(
+                      fileList.length === 1 
+                        ? (language === 'pt' ? 'Documento anexado.' : 'Document attached.') 
+                        : (language === 'pt' ? `${fileList.length} documentos anexados.` : `${fileList.length} documents attached.`)
+                    );
+                  } catch (err) {
+                    console.error('Error uploading in respond modal:', err);
+                    showError(language === 'pt' ? 'Erro ao anexar arquivo.' : 'Error uploading file.');
+                  } finally {
+                    setIsUploadingDoc(false);
+                    e.target.value = '';
+                  }
                 }}
                 className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
               />
