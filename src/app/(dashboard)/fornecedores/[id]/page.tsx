@@ -1103,7 +1103,7 @@ export default function SupplierDetailPage() {
       } else if (logisticsForm.feasibility === 'NEED_INFO') {
         newStage = 'LOGISTICS';
         newStatus = 'PENDING';
-        backlogReason = logisticsForm.need_info_reason || logisticsForm.notes || 'Logística solicitou informações adicionais ao Comercial';
+        backlogReason = logisticsForm.need_info_reason || (finalPendingDocs.length > 0 ? `Pendência documental: ${finalPendingDocs.join(', ')}` : (logisticsForm.notes || 'Logística solicitou informações adicionais ao Comercial'));
         await dbService.addSupplierTask({
           supplier_id: supplier.id,
           description: `Logística precisa de info: ${backlogReason}`,
@@ -4144,10 +4144,10 @@ export default function SupplierDetailPage() {
             )}
 
           {logisticsForm.feasibility === 'NEED_INFO' && (
-            <Input label={language === 'pt' ? 'O que precisa ser esclarecido com Compras? (Gera pendência automática) *' : 'What needs to be clarified with Commercial? (Creates auto-task) *'}
+            <Input label={language === 'pt' ? 'O que precisa ser esclarecido com Compras? (Gera pendência automática)' : 'What needs to be clarified with Commercial? (Creates auto-task)'}
               value={logisticsForm.need_info_reason}
               onChange={e => setLogisticsForm(p => ({ ...p, need_info_reason: e.target.value }))}
-              placeholder={language === 'pt' ? 'Ex: Confirmar se o acesso do caminhão Truck comporta portão de 4m' : 'E.g. Confirm whether 4m gate allows Truck access'} required />
+              placeholder={language === 'pt' ? 'Ex: Confirmar se o acesso do caminhão Truck comporta portão de 4m' : 'E.g. Confirm whether 4m gate allows Truck access'} />
           )}
 
           <Input label={language === 'pt' ? 'Infraestrutura necessária no local' : 'Infrastructure needed on site'}
