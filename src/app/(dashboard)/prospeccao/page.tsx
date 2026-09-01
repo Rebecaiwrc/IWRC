@@ -1314,7 +1314,7 @@ export default function ProspectingPage() {
               {profiles
                 .filter(p => p.role !== 'SUPER_ADMIN' && !p.email?.toLowerCase().includes('adm@123.com') && !p.name?.toLowerCase().includes('admin master'))
                 .map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
             </select>
           </div>
@@ -2561,7 +2561,7 @@ export default function ProspectingPage() {
                 >
                   <option value="">{language === 'pt' ? 'Selecione o responsável...' : 'Select responsible...'}</option>
                   {profiles.filter(p => p.role !== 'SUPER_ADMIN').map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                    <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
               </div>
