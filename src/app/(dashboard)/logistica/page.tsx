@@ -54,12 +54,10 @@ import {
 import Link from 'next/link';
 
 export const DOC_CHECKLIST = [
-  { key: 'Aguardando documentação', label: 'Aguardando documentação' },
-  { key: 'Aguardando dados MTR',     label: 'Aguardando dados MTR' },
-  { key: 'Carta de Doação',          label: 'Carta de Doação' },
-  { key: 'Cartão CNPJ',              label: 'Cartão CNPJ' },
-  { key: 'Doc. do Responsável',      label: 'Doc. do Responsável' },
-  { key: 'Outros',                   label: 'Outros (digitar pendência)' }
+  { key: 'Aguardando dados do MTR',    label: 'Aguardando dados do MTR' },
+  { key: 'Aguardando Carta de Doação', label: 'Aguardando Carta de Doação' },
+  { key: 'Aguardando Nota Fiscal',     label: 'Aguardando Nota Fiscal' },
+  { key: 'Outros',                     label: 'Outros (digitar pendência)' }
 ];
 
 export const transportTypeOptions = [
