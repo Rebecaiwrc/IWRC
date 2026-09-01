@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { UserRole, Profile } from '@/types';
 import { 
@@ -12,7 +12,7 @@ import {
   Truck, 
   Calendar, 
   Scale, 
-  TrendingUp,
+  TrendingUp, 
   LogOut, 
   Layers, 
   RotateCcw,
@@ -29,6 +29,7 @@ import { getLogisticsSlaInfo } from '@/lib/utils';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user, logout, switchUserById } = useAuth();
   const { t } = useLanguage();
@@ -208,7 +209,25 @@ export const Sidebar: React.FC = () => {
           )}
           
           {allowedItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const fromParam = searchParams?.get('from');
+            let isActive = false;
+
+            if (pathname.startsWith('/fornecedores/')) {
+              if (fromParam === 'logistica') {
+                isActive = item.href === '/logistica';
+              } else if (fromParam === 'prospeccao') {
+                isActive = item.href === '/prospeccao';
+              } else if (fromParam === 'compras') {
+                isActive = item.href === '/compras';
+              } else {
+                isActive = item.href === '/fornecedores';
+              }
+            } else if (item.href === '/dashboard') {
+              isActive = pathname === '/dashboard';
+            } else {
+              isActive = pathname.startsWith(item.href);
+            }
+
             const Icon = item.icon;
             return (
               <Link

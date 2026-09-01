@@ -1033,7 +1033,7 @@ export default function LogisticsPage() {
                           <td className="px-6 py-4 text-slate-500 text-xs">{supplier.responsible?.name || (language === 'pt' ? 'Não atribuído' : 'Unassigned')}</td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Link href={`/fornecedores/${supplier.id}`}>
+                              <Link href={`/fornecedores/${supplier.id}?from=logistica`}>
                                 <button className="text-xs text-[#2098D1] hover:text-[#1883B5] bg-[#E5F5F8] px-3 py-1.5 rounded-full font-bold border border-[#CCEAF1] cursor-pointer">
                                   {language === 'pt' ? 'Analisar' : 'Review'}
                                 </button>

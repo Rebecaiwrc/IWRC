@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { dbService } from '@/features/shared/services/dbService';
 import { 
   Supplier, 
@@ -78,6 +78,8 @@ import {
   Camera,
   ZoomIn,
   Image as ImageIcon,
+  ArrowLeft,
+  FileEdit,
   X
 } from 'lucide-react';
 import {
@@ -326,6 +328,8 @@ const newLine = (): MaterialLine => ({
 export default function SupplierDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromModule = searchParams?.get('from');
   const supplierId = params.id as string;
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
@@ -1457,8 +1461,11 @@ export default function SupplierDetailPage() {
   const sortedTimeline = timelineEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const activeLogistics = supplier.logistics_analyses?.[0];
   const primaryContact = supplier.contacts?.find(c => c.is_primary) || supplier.contacts?.[0];
-  const isLeadInEvaluation = ['PROSPECTING', 'QUALIFICATION', 'LOGISTICS'].includes(supplier.current_stage) && 
-    (!activeLogistics || !activeLogistics.feasibility || activeLogistics.feasibility === 'PENDING' || activeLogistics.feasibility === 'IN_PROGRESS');
+  const isLeadInEvaluation = 
+    supplier.current_stage === 'LOGISTICS' || 
+    supplier.prospecting_status === 'WAITING_LOGISTICS' ||
+    ['PROSPECTING', 'QUALIFICATION'].includes(supplier.current_stage) ||
+    (!activeLogistics || !activeLogistics.feasibility || activeLogistics.feasibility === 'PENDING' || activeLogistics.feasibility === 'IN_PROGRESS' || activeLogistics.feasibility === 'NEED_INFO');
 
   const storagePhotos = (supplier.attached_documents || []).filter(
     d => d.type === 'storage_photo' || 
@@ -1474,32 +1481,49 @@ export default function SupplierDetailPage() {
       {/* ===================== VIEW A: ANÁLISE DO LEAD / LOGÍSTICA ===================== */}
       {isLeadInEvaluation ? (
         <div className="space-y-6">
-          {/* Top Breadcrumb */}
-          <div className="flex items-center justify-between">
+          {/* Top Return Banner & Context Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 border border-[#CCEAF1] dark:border-slate-800 rounded-2xl shadow-xs">
             <Link 
-              href={supplier.current_stage === 'LOGISTICS' ? "/logistica" : "/prospeccao"} 
-              className="text-xs text-slate-500 hover:text-slate-900 font-semibold transition-all flex items-center gap-1"
+              href={fromModule === 'logistica' || supplier.current_stage === 'LOGISTICS' ? "/logistica" : fromModule === 'compras' ? "/compras" : "/prospeccao"} 
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#EBF7FA] hover:bg-[#DDF4F9] text-[#2098D1] hover:text-[#187A9C] text-xs font-bold rounded-xl border border-[#CCEAF1] transition-all cursor-pointer shadow-xs w-fit"
             >
-              ← Voltar para {supplier.current_stage === 'LOGISTICS' ? "Análise Logística" : "Funil de Prospecção"}
+              <ArrowLeft size={16} />
+              {fromModule === 'logistica' || supplier.current_stage === 'LOGISTICS'
+                ? (language === 'pt' ? '← Voltar para fila da Logística' : '← Back to Logistics Queue')
+                : (language === 'pt' ? '← Voltar para Prospecção' : '← Back to Prospecting')}
             </Link>
-            <span className="text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold uppercase px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800 flex items-center gap-1.5">
-              {supplier.current_stage === 'LOGISTICS' ? (
-                <>
-                  <Truck size={13} />
-                  Lead em Análise Logística
-                </>
-              ) : supplier.current_stage === 'PROSPECTING' ? (
-                <>
-                  <GitBranch size={13} />
-                  Lead em Prospecção
-                </>
-              ) : (
-                <>
-                  <CheckCircle size={13} />
-                  Lead em Qualificação
-                </>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold uppercase px-3.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 flex items-center gap-1.5 shadow-xs">
+                {supplier.current_stage === 'LOGISTICS' || fromModule === 'logistica' ? (
+                  <>
+                    <Truck size={14} className="text-indigo-600 shrink-0" />
+                    {language === 'pt' ? 'Módulo Logística • Lead em Análise' : 'Logistics Module • Lead in Review'}
+                  </>
+                ) : supplier.current_stage === 'PROSPECTING' ? (
+                  <>
+                    <GitBranch size={14} className="shrink-0" />
+                    {language === 'pt' ? 'Módulo Comercial • Lead em Prospecção' : 'Commercial Module • Prospecting Lead'}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={14} className="shrink-0" />
+                    {language === 'pt' ? 'Módulo Comercial • Lead em Qualificação' : 'Commercial Module • Qualification Lead'}
+                  </>
+                )}
+              </span>
+
+              {canUserRespondLogistics() && (supplier.current_stage === 'LOGISTICS' || fromModule === 'logistica') && (
+                <Button 
+                  size="sm" 
+                  className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs font-bold text-xs" 
+                  onClick={handleOpenLogisticsModal}
+                >
+                  <FileEdit size={14} />
+                  {language === 'pt' ? 'Responder Análise Logística' : 'Respond to Analysis'}
+                </Button>
               )}
-            </span>
+            </div>
           </div>
 
           {!canUserModifySupplier() && (
@@ -2159,8 +2183,18 @@ export default function SupplierDetailPage() {
         <>
           {/* Top Breadcrumb */}
           <div className="flex items-center justify-between">
-            <Link href="/fornecedores" className="text-xs text-slate-500 hover:text-slate-900 font-semibold transition-all">
-              ← Voltar para Geradores
+            <Link 
+              href={fromModule === 'logistica' ? "/logistica" : fromModule === 'compras' ? "/compras" : fromModule === 'prospeccao' ? "/prospeccao" : "/fornecedores"} 
+              className="inline-flex items-center gap-1.5 text-xs text-[#2098D1] hover:text-[#187A9C] font-bold transition-all bg-[#EAF7FA] px-3.5 py-2 rounded-xl border border-[#CCEAF1] shadow-xs"
+            >
+              <ArrowLeft size={14} />
+              {fromModule === 'logistica'
+                ? (language === 'pt' ? 'Voltar para Logística' : 'Back to Logistics')
+                : fromModule === 'compras'
+                  ? (language === 'pt' ? 'Voltar para Compras' : 'Back to Purchases')
+                  : fromModule === 'prospeccao'
+                    ? (language === 'pt' ? 'Voltar para Prospecção' : 'Back to Prospecting')
+                    : (language === 'pt' ? 'Voltar para Geradores' : 'Back to Generators')}
             </Link>
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase">
               {language === 'pt' ? 'Código' : 'Code'}: {formatSupplierCode(supplier.code)}
