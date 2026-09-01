@@ -21,28 +21,40 @@ body {
   min-height: 100vh;
 }
 
-/* Custom smooth scrollbar in iWrc cyan */
+/* Global Standard Scrollbars across all pages, modules and containers */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: #6BBFD4 #EEF8FA;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 11px;
+  height: 11px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #EAF7FA;
+  background: #EEF8FA;
   border-radius: 9999px;
+  margin: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #9BD7E6;
+  background: #6BBFD4;
   border-radius: 9999px;
-  border: 1.5px solid #EAF7FA;
+  border: 2px solid #EEF8FA;
+  min-height: 44px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #2098D1;
+  border-color: #E2F4F7;
 }
 
-/* Modal specific vertical scrollbar - comfortable thickness, highly visible and easy to grab */
+::-webkit-scrollbar-thumb:active {
+  background: #147BAA;
+}
+
+/* Modal and Drawer specific vertical scrollbar */
 .custom-modal-scrollbar {
   scrollbar-width: auto;
   scrollbar-color: #6BBFD4 #EEF8FA;

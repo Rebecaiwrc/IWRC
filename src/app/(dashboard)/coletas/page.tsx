@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { dbService } from '@/features/shared/services/dbService';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { useAuth } from '@/features/auth/context/AuthContext';
@@ -23,7 +23,14 @@ import {
   FileCheck,
   Scale,
   UserCheck,
-  ShieldCheck
+  ShieldCheck,
+  Search,
+  Filter,
+  RotateCcw,
+  X,
+  Layers,
+  CalendarRange,
+  ArrowUpDown
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -33,6 +40,14 @@ export default function CollectionsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [vehicleFilter, setVehicleFilter] = useState('ALL');
+  const [materialFilter, setMaterialFilter] = useState('ALL');
 
   const fetchData = async () => {
     try {
@@ -67,10 +82,117 @@ export default function CollectionsPage() {
     );
   };
 
-  const visibleCollections = collections.filter(c => {
-    const sup = c.supplier || suppliers.find(s => s.id === c.supplier_id);
-    return isResponsibleForSupplier(sup);
-  });
+  // Base list of collections visible to current user
+  const visibleCollections = useMemo(() => {
+    return collections.filter(c => {
+      const sup = c.supplier || suppliers.find(s => s.id === c.supplier_id);
+      return isResponsibleForSupplier(sup);
+    });
+  }, [collections, suppliers, currentUser, isBuyer]);
+
+  // Extract unique materials from collections for the filter dropdown
+  const availableMaterials = useMemo(() => {
+    const matSet = new Set<string>();
+    visibleCollections.forEach(c => {
+      (c.items || []).forEach(item => {
+        if (item.material_name?.trim()) {
+          matSet.add(item.material_name.trim());
+        }
+      });
+    });
+    return Array.from(matSet).sort();
+  }, [visibleCollections]);
+
+  // Extract unique vehicle / carrier / transport types for the filter dropdown
+  const availableVehicles = useMemo(() => {
+    const vSet = new Set<string>(['VUC', 'Toco', 'Truck', 'Carreta', 'Fiorino / Van']);
+    visibleCollections.forEach(c => {
+      if (c.carrier_name?.trim()) vSet.add(c.carrier_name.trim());
+      const sup = c.supplier || suppliers.find(s => s.id === c.supplier_id);
+      const transType = sup?.logistics_analyses?.[0]?.transport_type;
+      if (transType?.trim()) vSet.add(transType.trim());
+    });
+    return Array.from(vSet).sort();
+  }, [visibleCollections, suppliers]);
+
+  const hasActiveFilters = Boolean(
+    searchQuery.trim() ||
+    startDate ||
+    endDate ||
+    statusFilter !== 'ALL' ||
+    vehicleFilter !== 'ALL' ||
+    materialFilter !== 'ALL'
+  );
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setStartDate('');
+    setEndDate('');
+    setStatusFilter('ALL');
+    setVehicleFilter('ALL');
+    setMaterialFilter('ALL');
+  };
+
+  // Filter and sort chronologically from closest to furthest date
+  const filteredAndSortedCollections = useMemo(() => {
+    return visibleCollections
+      .filter(col => {
+        const sup = col.supplier || suppliers.find(s => s.id === col.supplier_id);
+
+        // 1. Search Query (Generator name, trade name, document, code)
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase().trim();
+          const nameMatch = sup?.name?.toLowerCase().includes(query);
+          const tradeMatch = sup?.trade_name?.toLowerCase().includes(query);
+          const codeMatch = sup?.code?.toLowerCase().includes(query);
+          const docMatch = sup?.document?.toLowerCase().includes(query);
+          const driverMatch = col.driver_name?.toLowerCase().includes(query);
+          const carrierMatch = col.carrier_name?.toLowerCase().includes(query);
+          if (!nameMatch && !tradeMatch && !codeMatch && !docMatch && !driverMatch && !carrierMatch) {
+            return false;
+          }
+        }
+
+        // 2. Date Period (Start Date & End Date)
+        if (startDate && col.scheduled_date) {
+          if (col.scheduled_date < startDate) return false;
+        }
+        if (endDate && col.scheduled_date) {
+          if (col.scheduled_date > endDate) return false;
+        }
+
+        // 3. Status Filter
+        if (statusFilter !== 'ALL') {
+          if (col.status !== statusFilter) return false;
+        }
+
+        // 4. Vehicle / Transport Filter
+        if (vehicleFilter !== 'ALL') {
+          const vQuery = vehicleFilter.toLowerCase();
+          const carrierMatch = col.carrier_name?.toLowerCase().includes(vQuery);
+          const driverMatch = col.driver_name?.toLowerCase().includes(vQuery);
+          const logTransportMatch = sup?.logistics_analyses?.[0]?.transport_type?.toLowerCase().includes(vQuery);
+          if (!carrierMatch && !driverMatch && !logTransportMatch) return false;
+        }
+
+        // 5. Material Filter
+        if (materialFilter !== 'ALL') {
+          const mQuery = materialFilter.toLowerCase();
+          const hasMaterial = (col.items || []).some(item => 
+            item.material_name?.toLowerCase().includes(mQuery)
+          );
+          if (!hasMaterial) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        // Chronological ascending order: closest date first, furthest later
+        const timeA = a.scheduled_date ? new Date(a.scheduled_date + 'T00:00:00').getTime() : 9999999999999;
+        const timeB = b.scheduled_date ? new Date(b.scheduled_date + 'T00:00:00').getTime() : 9999999999999;
+        return timeA - timeB;
+      });
+  }, [visibleCollections, suppliers, searchQuery, startDate, endDate, statusFilter, vehicleFilter, materialFilter]);
 
   if (loading) {
     return (
@@ -93,7 +215,7 @@ export default function CollectionsPage() {
             {t('collections.title', 'Programação de Coletas')}
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            {t('collections.subtitle', 'Acompanhe as coletas programadas e realize o recebimento dos materiais.')}
+            {t('collections.subtitle', 'Acompanhe as coletas programadas organizadas cronologicamente e realize o recebimento dos materiais.')}
           </p>
         </div>
 
@@ -113,11 +235,165 @@ export default function CollectionsPage() {
         </div>
       </div>
 
+      {/* FILTERS PANEL */}
+      <Card className="p-4 border border-[#CCEAF1] dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+          <div className="flex items-center gap-2 text-xs font-black text-[#0D2439] dark:text-slate-200 uppercase tracking-wider">
+            <Filter size={15} className="text-[#2098D1]" />
+            <span>{language === 'pt' ? 'Filtros de Pesquisa' : 'Search Filters'}</span>
+            <span className="text-[11px] font-bold text-slate-500 bg-[#EAF7FA] px-2 py-0.5 rounded-full border border-[#CCEAF1]">
+              {filteredAndSortedCollections.length} {filteredAndSortedCollections.length === 1 ? (language === 'pt' ? 'coleta' : 'collection') : (language === 'pt' ? 'coletas' : 'collections')}
+            </span>
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer w-fit"
+            >
+              <RotateCcw size={13} />
+              {language === 'pt' ? 'Limpar filtros' : 'Clear filters'}
+            </button>
+          )}
+        </div>
+
+        {/* Row 1: Search, Status, Material, Vehicle */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          
+          {/* Gerador / Empresa Search */}
+          <div className="relative">
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+              {language === 'pt' ? 'Gerador / Empresa' : 'Generator / Company'}
+            </label>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={language === 'pt' ? 'Buscar gerador, CNPJ...' : 'Search generator...'}
+                className="w-full pl-8.5 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Status da Coleta */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+              {language === 'pt' ? 'Status da Coleta' : 'Collection Status'}
+            </label>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] font-medium cursor-pointer"
+            >
+              <option value="ALL">{language === 'pt' ? 'Todos os status' : 'All statuses'}</option>
+              <option value="SCHEDULED">{language === 'pt' ? 'Agendada' : 'Scheduled'}</option>
+              <option value="IN_TRANSIT">{language === 'pt' ? 'Em Trânsito' : 'In Transit'}</option>
+              <option value="COMPLETED">{language === 'pt' ? 'Concluída' : 'Completed'}</option>
+              <option value="CANCELLED">{language === 'pt' ? 'Cancelada' : 'Cancelled'}</option>
+            </select>
+          </div>
+
+          {/* Material */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+              {language === 'pt' ? 'Material' : 'Material'}
+            </label>
+            <select
+              value={materialFilter}
+              onChange={e => setMaterialFilter(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] font-medium cursor-pointer"
+            >
+              <option value="ALL">{language === 'pt' ? 'Todos os materiais' : 'All materials'}</option>
+              {availableMaterials.map(mat => (
+                <option key={mat} value={mat}>{mat}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Veículo / Transporte */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+              {language === 'pt' ? 'Tipo de Veículo / Transporte' : 'Vehicle / Transport Type'}
+            </label>
+            <select
+              value={vehicleFilter}
+              onChange={e => setVehicleFilter(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] font-medium cursor-pointer"
+            >
+              <option value="ALL">{language === 'pt' ? 'Todos os transportes' : 'All transports'}</option>
+              {availableVehicles.map(veh => (
+                <option key={veh} value={veh}>{veh}</option>
+              ))}
+            </select>
+          </div>
+
+        </div>
+
+        {/* Row 2: Date Period (De / Até) */}
+        <div className="flex flex-wrap items-end gap-3 pt-1 border-t border-slate-100 dark:border-slate-800/40">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
+            <CalendarRange size={14} className="text-[#2098D1]" />
+            <span>{language === 'pt' ? 'Período da Coleta:' : 'Collection Period:'}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div>
+              <span className="text-[10px] text-slate-400 font-bold block mb-0.5">{language === 'pt' ? 'De' : 'From'}</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
+              />
+            </div>
+
+            <div>
+              <span className="text-[10px] text-slate-400 font-bold block mb-0.5">{language === 'pt' ? 'Até' : 'To'}</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] font-medium"
+              />
+            </div>
+          </div>
+
+          {/* Chronological order indicator */}
+          <div className="ml-auto text-[11px] text-[#2098D1] bg-[#EAF7FA] dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-[#CCEAF1] font-semibold flex items-center gap-1.5">
+            <ArrowUpDown size={12} />
+            <span>{language === 'pt' ? 'Ordenação: Data mais próxima primeiro' : 'Sort: Closest date first'}</span>
+          </div>
+        </div>
+      </Card>
+
       {/* Collections list */}
       <Card className="overflow-hidden !p-0 border border-slate-200 dark:border-slate-800 shadow-sm">
-        {visibleCollections.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-sm">
-            {language === 'pt' ? 'Nenhuma coleta cadastrada para o seu usuário.' : 'No collections registered for your account.'}
+        {filteredAndSortedCollections.length === 0 ? (
+          <div className="p-12 text-center text-slate-400 text-sm space-y-2">
+            <p className="font-semibold">
+              {hasActiveFilters 
+                ? (language === 'pt' ? 'Nenhuma coleta encontrada com os filtros selecionados.' : 'No collections match the selected filters.')
+                : (language === 'pt' ? 'Nenhuma coleta cadastrada para o seu usuário.' : 'No collections registered for your account.')}
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearFilters}
+                className="text-xs text-[#2098D1] hover:underline font-bold cursor-pointer"
+              >
+                {language === 'pt' ? 'Limpar todos os filtros' : 'Clear all filters'}
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto text-sm">
@@ -133,11 +409,11 @@ export default function CollectionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {visibleCollections.map((col) => (
+                {filteredAndSortedCollections.map((col) => (
                   <tr key={col.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-slate-400" />
+                        <Calendar size={14} className="text-[#2098D1]" />
                         <span className="font-bold text-slate-900 dark:text-white">{formatDate(col.scheduled_date)}</span>
                       </div>
                     </td>
