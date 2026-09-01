@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E2A40" />
+      <stop offset="100%" stop-color="#05121E" />
+    </linearGradient>
+
+    <!-- Cyan Gradient -->
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0EA5E9" />
+    </linearGradient>
+
+    <!-- Border Glow Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.65" />
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="glowShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- Container Squircle -->
+  <rect x="3" y="3" width="122" height="122" rx="28" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="3" />
+
+  <!-- Subtle Inner Ring -->
+  <rect x="6" y="6" width="116" height="116" rx="25" fill="none" stroke="#38BDF8" stroke-width="1" stroke-opacity="0.2" />
+
+  <!-- Monogram "iW" -->
+  <g filter="url(#glowShadow)">
+    <!-- Dot of the "i" -->
+    <circle cx="31" cy="36" r="12" fill="url(#cyanGrad)" />
+
+    <!-- Body of the "i" -->
+    <rect x="19" y="56" width="24" height="49" rx="12" fill="url(#cyanGrad)" />
+
+    <!-- Letter "W" in bold white rounded strokes -->
+    <path 
+      d="M 52 56 L 64 104 L 80 57 L 95 104 L 109 56" 
+      fill="none" 
+      stroke="#FFFFFF" 
+      stroke-width="14" 
+      stroke-linecap="round" 
+      stroke-linejoin="round" 
+    />
+  </g>
+</svg>

@@ -18,9 +18,15 @@ export const metadata: Metadata = {
   title: "iWrc ERP - Sistema de Gestão de Geradores",
   description: "ERP Interno para prospecção, homologação, logística e recebimento de resíduos - iWrc Economia Circular",
   icons: {
-    icon: "/iwrc-logo.png",
-    shortcut: "/iwrc-logo.png",
-    apple: "/iwrc-logo.png",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 
