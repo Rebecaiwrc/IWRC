@@ -401,6 +401,7 @@ export default function SupplierDetailPage() {
     notes: ''
   });
   const [selectedPhotoForLightbox, setSelectedPhotoForLightbox] = useState<AttachedDocument | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
 
   const [newInteraction, setNewInteraction] = useState({
     type: '',
@@ -646,8 +647,6 @@ export default function SupplierDetailPage() {
       alert(language === 'pt' ? 'Erro ao excluir gerador.' : 'Error deleting generator.');
     }
   };
-
-  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
 
   const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault();
