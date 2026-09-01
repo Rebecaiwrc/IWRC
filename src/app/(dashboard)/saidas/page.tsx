@@ -31,9 +31,9 @@ import {
   ArrowDownLeft,
   Boxes,
   Printer,
-  ShieldCheck,
-  UserCheck,
-  FileText
+  FileText,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export const DISPATCH_DESTINATION_OPTIONS: { value: DispatchDestinationType; label: string }[] = [
@@ -69,6 +69,9 @@ export default function SaidasPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Financial values privacy toggle for Admin
+  const [hideFinancialValues, setHideFinancialValues] = useState(false);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,7 +118,8 @@ export default function SaidasPage() {
   });
 
   const isBuyer = currentUser?.role === 'BUYER';
-  const canManageDispatches = currentUser?.role === 'LOGISTICS' || currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const canManageDispatches = currentUser?.role === 'LOGISTICS' || isAdmin;
 
   const isResponsibleForSupplier = useCallback((s?: Supplier | null) => {
     if (!s || !currentUser) return false;
@@ -168,11 +172,12 @@ export default function SaidasPage() {
   }, [dispatches]);
 
   const totalRevenue = useMemo(() => {
+    if (!isAdmin) return 0;
     return dispatches.reduce((acc, d) => acc + (Number(d.total_value) || 0), 0);
-  }, [dispatches]);
+  }, [dispatches, isAdmin]);
 
   const currentHubBalanceKg = Math.max(0, totalReceivedKg - totalDispatchedKg);
-  const avgPricePerKg = totalDispatchedKg > 0 ? (totalRevenue / totalDispatchedKg) : 0;
+  const avgPricePerKg = totalDispatchedKg > 0 && isAdmin ? (totalRevenue / totalDispatchedKg) : 0;
 
   // Filtered Dispatches List
   const filteredDispatches = useMemo(() => {
@@ -218,8 +223,10 @@ export default function SaidasPage() {
         buyer_document: form.buyer_document || null,
         material_name: finalMaterial || 'Material Geral',
         quantity_kg: Number(form.quantity_kg) || 0,
-        unit_price: Number(form.unit_price) || 0,
-        total_value: Number(form.total_value) || (Number(form.quantity_kg) * Number(form.unit_price)),
+        unit_price: isAdmin ? (Number(form.unit_price) || 0) : 0,
+        total_value: isAdmin 
+          ? (Number(form.total_value) || (Number(form.quantity_kg) * Number(form.unit_price))) 
+          : 0,
         dispatch_date: form.dispatch_date,
         invoice_number: form.invoice_number || null,
         mtr_number: form.mtr_number || null,
@@ -251,7 +258,6 @@ export default function SaidasPage() {
       });
 
       await fetchData();
-      alert(language === 'pt' ? 'Saída de material registrada com sucesso no Hub!' : 'Material dispatch recorded successfully at the Hub!');
     } catch (err: any) {
       console.error(err);
       alert(`Erro ao registrar saída: ${err.message || 'Falha ao salvar'}`);
@@ -283,18 +289,6 @@ export default function SaidasPage() {
     }, 200);
   };
 
-  const handleClearHubData = async () => {
-    if (!confirm(language === 'pt' ? 'Deseja realmente zerar todas as pesagens de recebimento e saídas de testes do Hub (resetar saldo para 0 kg)?' : 'Do you want to reset all test receipts and dispatches to 0 kg?')) return;
-    try {
-      await dbService.clearAllHubReceipts();
-      await fetchData();
-      alert(language === 'pt' ? 'Saldo do Hub e pesagens zerados com sucesso!' : 'Hub balance and receipts reset to 0!');
-    } catch (err) {
-      console.error(err);
-      alert(language === 'pt' ? 'Erro ao zerar dados do Hub.' : 'Error resetting Hub data.');
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -323,47 +317,22 @@ export default function SaidasPage() {
           </p>
         </div>
 
-        {/* User Scope & Action */}
-        <div className="flex items-center gap-3">
-          {isBuyer ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
-              <UserCheck size={14} />
-              {language === 'pt' ? 'Visão: Meus Processos de Compras' : 'View: My Buying Leads'}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
-              <ShieldCheck size={14} />
-              {language === 'pt' ? 'Visão: Geral do Hub (Todos)' : 'View: Hub Global (All)'}
-            </span>
-          )}
-
-          {canManageDispatches && (
-            <>
-              {totalReceivedKg > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={handleClearHubData}
-                  className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 text-xs font-bold rounded-xl cursor-pointer"
-                >
-                  <Trash2 size={14} />
-                  {language === 'pt' ? 'Zerar Saldo do Galpão' : 'Reset Hub Stock'}
-                </Button>
-              )}
-
-              <Button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-bold gap-2 shadow-lg shadow-purple-600/20 rounded-xl cursor-pointer"
-              >
-                <Plus size={16} />
-                {language === 'pt' ? 'Registrar Saída de Material' : 'Register Outbound Dispatch'}
-              </Button>
-            </>
-          )}
-        </div>
+        {/* Action Button */}
+        {canManageDispatches && (
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold gap-2 shadow-lg shadow-purple-600/20 rounded-xl cursor-pointer"
+            >
+              <Plus size={16} />
+              {language === 'pt' ? 'Registrar Saída de Material' : 'Register Outbound Dispatch'}
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Strategic Hub Balance Overview (Balanço Estratégico do Hub) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Strategic Hub Balance Overview */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
         
         {/* Total Recebido (Entradas) */}
         <Card className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden">
@@ -419,23 +388,36 @@ export default function SaidasPage() {
           </div>
         </Card>
 
-        {/* Faturamento Total com Vendas */}
-        <Card className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden">
-          <div className="h-12 w-12 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">
-              {language === 'pt' ? 'Faturamento Total de Saídas' : 'Total Dispatches Revenue'}
-            </p>
-            <h3 className="text-xl font-black text-emerald-600 mt-0.5">
-              {formatCurrency(totalRevenue)}
-            </h3>
-            <span className="text-[10px] text-emerald-700 font-semibold">
-              {formatCurrency(avgPricePerKg)} / kg médio
-            </span>
-          </div>
-        </Card>
+        {/* Faturamento Total com Vendas (EXCLUSIVO PARA ADMIN/GESTÃO) */}
+        {isAdmin && (
+          <Card className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden">
+            <div className="h-12 w-12 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
+              <DollarSign size={24} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-wider truncate">
+                  {language === 'pt' ? 'Faturamento Total de Saídas' : 'Total Dispatches Revenue'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setHideFinancialValues(prev => !prev)}
+                  className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                  title={hideFinancialValues ? (language === 'pt' ? 'Mostrar valores' : 'Show values') : (language === 'pt' ? 'Ocultar valores' : 'Hide values')}
+                >
+                  {hideFinancialValues ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+              </div>
+
+              <h3 className="text-xl font-black text-emerald-600 mt-0.5 truncate">
+                {hideFinancialValues ? 'R$ ••••••••' : formatCurrency(totalRevenue)}
+              </h3>
+              <span className="text-[10px] text-emerald-700 font-semibold block truncate">
+                {hideFinancialValues ? '•••• / kg médio' : `${formatCurrency(avgPricePerKg)} / kg médio`}
+              </span>
+            </div>
+          </Card>
+        )}
 
       </div>
 
@@ -509,7 +491,9 @@ export default function SaidasPage() {
                   <th className="px-6 py-4">{language === 'pt' ? 'Comprador / Destinatário' : 'Buyer / Destination'}</th>
                   <th className="px-6 py-4">{language === 'pt' ? 'Material Expedido' : 'Material'}</th>
                   <th className="px-6 py-4">{language === 'pt' ? 'Peso Líquido (kg)' : 'Net Weight (kg)'}</th>
-                  <th className="px-6 py-4">{language === 'pt' ? 'Preço e Total (R$)' : 'Price & Total (R$)'}</th>
+                  {isAdmin && (
+                    <th className="px-6 py-4">{language === 'pt' ? 'Preço e Total (R$)' : 'Price & Total (R$)'}</th>
+                  )}
                   <th className="px-6 py-4">{language === 'pt' ? 'NF-e & MTR' : 'Invoice & MTR'}</th>
                   <th className="px-6 py-4">{language === 'pt' ? 'Transporte' : 'Transport'}</th>
                   <th className="px-6 py-4">{language === 'pt' ? 'Destinação' : 'Destination'}</th>
@@ -550,17 +534,19 @@ export default function SaidasPage() {
                       {formatVolume(disp.quantity_kg, 'kg')}
                     </td>
 
-                    {/* Value */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-black text-emerald-600 block text-sm">
-                        {formatCurrency(disp.total_value)}
-                      </span>
-                      {disp.unit_price ? (
-                        <span className="text-[11px] text-slate-400 font-semibold">
-                          {formatCurrency(disp.unit_price)} / kg
+                    {/* Value (Admin Only) */}
+                    {isAdmin && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="font-black text-emerald-600 block text-sm">
+                          {hideFinancialValues ? 'R$ •••••' : formatCurrency(disp.total_value)}
                         </span>
-                      ) : null}
-                    </td>
+                        {!hideFinancialValues && disp.unit_price ? (
+                          <span className="text-[11px] text-slate-400 font-semibold">
+                            {formatCurrency(disp.unit_price)} / kg
+                          </span>
+                        ) : null}
+                      </td>
+                    )}
 
                     {/* NF-e and MTR */}
                     <td className="px-6 py-4 text-xs space-y-0.5">
@@ -698,7 +684,7 @@ export default function SaidasPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={`grid grid-cols-1 ${isAdmin ? 'sm:grid-cols-3' : 'sm:grid-cols-1'} gap-3`}>
               <Input
                 label={language === 'pt' ? 'Quantidade / Peso Líquido (kg) *' : 'Quantity / Net Weight (kg) *'}
                 type="number"
@@ -717,32 +703,36 @@ export default function SaidasPage() {
                 required
               />
 
-              <Input
-                label={language === 'pt' ? 'Preço Unitário (R$/kg)' : 'Unit Price (R$/kg)'}
-                type="number"
-                step="0.01"
-                value={form.unit_price}
-                onChange={e => {
-                  const price = e.target.value;
-                  const qty = form.quantity_kg;
-                  const autoTotal = (Number(qty) || 0) * (Number(price) || 0);
-                  setForm(p => ({ 
-                    ...p, 
-                    unit_price: price, 
-                    total_value: autoTotal > 0 ? autoTotal.toFixed(2) : p.total_value 
-                  }));
-                }}
-                placeholder="Ex: 0.85"
-              />
+              {isAdmin && (
+                <>
+                  <Input
+                    label={language === 'pt' ? 'Preço Unitário (R$/kg)' : 'Unit Price (R$/kg)'}
+                    type="number"
+                    step="0.01"
+                    value={form.unit_price}
+                    onChange={e => {
+                      const price = e.target.value;
+                      const qty = form.quantity_kg;
+                      const autoTotal = (Number(qty) || 0) * (Number(price) || 0);
+                      setForm(p => ({ 
+                        ...p, 
+                        unit_price: price, 
+                        total_value: autoTotal > 0 ? autoTotal.toFixed(2) : p.total_value 
+                      }));
+                    }}
+                    placeholder="Ex: 0.85"
+                  />
 
-              <Input
-                label={language === 'pt' ? 'Valor Total da Saída (R$)' : 'Total Dispatch Value (R$)'}
-                type="number"
-                step="0.01"
-                value={form.total_value}
-                onChange={e => setForm(p => ({ ...p, total_value: e.target.value }))}
-                placeholder="Ex: 4250.00"
-              />
+                  <Input
+                    label={language === 'pt' ? 'Valor Total da Saída (R$)' : 'Total Dispatch Value (R$)'}
+                    type="number"
+                    step="0.01"
+                    value={form.total_value}
+                    onChange={e => setForm(p => ({ ...p, total_value: e.target.value }))}
+                    placeholder="Ex: 4250.00"
+                  />
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
