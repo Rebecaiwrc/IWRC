@@ -291,6 +291,7 @@ export default function ReceiptsPage() {
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [selectedCollectionId, setSelectedCollectionId] = useState('');
   const [receivedDate, setReceivedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [notes, setNotes] = useState('');
   
   // Weigh items state
@@ -533,7 +534,9 @@ export default function ReceiptsPage() {
           supplier_id: targetSupplierId,
           collection_id: targetColId || null,
           received_date: currentReceivedDate,
-          notes: currentNotes || null
+          notes: currentNotes || null,
+          invoice_number: invoiceNumber.trim() || null,
+          invoice_status: 'PENDING_CHECK'
         },
         itemsToSave
       );
@@ -562,6 +565,7 @@ export default function ReceiptsPage() {
       // 3. Reset form immediately
       setSelectedSupplierId('');
       setSelectedCollectionId('');
+      setInvoiceNumber('');
       setNotes('');
       setWeighItems([]);
 
@@ -886,7 +890,14 @@ export default function ReceiptsPage() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1.5 pt-4 border-t border-slate-150 dark:border-slate-800">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4 border-t border-slate-150 dark:border-slate-800">
+                <Input
+                  label={language === 'pt' ? 'Número da Nota Fiscal (NF-e)' : 'Invoice Number (NF-e)'}
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                  placeholder={language === 'pt' ? 'Ex: 001.234 (opcional se não entregue)' : 'E.g. 001.234'}
+                />
+
                 <Input
                   label={language === 'pt' ? 'Notas do Recebimento / Observações da Balança' : 'Receipt / Scale Notes'}
                   value={notes}

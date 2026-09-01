@@ -289,6 +289,8 @@ export interface CollectionItem {
   unit: string;
 }
 
+export type ReceiptInvoiceStatus = 'PENDING_CHECK' | 'APPROVED' | 'DIVERGENT';
+
 export interface Receipt {
   id: string;
   supplier_id: string;
@@ -297,10 +299,23 @@ export interface Receipt {
   notes: string | null;
   created_at: string;
   
+  // Invoice verification fields
+  invoice_number?: string | null;
+  invoice_doc_id?: string | null;
+  invoice_status?: ReceiptInvoiceStatus;
+  invoice_checked_by?: string | null;
+  invoice_checked_at?: string | null;
+  invoice_divergence_reason?: string | null;
+  invoice_divergence_notes?: string | null;
+  corrected_invoice_number?: string | null;
+  corrected_invoice_doc_id?: string | null;
+  corrected_invoice_doc_url?: string | null;
+  
   // Joins
   supplier?: Supplier;
   collection?: Collection | null;
   items?: ReceiptItem[];
+  invoice_checked_by_profile?: Profile | null;
 }
 
 export interface ReceiptItem {

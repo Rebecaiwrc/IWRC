@@ -1488,6 +1488,15 @@ export const dbService = {
       collection_id: receiptData.collection_id || null,
       received_date: receiptData.received_date || new Date().toISOString().split('T')[0],
       notes: receiptData.notes || null,
+      invoice_number: receiptData.invoice_number || null,
+      invoice_doc_id: receiptData.invoice_doc_id || null,
+      invoice_status: receiptData.invoice_status || 'PENDING_CHECK',
+      invoice_checked_by: receiptData.invoice_checked_by || null,
+      invoice_checked_at: receiptData.invoice_checked_at || null,
+      invoice_divergence_reason: receiptData.invoice_divergence_reason || null,
+      invoice_divergence_notes: receiptData.invoice_divergence_notes || null,
+      corrected_invoice_number: receiptData.corrected_invoice_number || null,
+      corrected_invoice_doc_id: receiptData.corrected_invoice_doc_id || null,
       created_at: now
     };
 
@@ -1515,6 +1524,29 @@ export const dbService = {
 
     const allRec = await this.getReceipts();
     return allRec.find(r => r.id === receiptId)!;
+  },
+
+  async updateReceipt(id: string, updates: Partial<Receipt>): Promise<Receipt> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('receipts')
+        .update(updates)
+        .eq('id', id);
+      if (error) console.error('Error updating receipt in Supabase:', error);
+    }
+
+    const receipts = getLocalData<Receipt>('receipts', mockReceipts);
+    const index = receipts.findIndex(r => r.id === id);
+    if (index !== -1) {
+      receipts[index] = {
+        ...receipts[index],
+        ...updates
+      };
+      saveLocalData('receipts', receipts);
+    }
+
+    const allRec = await this.getReceipts();
+    return allRec.find(r => r.id === id)!;
   },
 
   async deleteReceipt(id: string): Promise<void> {
