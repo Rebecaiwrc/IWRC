@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { dbService } from '@/features/shared/services/dbService';
 import { Supplier, Collection, Receipt } from '@/types';
@@ -13,7 +13,18 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { formatDate, formatVolume } from '@/lib/utils';
-import { Scale, Building2, Calendar, ClipboardCheck, Plus, Trash2, ShieldCheck, UserCheck } from 'lucide-react';
+import { 
+  Scale, 
+  Building2, 
+  Calendar, 
+  ClipboardCheck, 
+  Plus, 
+  Trash2, 
+  ShieldCheck, 
+  UserCheck,
+  ChevronDown,
+  Check
+} from 'lucide-react';
 
 const MATERIAL_OPTIONS = [
   'Papelão', 
@@ -44,6 +55,210 @@ export const PACKAGING_UNIT_OPTIONS = [
   { value: 'granel', label: 'Granel' },
   { value: 'Outros', label: 'Outros (digitar embalagem)' }
 ];
+
+export function ScaleMaterialSelector({
+  value,
+  customValue,
+  declaredMaterials = [],
+  onChange,
+  onCustomChange,
+  language = 'pt'
+}: {
+  value: string;
+  customValue?: string;
+  declaredMaterials?: string[];
+  onChange: (val: string) => void;
+  onCustomChange: (val: string) => void;
+  language?: 'pt' | 'en';
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [showAllMaterials, setShowAllMaterials] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const allGeneralMaterials = [
+    'Papelão',
+    'Papel Branco Sigiloso',
+    'Papel Misto',
+    'Plástico Filme',
+    'Plástico Rígido',
+    'PET',
+    'Alumínio',
+    'Ferro/Aço',
+    'Cobre',
+    'Vidro',
+    'Eletrônicos',
+    'Eletrônicos (REEE)',
+    'Orgânicos',
+    'Recicláveis em geral'
+  ];
+
+  const cleanDeclared = Array.from(new Set(declaredMaterials.filter(Boolean)));
+
+  const handleSelect = (mat: string) => {
+    onChange(mat);
+    if (mat !== 'Outro') {
+      onCustomChange('');
+    }
+    setIsOpen(false);
+  };
+
+  const isCustom = value === 'Outro' || (!cleanDeclared.includes(value) && !allGeneralMaterials.includes(value) && Boolean(value));
+
+  const displayText = value
+    ? (value === 'Outro'
+        ? (customValue ? `${language === 'pt' ? 'Outro' : 'Other'}: ${customValue}` : (language === 'pt' ? 'Outro material...' : 'Other material...'))
+        : (cleanDeclared.includes(value) ? `⭐ ${value}` : value))
+    : (language === 'pt' ? 'Selecione o material...' : 'Select material...');
+
+  return (
+    <div className="flex flex-col gap-1 relative" ref={dropdownRef}>
+      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+        {language === 'pt' ? 'Nome do Material *' : 'Material Name *'}
+      </label>
+
+      {/* Select Trigger */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(prev => !prev)}
+        className={`w-full flex items-center justify-between px-3 py-2 text-xs bg-white dark:bg-slate-950 border rounded-xl outline-none transition-all cursor-pointer text-left font-medium ${
+          isOpen
+            ? 'border-[#2098D1] ring-2 ring-[#2098D1]/20 shadow-xs'
+            : 'border-slate-200 dark:border-slate-700 hover:border-[#2098D1]'
+        }`}
+      >
+        <span className={value ? 'text-slate-800 dark:text-slate-100 font-bold truncate' : 'text-slate-400'}>
+          {displayText}
+        </span>
+        <ChevronDown size={14} className={`text-slate-400 shrink-0 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#2098D1]' : ''}`} />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-slate-950 border border-[#CCEAF1] dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden py-1 max-h-80 overflow-y-auto animate-fadeIn custom-modal-scrollbar">
+          
+          {/* Section 1: Materiais Declarados / Previstos (com estrelinha ⭐) */}
+          {cleanDeclared.length > 0 && (
+            <div className="p-1 border-b border-slate-100 dark:border-slate-800 bg-[#F7FCFD] dark:bg-slate-900/60">
+              <div className="px-2.5 py-1 text-[10px] font-black text-[#2098D1] uppercase tracking-wider flex items-center gap-1">
+                <span>⭐</span> {language === 'pt' ? 'Material Previsto / Declarado' : 'Predicted Material'}
+              </div>
+              <div className="space-y-0.5">
+                {cleanDeclared.map(mat => {
+                  const isSelected = value === mat;
+                  return (
+                    <button
+                      key={`decl-${mat}`}
+                      type="button"
+                      onClick={() => handleSelect(mat)}
+                      className={`w-full px-3 py-2 text-left text-xs font-bold rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#E5F5F8] text-[#2098D1]'
+                          : 'text-slate-800 dark:text-slate-100 hover:bg-[#EAF7FA] hover:text-[#2098D1]'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 truncate">
+                        <span className="text-amber-500 shrink-0">⭐</span>
+                        <span className="truncate">{mat}</span>
+                        <span className="text-[10px] text-slate-400 font-normal shrink-0">({language === 'pt' ? 'Previsto' : 'Predicted'})</span>
+                      </span>
+                      {isSelected && <Check size={14} className="text-[#2098D1] shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Section 2: "Ver todos os materiais" accordion */}
+          <div className="p-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowAllMaterials(prev => !prev);
+              }}
+              className="w-full px-3 py-2 text-left text-xs font-bold text-slate-600 hover:text-[#2098D1] hover:bg-[#EAF7FA] rounded-lg flex items-center justify-between transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showAllMaterials ? 'rotate-180 text-[#2098D1]' : ''}`} />
+                <span>{language === 'pt' ? 'Ver todos os materiais' : 'View all materials'}</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-normal">({allGeneralMaterials.length})</span>
+            </button>
+
+            {showAllMaterials && (
+              <div className="pl-3 pr-1 py-1 space-y-0.5 border-l-2 border-[#CCEAF1] ml-3 mt-1 animate-fadeIn">
+                {allGeneralMaterials.map(mat => {
+                  const isSelected = value === mat;
+                  return (
+                    <button
+                      key={`gen-${mat}`}
+                      type="button"
+                      onClick={() => handleSelect(mat)}
+                      className={`w-full px-2.5 py-1.5 text-left text-xs rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#E5F5F8] text-[#2098D1] font-bold'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 hover:text-[#2098D1]'
+                      }`}
+                    >
+                      <span className="truncate">{mat}</span>
+                      {isSelected && <Check size={14} className="text-[#2098D1] shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: "Outro material" */}
+          <div className="p-1 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => handleSelect('Outro')}
+              className={`w-full px-3 py-2 text-left text-xs font-bold rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                value === 'Outro'
+                  ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <span>{language === 'pt' ? 'Outro material (digitar)' : 'Other material (custom)'}</span>
+              {value === 'Outro' && <Check size={14} className="text-amber-600 shrink-0" />}
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* Input when Outro is selected or custom material was entered */}
+      {(value === 'Outro' || (isCustom && value !== '')) && (
+        <input
+          type="text"
+          placeholder={language === 'pt' ? 'Digite o nome do material recebido...' : 'Type received material name...'}
+          value={customValue || (value === 'Outro' ? '' : value)}
+          onChange={e => onCustomChange(e.target.value)}
+          className="mt-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-[#2098D1] rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] font-medium animate-fadeIn"
+          required
+          autoFocus
+        />
+      )}
+    </div>
+  );
+}
 
 export default function ReceiptsPage() {
   const searchParams = useSearchParams();
@@ -159,9 +374,28 @@ export default function ReceiptsPage() {
     return isResponsibleForSupplier(sup);
   });
 
-  // Selected supplier declared materials
+  // Selected supplier & collection declared materials
   const selectedSupplier = visibleSuppliers.find(s => s.id === selectedSupplierId);
-  const declaredMaterials = selectedSupplier?.materials?.map(m => m.material_name) || [];
+  const selectedCollection = visibleCollections.find(c => c.id === selectedCollectionId);
+
+  const declaredMaterials = useMemo(() => {
+    const list: string[] = [];
+    if (selectedCollection?.items) {
+      selectedCollection.items.forEach(item => {
+        if (item.material_name?.trim() && !list.includes(item.material_name.trim())) {
+          list.push(item.material_name.trim());
+        }
+      });
+    }
+    if (selectedSupplier?.materials) {
+      selectedSupplier.materials.forEach(mat => {
+        if (mat.material_name?.trim() && !list.includes(mat.material_name.trim())) {
+          list.push(mat.material_name.trim());
+        }
+      });
+    }
+    return list;
+  }, [selectedSupplier, selectedCollection]);
 
   // Handle supplier change to update collections list
   const handleSupplierChange = (supplierId: string) => {
@@ -464,53 +698,23 @@ export default function ReceiptsPage() {
                           key={idx} 
                           className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl relative"
                         >
-                          {/* Material Selector */}
-                          <div className="md:col-span-4 space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
-                              {language === 'pt' ? 'Nome do Material *' : 'Material Name *'}
-                            </label>
-                            <select
-                              value={selectVal}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === 'Outro') {
-                                  handleUpdateWeighRow(idx, 'material_name', 'Outro');
-                                  handleUpdateWeighRow(idx, 'custom_material_name', '');
-                                } else {
-                                  handleUpdateWeighRow(idx, 'material_name', val);
+                          {/* Material Selector with Hierarchical Dropdown */}
+                          <div className="md:col-span-4">
+                            <ScaleMaterialSelector
+                              value={row.material_name}
+                              customValue={row.custom_material_name}
+                              declaredMaterials={declaredMaterials}
+                              onChange={(val) => {
+                                handleUpdateWeighRow(idx, 'material_name', val);
+                                if (val !== 'Outro') {
                                   handleUpdateWeighRow(idx, 'custom_material_name', '');
                                 }
                               }}
-                              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#2098D1] cursor-pointer font-medium"
-                              required
-                            >
-                              <option value="">{language === 'pt' ? 'Selecione o material...' : 'Select material...'}</option>
-                              {declaredMaterials.length > 0 && (
-                                <optgroup label={language === 'pt' ? 'Materiais Declarados do Gerador' : 'Declared Materials'}>
-                                  {declaredMaterials.map(m => (
-                                    <option key={`decl-${m}`} value={m}>⭐ {m}</option>
-                                  ))}
-                                </optgroup>
-                              )}
-                              <optgroup label={language === 'pt' ? 'Todos os Materiais' : 'All Materials'}>
-                                {MATERIAL_OPTIONS.map(opt => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </optgroup>
-                            </select>
-
-                            {(row.material_name === 'Outro' || (!isStd && row.material_name !== '')) && (
-                              <input
-                                type="text"
-                                placeholder={language === 'pt' ? 'Digite o nome do material...' : 'Type material name...'}
-                                value={row.custom_material_name !== undefined ? row.custom_material_name : (row.material_name === 'Outro' ? '' : row.material_name)}
-                                onChange={(e) => {
-                                  handleUpdateWeighRow(idx, 'custom_material_name', e.target.value);
-                                }}
-                                className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-[#2098D1] rounded-lg outline-none focus:ring-1 focus:ring-[#2098D1]"
-                                required
-                              />
-                            )}
+                              onCustomChange={(val) => {
+                                handleUpdateWeighRow(idx, 'custom_material_name', val);
+                              }}
+                              language={language}
+                            />
                           </div>
 
                           {/* Quantity */}
