@@ -20,6 +20,7 @@ import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
+import { useToast } from '@/features/shared/context/ToastContext';
 import { 
   translateStage, 
   getStageColor, 
@@ -333,6 +334,7 @@ export default function SupplierDetailPage() {
   const supplierId = params.id as string;
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
+  const { showSuccess, showError } = useToast();
 
   // Data state
   const [supplier, setSupplier] = useState<Supplier | null>(null);
@@ -1190,10 +1192,18 @@ export default function SupplierDetailPage() {
         notes: language === 'pt' ? 'Lead retirado da Logística pelo responsável' : 'Lead withdrawn from Logistics by owner'
       });
       await fetchSupplierData();
-      alert(language === 'pt' ? 'Lead retornado para a etapa de Qualificação com sucesso!' : 'Lead returned to Qualification successfully!');
+      showSuccess(
+        language === 'pt'
+          ? 'Lead retornado para a etapa de Qualificação com sucesso!'
+          : 'Lead returned to Qualification successfully!'
+      );
     } catch (err) {
       console.error(err);
-      alert(language === 'pt' ? 'Erro ao retirar lead da Logística.' : 'Error withdrawing lead.');
+      showError(
+        language === 'pt'
+          ? 'Erro ao retirar lead da Logística.'
+          : 'Error withdrawing lead.'
+      );
     }
   };
 
@@ -1250,10 +1260,14 @@ export default function SupplierDetailPage() {
       setIsRespondInfoModalOpen(false);
       setRespondInfoText('');
       await fetchSupplierData();
-      alert('Informações enviadas com sucesso! Gerador encaminhado para Aguardando agendamento da coleta na Logística.');
+      showSuccess(
+        language === 'pt'
+          ? 'Informações enviadas com sucesso! Gerador encaminhado para a Logística.'
+          : 'Information sent successfully! Generator forwarded to Logistics.'
+      );
     } catch (err) {
       console.error(err);
-      alert('Erro ao enviar informações.');
+      showError(language === 'pt' ? 'Erro ao enviar informações.' : 'Error sending information.');
     }
   };
 
@@ -1291,10 +1305,14 @@ export default function SupplierDetailPage() {
       });
 
       await fetchSupplierData();
-      alert('Gerador enviado com sucesso para a fila de Agendamento de Coletas da Logística!');
+      showSuccess(
+        language === 'pt'
+          ? 'Gerador enviado com sucesso para a fila de Agendamento de Coletas da Logística!'
+          : 'Generator sent to Logistics Scheduling queue successfully!'
+      );
     } catch (err) {
       console.error(err);
-      alert('Erro ao enviar para agendamento.');
+      showError(language === 'pt' ? 'Erro ao enviar para agendamento.' : 'Error sending to scheduling.');
     }
   };
 

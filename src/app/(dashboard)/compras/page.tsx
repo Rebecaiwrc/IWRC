@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
+import { useToast } from '@/features/shared/context/ToastContext';
 import { dbService } from '@/features/shared/services/dbService';
 import { Supplier, Profile, SupplierInteraction } from '@/types';
 import { 
@@ -49,6 +50,7 @@ import { Modal } from '@/components/ui/Modal';
 export default function ComprasPage() {
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
+  const { showSuccess, showError } = useToast();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -261,13 +263,18 @@ export default function ComprasPage() {
       setAttachedFiles([]);
       await fetchData();
 
-      alert(language === 'pt' 
-        ? `Sucesso! O retorno para "${supplierName}" foi enviado e o lead voltou automaticamente para a fila da Logística.` 
-        : `Success! Response for "${supplierName}" sent. Returned to Logistics queue.`
+      showSuccess(
+        language === 'pt'
+          ? 'Resposta enviada para a Logística com sucesso.'
+          : 'Response sent to Logistics successfully.'
       );
     } catch (err: any) {
       console.error('Error sending response to logistics:', err);
-      alert(language === 'pt' ? `Erro ao enviar resposta: ${err.message || 'Tente novamente.'}` : `Error sending response: ${err.message}`);
+      showError(
+        language === 'pt'
+          ? `Erro ao enviar resposta: ${err.message || 'Tente novamente.'}`
+          : `Error sending response: ${err.message}`
+      );
     } finally {
       setIsSubmitting(false);
     }

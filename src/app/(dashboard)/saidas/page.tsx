@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
+import { useToast } from '@/features/shared/context/ToastContext';
 import {
   formatDate,
   formatVolume,
@@ -65,6 +66,7 @@ export const DISPATCH_MATERIAL_OPTIONS = [
 export default function SaidasPage() {
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
+  const { showSuccess, showError } = useToast();
 
   const [dispatches, setDispatches] = useState<MaterialDispatch[]>([]);
   const [receipts, setReceipts] = useState<Receipt[]>([]);
@@ -263,9 +265,14 @@ export default function SaidasPage() {
       });
 
       await fetchData();
+      showSuccess(
+        language === 'pt'
+          ? 'Saída de material registrada com sucesso.'
+          : 'Material dispatch recorded successfully.'
+      );
     } catch (err: any) {
       console.error(err);
-      alert(`Erro ao registrar saída: ${err.message || 'Falha ao salvar'}`);
+      showError(`Erro ao registrar saída: ${err.message || 'Falha ao salvar'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -273,7 +280,7 @@ export default function SaidasPage() {
 
   const handleDeleteDispatch = async (id: string, buyer: string) => {
     if (!canManageDispatches) {
-      alert(language === 'pt' ? 'Apenas a equipe de Logística e Administradores podem excluir saídas de materiais.' : 'Only Logistics and Administrators can delete material dispatches.');
+      showError(language === 'pt' ? 'Apenas a equipe de Logística e Administradores podem excluir saídas de materiais.' : 'Only Logistics and Administrators can delete material dispatches.');
       return;
     }
 
@@ -281,9 +288,14 @@ export default function SaidasPage() {
     try {
       await dbService.deleteMaterialDispatch(id);
       await fetchData();
+      showSuccess(
+        language === 'pt'
+          ? 'Saída excluída com sucesso.'
+          : 'Dispatch deleted successfully.'
+      );
     } catch (err) {
       console.error(err);
-      alert(language === 'pt' ? 'Erro ao excluir saída.' : 'Error deleting dispatch.');
+      showError(language === 'pt' ? 'Erro ao excluir saída.' : 'Error deleting dispatch.');
     }
   };
 

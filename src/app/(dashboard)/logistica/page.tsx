@@ -9,8 +9,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
-import { useAuth } from '@/features/auth/context/AuthContext';
-import { useLanguage } from '@/features/shared/context/LanguageContext';
 import {
   translateFeasibility,
   getFeasibilityColor,
@@ -119,11 +117,15 @@ export const DISPATCH_MATERIAL_OPTIONS = [
   'Outros'
 ];
 
+import { useAuth } from '@/features/auth/context/AuthContext';
+import { useLanguage } from '@/features/shared/context/LanguageContext';
+import { useToast } from '@/features/shared/context/ToastContext';
 import { useRouter } from 'next/navigation';
 
 export default function LogisticsPage() {
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
+  const { showSuccess, showError, showToast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
@@ -468,10 +470,10 @@ export default function LogisticsPage() {
         notes: ''
       });
       await fetchData();
-      alert(language === 'pt' ? 'Saída de material registrada com sucesso!' : 'Material dispatch recorded successfully!');
+      showToast(language === 'pt' ? 'Saída de material registrada com sucesso.' : 'Material dispatch recorded successfully.');
     } catch (err: any) {
       console.error(err);
-      alert(`Erro ao registrar saída: ${err.message || 'Falha ao salvar'}`);
+      showToast(`Erro ao registrar saída: ${err.message || 'Falha ao salvar'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -482,9 +484,10 @@ export default function LogisticsPage() {
     try {
       await dbService.deleteMaterialDispatch(dispatchId);
       await fetchData();
+      showToast(language === 'pt' ? 'Saída excluída com sucesso.' : 'Dispatch deleted successfully.');
     } catch (err) {
       console.error(err);
-      alert(language === 'pt' ? 'Erro ao excluir saída.' : 'Error deleting dispatch.');
+      showToast(language === 'pt' ? 'Erro ao excluir saída.' : 'Error deleting dispatch.');
     }
   };
 
@@ -841,9 +844,10 @@ export default function LogisticsPage() {
     try {
       await dbService.deleteSupplier(supplierId);
       await fetchData();
+      showToast('Gerador excluído com sucesso.');
     } catch (err) {
       console.error(err);
-      alert('Erro ao excluir gerador.');
+      showToast('Erro ao excluir gerador.');
     }
   };
 

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useToast } from '@/features/shared/context/ToastContext';
 import { 
   ShieldCheck, 
   Activity, 
@@ -43,6 +44,7 @@ import {
 
 export default function SuperAdminPanelPage() {
   const { user: currentUser } = useAuth();
+  const { showSuccess, showError } = useToast();
 
   // State
   const [metrics, setMetrics] = useState<DatabaseQuotaMetrics | null>(null);
@@ -488,10 +490,10 @@ Acessar o sistema: ${loginUrl}
         throw new Error(data.error || 'Falha ao excluir usuário');
       }
       setUsersList(prev => prev.filter(u => u.id !== userId));
-      alert('Usuário excluído com sucesso.');
+      showSuccess('Usuário excluído com sucesso.');
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'Erro ao excluir usuário.');
+      showError(err.message || 'Erro ao excluir usuário.');
     }
   };
 
