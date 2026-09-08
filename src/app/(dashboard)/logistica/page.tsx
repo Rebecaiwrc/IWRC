@@ -50,7 +50,8 @@ import {
   UserCheck,
   ShieldCheck,
   Layers,
-  MessageSquare
+  MessageSquare,
+  ClipboardList
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -1815,28 +1816,50 @@ export default function LogisticsPage() {
             );
           })()}
 
-            {/* Buyer Checklist Recap (Momento 1 / 2) */}
-            {selectedSupplier.buyer_checklist && (
-              <div className="border border-sky-200 dark:border-sky-800 rounded-2xl overflow-hidden bg-sky-50/50 dark:bg-sky-950/20">
-                <button
-                  type="button"
-                  onClick={() => setShowBuyerChecklistRecap(!showBuyerChecklistRecap)}
-                  className="w-full flex items-center justify-between p-3.5 text-xs font-bold text-[#1883B5] dark:text-[#2098D1] hover:bg-sky-100/50 dark:hover:bg-sky-900/30 transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    📋 {language === 'pt' ? 'Checklist de Compras Preenchido pelo Comercial' : 'Buyer Checklist Filled by Commercial'}
+            {/* Informações Operacionais do Fornecedor (Checklist de Compras) */}
+            <div className="border border-sky-200 dark:border-sky-800 rounded-2xl overflow-hidden bg-sky-50/50 dark:bg-sky-950/20 shadow-xs">
+              <div className="w-full flex items-center justify-between p-3.5 bg-sky-100/60 dark:bg-sky-900/30 border-b border-sky-200 dark:border-sky-800">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 rounded-md bg-[#2098D1] text-white">
+                    <ClipboardList size={14} />
                   </span>
-                  <span className="text-[11px] font-semibold underline">
-                    {showBuyerChecklistRecap ? (language === 'pt' ? 'Ocultar' : 'Hide') : (language === 'pt' ? 'Exibir Respostas' : 'Show Answers')}
-                  </span>
-                </button>
-                {showBuyerChecklistRecap && (
-                  <div className="p-4 border-t border-sky-100 dark:border-sky-900/40 bg-white dark:bg-slate-900">
-                    <BuyerChecklistForm value={selectedSupplier.buyer_checklist} readOnly language={language} />
+                  <div>
+                    <h4 className="text-xs font-bold text-[#0E2439] dark:text-slate-100">
+                      {language === 'pt' ? 'Informações Operacionais do Fornecedor' : 'Supplier Operational Information'}
+                    </h4>
+                    <p className="text-[10px] text-[#4F7891] dark:text-slate-400">
+                      {language === 'pt' ? 'Respostas do Checklist de Compras (Armazenamento, Estrutura, Carregamento e Acesso)' : 'Buyer Checklist Answers (Storage, Structure, Loading & Access)'}
+                    </p>
                   </div>
+                </div>
+                {selectedSupplier.buyer_checklist && (
+                  <button
+                    type="button"
+                    onClick={() => setShowBuyerChecklistRecap(!showBuyerChecklistRecap)}
+                    className="text-[11px] font-bold text-[#1883B5] dark:text-[#2098D1] hover:underline cursor-pointer"
+                  >
+                    {showBuyerChecklistRecap ? (language === 'pt' ? 'Recolher' : 'Collapse') : (language === 'pt' ? 'Expandir' : 'Expand')}
+                  </button>
                 )}
               </div>
-            )}
+              
+              {selectedSupplier.buyer_checklist ? (
+                showBuyerChecklistRecap && (
+                  <div className="p-4 bg-white dark:bg-slate-900">
+                    <BuyerChecklistForm value={selectedSupplier.buyer_checklist} readOnly language={language} />
+                  </div>
+                )
+              ) : (
+                <div className="p-3.5 bg-amber-50/80 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-850 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2">
+                  <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-600" />
+                  <p>
+                    {language === 'pt'
+                      ? 'Nenhuma informação operacional preenchida por Compras ainda. Se faltarem dados essenciais para o transporte, selecione "Necessita Informação Adicional" abaixo para solicitar à equipe comercial.'
+                      : 'No operational information provided by Purchasing yet. Select "Need Additional Info" below if essential data is missing.'}
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* CHECKLIST DE LOGÍSTICA (Análise Operacional) */}
             <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl">

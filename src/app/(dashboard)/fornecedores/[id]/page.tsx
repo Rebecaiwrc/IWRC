@@ -329,6 +329,131 @@ const newLine = (): MaterialLine => ({
   storage_provision_quantity: '',
   storage_provision_custom_type: ''
 });
+
+function SupplierOperationalAndLogisticsCards({
+  supplier,
+  language,
+  onEditBuyerChecklist,
+  onOpenLogisticsModal,
+  canRespondLogistics
+}: {
+  supplier: Supplier;
+  language: 'pt' | 'en';
+  onEditBuyerChecklist: () => void;
+  onOpenLogisticsModal: () => void;
+  canRespondLogistics: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+      {/* 1. Informações Operacionais do Fornecedor (Checklist de Compras) */}
+      <Card className="space-y-4 border-l-4 border-l-[#2098D1]">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+              <ClipboardList size={16} className="text-[#2098D1]" />
+              {language === 'pt' ? 'Informações Operacionais do Fornecedor' : 'Supplier Operational Information'}
+            </h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              {language === 'pt' ? 'Checklist de Compras (Armazenamento, Estrutura, Carregamento e Acesso)' : 'Buyer Checklist'}
+            </p>
+          </div>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onEditBuyerChecklist}
+            className="text-xs gap-1.5 shrink-0 border-[#CCEAF1] hover:border-[#2098D1] text-[#2098D1]"
+          >
+            <Edit2 size={12} />
+            {language === 'pt' ? 'Editar/Completar informações' : 'Edit/Complete info'}
+          </Button>
+        </div>
+
+        {supplier.buyer_checklist ? (
+          <BuyerChecklistForm value={supplier.buyer_checklist} readOnly language={language} />
+        ) : (
+          <div className="py-6 px-4 text-center bg-slate-50 dark:bg-slate-900/40 border border-dashed border-[#CCEAF1] dark:border-slate-800 rounded-2xl space-y-3">
+            <ClipboardList size={28} className="mx-auto text-slate-300 opacity-70" />
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Nenhuma informação operacional preenchida ainda' : 'No operational information provided yet'}
+              </p>
+              <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                {language === 'pt'
+                  ? 'Informe as condições de espaço, capacidade de acúmulo, estrutura (doca/empilhadeira), carregamento e regras de acesso do gerador.'
+                  : 'Specify storage capacity, available structure, loading conditions and access rules.'}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={onEditBuyerChecklist}
+              className="text-xs gap-1.5 bg-[#2098D1] hover:bg-[#1883B5] text-white"
+            >
+              <Plus size={13} />
+              {language === 'pt' ? 'Preencher Informações Operacionais' : 'Fill Operational Information'}
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      {/* 2. Análise Operacional da Logística (Checklist de Logística) */}
+      <Card className="space-y-4 border-l-4 border-l-indigo-600">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+              <Truck size={16} className="text-indigo-600" />
+              {language === 'pt' ? 'Análise Operacional da Logística' : 'Logistics Operational Analysis'}
+            </h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              {language === 'pt' ? 'Checklist de Logística (Veículo, Ajudante, Equipamentos, Big Bags e Custos)' : 'Logistics Checklist'}
+            </p>
+          </div>
+
+          {supplier.logistics_checklist && canRespondLogistics && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onOpenLogisticsModal}
+              className="text-xs gap-1.5 shrink-0 border-indigo-200 text-indigo-600 hover:border-indigo-400"
+            >
+              <Edit2 size={12} />
+              {language === 'pt' ? 'Editar Análise' : 'Edit Analysis'}
+            </Button>
+          )}
+        </div>
+
+        {supplier.logistics_checklist ? (
+          <LogisticsChecklistForm value={supplier.logistics_checklist} readOnly language={language} />
+        ) : (
+          <div className="py-6 px-4 text-center bg-slate-50 dark:bg-slate-900/40 border border-dashed border-indigo-150 dark:border-slate-800 rounded-2xl space-y-3">
+            <Truck size={28} className="mx-auto text-slate-300 opacity-70" />
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'pt' ? 'Análise Operacional da Logística Pendente' : 'Logistics Operational Analysis Pending'}
+              </p>
+              <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                {language === 'pt'
+                  ? 'A equipe de Logística registrará o veículo recomendado, necessidade de ajudante/equipamentos e custos operacionais ao analisar a solicitação.'
+                  : 'Logistics will record recommended vehicle, helper/equipment needs and operational costs upon review.'}
+              </p>
+            </div>
+            {canRespondLogistics && (
+              <Button
+                size="sm"
+                onClick={onOpenLogisticsModal}
+                className="text-xs gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                <Truck size={13} />
+                {language === 'pt' ? 'Preencher Análise Logística' : 'Fill Logistics Analysis'}
+              </Button>
+            )}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 export default function SupplierDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -357,6 +482,9 @@ export default function SupplierDetailPage() {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [isLogisticsModalOpen, setIsLogisticsModalOpen] = useState(false);
+  const [isBuyerChecklistEditModalOpen, setIsBuyerChecklistEditModalOpen] = useState(false);
+  const [buyerChecklistEditForm, setBuyerChecklistEditForm] = useState<BuyerChecklist>({});
+  const [isSavingBuyerChecklist, setIsSavingBuyerChecklist] = useState(false);
   const [isRespondInfoModalOpen, setIsRespondInfoModalOpen] = useState(false);
   const [respondInfoText, setRespondInfoText] = useState('');
   const [pendingDocs, setPendingDocs] = useState<string[]>([]);
@@ -852,6 +980,51 @@ export default function SupplierDetailPage() {
     setIsHubDelivery(Boolean(isSupplierSelfDelivery));
 
     setIsMaterialModalOpen(true);
+  };
+
+  const handleOpenBuyerChecklistEdit = () => {
+    const existing = supplier?.buyer_checklist || (supplier ? dbService.getBuyerChecklist(supplier.id) : null);
+    setBuyerChecklistEditForm(existing || {
+      adequate_storage_space: 'yes',
+      available_structures: ['ground_floor'],
+      truck_access_ok: 'yes',
+      can_load_vehicle: 'yes',
+      can_prepare_material: 'yes'
+    });
+    setIsBuyerChecklistEditModalOpen(true);
+  };
+
+  const handleSaveBuyerChecklistOnly = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!supplier) return;
+    setIsSavingBuyerChecklist(true);
+    try {
+      const updatedChecklist: BuyerChecklist = {
+        ...buyerChecklistEditForm,
+        completed_by: currentUser?.name || 'Comercial',
+        completed_at: new Date().toISOString()
+      };
+      await dbService.saveBuyerChecklist(supplier.id, updatedChecklist);
+      await dbService.updateSupplier(supplier.id, {
+        buyer_checklist: updatedChecklist
+      });
+      setSupplier(prev => prev ? { ...prev, buyer_checklist: updatedChecklist } : null);
+      setIsBuyerChecklistEditModalOpen(false);
+      showSuccess(
+        language === 'pt'
+          ? 'Informações operacionais atualizadas com sucesso!'
+          : 'Operational information updated successfully!'
+      );
+    } catch (err: any) {
+      console.error('Error saving buyer checklist:', err);
+      showError(
+        language === 'pt'
+          ? 'Erro ao salvar informações operacionais.'
+          : 'Error saving operational information.'
+      );
+    } finally {
+      setIsSavingBuyerChecklist(false);
+    }
   };
 
   const updMat = (id: string, field: keyof MaterialLine, val: string | boolean) =>
@@ -2168,40 +2341,14 @@ export default function SupplierDetailPage() {
 
           </div>
 
-          {/* Checklists Integrados (Compras & Logística) */}
-          {(supplier.buyer_checklist || supplier.logistics_checklist) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {supplier.buyer_checklist && (
-                <Card className="space-y-4 border-l-4 border-l-[#2098D1]">
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
-                      <ClipboardList size={15} className="text-[#2098D1]" />
-                      {language === 'pt' ? 'Checklist de Compras' : 'Buyer Checklist'}
-                    </h3>
-                    <Badge variant="info">
-                      {language === 'pt' ? 'Preenchido por Compras' : 'Filled by Purchasing'}
-                    </Badge>
-                  </div>
-                  <BuyerChecklistForm value={supplier.buyer_checklist} readOnly language={language} />
-                </Card>
-              )}
-
-              {supplier.logistics_checklist && (
-                <Card className="space-y-4 border-l-4 border-l-indigo-600">
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
-                      <Truck size={15} className="text-indigo-600" />
-                      {language === 'pt' ? 'Checklist de Logística' : 'Logistics Checklist'}
-                    </h3>
-                    <Badge variant="purple">
-                      {language === 'pt' ? 'Análise Operacional' : 'Operational Analysis'}
-                    </Badge>
-                  </div>
-                  <LogisticsChecklistForm value={supplier.logistics_checklist} readOnly language={language} />
-                </Card>
-              )}
-            </div>
-          )}
+          {/* Informações Operacionais do Fornecedor & Análise da Logística */}
+          <SupplierOperationalAndLogisticsCards
+            supplier={supplier}
+            language={language}
+            onEditBuyerChecklist={handleOpenBuyerChecklistEdit}
+            onOpenLogisticsModal={handleOpenLogisticsModal}
+            canRespondLogistics={canUserRespondLogistics()}
+          />
 
           {/* Section: Histórico de Alterações, Logs e Interações do Lead */}
           <Card className="space-y-5 border border-slate-200/80 shadow-sm">
@@ -2799,40 +2946,16 @@ export default function SupplierDetailPage() {
                         </Card>
                       </div>
 
-                      {/* Checklists Integrados na Visão Geral */}
-                      {(supplier.buyer_checklist || supplier.logistics_checklist) && (
-                        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                          {supplier.buyer_checklist && (
-                            <Card className="space-y-4 border-l-4 border-l-[#2098D1]">
-                              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                                <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
-                                  <ClipboardList size={15} className="text-[#2098D1]" />
-                                  {language === 'pt' ? 'Checklist de Compras' : 'Buyer Checklist'}
-                                </h3>
-                                <Badge variant="info">
-                                  {language === 'pt' ? 'Preenchido por Compras' : 'Filled by Purchasing'}
-                                </Badge>
-                              </div>
-                              <BuyerChecklistForm value={supplier.buyer_checklist} readOnly language={language} />
-                            </Card>
-                          )}
-
-                          {supplier.logistics_checklist && (
-                            <Card className="space-y-4 border-l-4 border-l-indigo-600">
-                              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                                <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
-                                  <Truck size={15} className="text-indigo-600" />
-                                  {language === 'pt' ? 'Checklist de Logística' : 'Logistics Checklist'}
-                                </h3>
-                                <Badge variant="purple">
-                                  {language === 'pt' ? 'Análise Operacional' : 'Operational Analysis'}
-                                </Badge>
-                              </div>
-                              <LogisticsChecklistForm value={supplier.logistics_checklist} readOnly language={language} />
-                            </Card>
-                          )}
-                        </div>
-                      )}
+                      {/* Informações Operacionais do Fornecedor & Análise da Logística */}
+                      <div className="md:col-span-3">
+                        <SupplierOperationalAndLogisticsCards
+                          supplier={supplier}
+                          language={language}
+                          onEditBuyerChecklist={handleOpenBuyerChecklistEdit}
+                          onOpenLogisticsModal={handleOpenLogisticsModal}
+                          canRespondLogistics={canUserRespondLogistics()}
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -3203,29 +3326,16 @@ export default function SupplierDetailPage() {
                   </div>
                 )}
 
-                {/* Checklist de Logística e Compras Integrados na Aba */}
-                {(supplier.logistics_checklist || supplier.buyer_checklist) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 mt-6 border-t border-slate-100 dark:border-slate-800">
-                    {supplier.logistics_checklist && (
-                      <div className="space-y-2">
-                        <h4 className="font-bold text-xs uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
-                          <Truck size={14} />
-                          {language === 'pt' ? 'Checklist de Análise Operacional (Logística)' : 'Logistics Operational Checklist'}
-                        </h4>
-                        <LogisticsChecklistForm value={supplier.logistics_checklist} readOnly language={language} />
-                      </div>
-                    )}
-                    {supplier.buyer_checklist && (
-                      <div className="space-y-2">
-                        <h4 className="font-bold text-xs uppercase tracking-wider text-[#2098D1] flex items-center gap-1.5">
-                          <ClipboardList size={14} />
-                          {language === 'pt' ? 'Checklist Inicial do Comercial (Compras)' : 'Buyer Initial Checklist'}
-                        </h4>
-                        <BuyerChecklistForm value={supplier.buyer_checklist} readOnly language={language} />
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Informações Operacionais do Fornecedor & Análise da Logística */}
+                <div className="pt-4 mt-6 border-t border-slate-100 dark:border-slate-800">
+                  <SupplierOperationalAndLogisticsCards
+                    supplier={supplier}
+                    language={language}
+                    onEditBuyerChecklist={handleOpenBuyerChecklistEdit}
+                    onOpenLogisticsModal={handleOpenLogisticsModal}
+                    canRespondLogistics={canUserRespondLogistics()}
+                  />
+                </div>
               </Card>
             )}
 
@@ -3987,6 +4097,49 @@ export default function SupplierDetailPage() {
             </div>
           </div>
         </div>
+      </Modal>
+
+      {/* Modal: Editar Informações Operacionais do Fornecedor (Checklist de Compras) */}
+      <Modal
+        isOpen={isBuyerChecklistEditModalOpen}
+        onClose={() => setIsBuyerChecklistEditModalOpen(false)}
+        title={`${language === 'pt' ? 'Informações Operacionais do Fornecedor' : 'Supplier Operational Information'} — ${supplier.name}`}
+        size="lg"
+      >
+        <form onSubmit={handleSaveBuyerChecklistOnly} className="space-y-5">
+          <div className="flex items-start gap-3 p-3 rounded-xl text-xs bg-sky-50 border border-sky-200 text-sky-800 dark:bg-sky-950/40 dark:border-sky-800 dark:text-sky-300">
+            <ClipboardList size={16} className="shrink-0 mt-0.5 text-[#2098D1]" />
+            <p>
+              {language === 'pt'
+                ? 'Atualize ou complete as informações operacionais do fornecedor (armazenamento, estrutura disponível, carregamento, acesso/coleta e preparação). As alterações são salvas permanentemente no cadastro.'
+                : 'Update or complete supplier operational conditions. All changes are saved permanently.'}
+            </p>
+          </div>
+
+          <BuyerChecklistForm
+            value={buyerChecklistEditForm}
+            onChange={setBuyerChecklistEditForm}
+            language={language}
+          />
+
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBuyerChecklistEditModalOpen(false)}
+            >
+              {language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSavingBuyerChecklist}
+            >
+              {isSavingBuyerChecklist
+                ? (language === 'pt' ? 'Salvando...' : 'Saving...')
+                : (language === 'pt' ? 'Salvar Informações' : 'Save Information')}
+            </Button>
+          </div>
+        </form>
       </Modal>
 
       {/* Modal: Agendar / Editar Coleta */}
