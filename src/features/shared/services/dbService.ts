@@ -654,13 +654,7 @@ export const dbService = {
       if (supplierData.current_stage !== undefined) updatePayload.current_stage = supplierData.current_stage;
       if (supplierData.current_status !== undefined) updatePayload.current_status = supplierData.current_status;
       if (supplierData.backlog_reason !== undefined) updatePayload.backlog_reason = supplierData.backlog_reason;
-      if (supplierData.mtr_login !== undefined) updatePayload.mtr_login = supplierData.mtr_login;
-      if (supplierData.mtr_password !== undefined) updatePayload.mtr_password = supplierData.mtr_password;
-      if (supplierData.first_collection_date !== undefined) updatePayload.first_collection_date = supplierData.first_collection_date;
-      if (supplierData.last_collection_date !== undefined) updatePayload.last_collection_date = supplierData.last_collection_date;
-      if (supplierData.transport_responsible !== undefined) updatePayload.transport_responsible = supplierData.transport_responsible;
-      if (supplierData.sent_to_logistics_at !== undefined) updatePayload.sent_to_logistics_at = supplierData.sent_to_logistics_at;
-      if (supplierData.logistics_deadline !== undefined) updatePayload.logistics_deadline = supplierData.logistics_deadline;
+
 
       if (supplierData.prospecting_status) {
         if (supplierData.prospecting_status === 'WAITING_LOGISTICS') {
