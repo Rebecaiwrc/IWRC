@@ -220,35 +220,199 @@ export const dbService = {
         .order('created_at', { ascending: false });
       if (error) throw error;
 
+      let cloudDocsBySupplier: Record<string, AttachedDocument[]> = {};
+      let cloudBuyerChecklists: Record<string, BuyerChecklist> = {};
+      let cloudLogisticsChecklists: Record<string, LogisticsChecklist> = {};
+
+      if (isBrowser) {
+        try {
+          const [docRes, chkData] = await Promise.all([
+            fetch('/api/documents?all=true').then(r => r.ok ? r.json() : { documentsBySupplier: {} }).catch(() => ({ documentsBySupplier: {} })),
+            this.fetchCloudChecklists()
+          ]);
+          cloudDocsBySupplier = docRes.documentsBySupplier || {};
+          cloudBuyerChecklists = chkData.buyerChecklists || {};
+          cloudLogisticsChecklists = chkData.logisticsChecklists || {};
+        } catch (e) {}
+      }
+
+      const localBuyerChecklists = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
+      const localLogisticsChecklists = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
+      const localStoredDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
+
       return (data || []).map((s: any, idx: number) => {
-        let pStatus: ProspectingStatus = 'NEW_LEAD';
-        if (s.current_stage === 'LOGISTICS') {
+          let pStatus: ProspectingStatus = 'NEW_LEAD';
+          if (s.current_stage === 'LOGISTICS') {
+            pStatus = 'WAITING_LOGISTICS';
+          } else if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage)) {
+            pStatus = 'QUALIFIED';
+          } else if (s.backlog_reason === 'PRESENTATION_SENT') {
+            pStatus = 'PRESENTATION_SENT';
+          } else if (s.backlog_reason === 'FIRST_CONTACT') {
+            pStatus = 'FIRST_CONTACT';
+          } else if (s.backlog_reason === 'QUALIFIED') {
+            pStatus = 'QUALIFIED';
+          } else if (s.current_status === 'APPROVED') {
+            pStatus = 'QUALIFIED';
+          } else if (s.current_status === 'IN_PROGRESS') {
+            pStatus = 'FIRST_CONTACT';
+          } else {
+            pStatus = 'NEW_LEAD';
+          }
+
+          const sentLogAt = s.sent_to_logistics_at || (s.current_stage === 'LOGISTICS' ? (s.updated_at || s.created_at) : null);
+          const logDeadline = s.logistics_deadline || (sentLogAt ? new Date(new Date(sentLogAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null);
+
+          const finalBuyerChecklist = cloudBuyerChecklists[s.id] || s.buyer_checklist || localBuyerChecklists[s.id] || null;
+          const finalLogisticsChecklist = cloudLogisticsChecklists[s.id] || s.logistics_checklist || localLogisticsChecklists[s.id] || null;
+          const finalDocs = cloudDocsBySupplier[s.id] || [
+            ...(s.attached_documents || []),
+            ...localStoredDocs.filter(d => d.supplier_id === s.id)
+          ].filter((doc, dIdx, self) => dIdx === self.findIndex(d => d.id === doc.id));
+
+          return {
+            ...s,
+            code: s.code ? (s.code.startsWith('GER-') ? s.code.replace('GER-', 'IW-') : s.code) : ('IW-' + String((data?.length || 1) - idx).padStart(3, '0')),
+            prospecting_status: pStatus,
+            sent_to_logistics_at: sentLogAt,
+            logistics_deadline: logDeadline,
+            materials: (s.materials || []).map((m: any) => {
+              let needsStorage = Boolean(m.needs_storage_provision);
+              let sType = m.storage_provision_type || 'Bag';
+              let sQty = m.storage_provision_quantity || null;
+              let sCustom = m.storage_provision_custom_type || null;
+
+              if (m.notes && m.notes.includes('[STORAGE_PROVISION:')) {
+                needsStorage = true;
+                const match = m.notes.match(/\[STORAGE_PROVISION:\s*([^|]+)\s*\|\s*([^|]+)\s*(?:\|\s*([^\]]+))?\]/);
+                if (match) {
+                  sType = match[1]?.trim() || 'Bag';
+                  sQty = Number(match[2]?.trim()) || null;
+                  sCustom = match[3]?.trim() || null;
+                }
+              }
+
+              return {
+                ...m,
+                needs_storage_provision: needsStorage,
+                storage_provision_type: sType,
+                storage_provision_quantity: sQty,
+                storage_provision_custom_type: sCustom
+              };
+            }).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
+            contacts: s.contacts || [],
+            interactions: s.interactions || [],
+            tasks: s.tasks || [],
+            logistics_analyses: s.logistics_analyses || [],
+            collections: (s.collections || []).map((col: any) => ({
+              ...col,
+              items: col.items || []
+            })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
+            receipts: s.receipts || [],
+            buyer_checklist: finalBuyerChecklist,
+            logistics_checklist: finalLogisticsChecklist,
+            attached_documents: finalDocs
+          };
+        });
+      }
+
+      // Local Storage Mock Join Query
+      const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+      const profiles = getLocalData<Profile>('profiles', mockProfiles);
+      const addresses = getLocalData<SupplierAddress>('addresses', mockAddresses);
+      const contacts = getLocalData<SupplierContact>('contacts', mockContacts);
+      const materials = getLocalData<SupplierMaterial>('materials', mockMaterials);
+      const interactions = getLocalData<SupplierInteraction>('interactions', mockInteractions);
+      const tasks = getLocalData<SupplierTask>('tasks', mockTasks);
+      const logistics = getLocalData<LogisticsAnalysis>('logistics', mockLogistics);
+      const collections = getLocalData<Collection>('collections', mockCollections);
+      const receipts = getLocalData<Receipt>('receipts', mockReceipts);
+      const storedDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
+      const buyerChecklists = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
+      const logisticsChecklists = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
+
+      return suppliers.map(s => ({
+        ...s,
+        responsible: profiles.find(p => p.id === s.internal_responsible_id) || null,
+        address: addresses.find(a => a.supplier_id === s.id) || null,
+        contacts: contacts.filter(c => c.supplier_id === s.id),
+        materials: materials.filter(m => m.supplier_id === s.id),
+        interactions: interactions.filter(i => i.supplier_id === s.id),
+        tasks: tasks.filter(t => t.supplier_id === s.id),
+        logistics_analyses: logistics.filter(l => l.supplier_id === s.id),
+        collections: collections.filter(col => col.supplier_id === s.id),
+        receipts: receipts.filter(r => r.supplier_id === s.id),
+        buyer_checklist: s.buyer_checklist || buyerChecklists[s.id] || null,
+        logistics_checklist: s.logistics_checklist || logisticsChecklists[s.id] || null,
+        attached_documents: [
+          ...(s.attached_documents || []),
+          ...storedDocs.filter(d => d.supplier_id === s.id)
+        ].filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id))
+      })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    },
+
+    async getSupplier(id: string): Promise<Supplier | null> {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select(`
+            *,
+            responsible:profiles(id, name, email, role),
+            address:supplier_addresses(*),
+            contacts:supplier_contacts(*),
+            materials:supplier_materials(*),
+            interactions:supplier_interactions(*),
+            tasks:supplier_tasks(*),
+            logistics_analyses:logistics_analyses(*),
+            collections:collections(*, items:collection_items(*)),
+            receipts:receipts(*),
+            status_history:supplier_status_history(*, user:profiles(id, name, email, role))
+          `)
+          .eq('id', id)
+          .single();
+        
+        if (!error && data) {
+          let pStatus: ProspectingStatus = 'NEW_LEAD';
+        if (data.current_stage === 'LOGISTICS') {
           pStatus = 'WAITING_LOGISTICS';
-        } else if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(s.current_stage)) {
+        } else if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(data.current_stage)) {
           pStatus = 'QUALIFIED';
-        } else if (s.backlog_reason === 'PRESENTATION_SENT') {
+        } else if (data.backlog_reason === 'PRESENTATION_SENT') {
           pStatus = 'PRESENTATION_SENT';
-        } else if (s.backlog_reason === 'FIRST_CONTACT') {
+        } else if (data.backlog_reason === 'FIRST_CONTACT') {
           pStatus = 'FIRST_CONTACT';
-        } else if (s.backlog_reason === 'QUALIFIED') {
+        } else if (data.backlog_reason === 'QUALIFIED') {
           pStatus = 'QUALIFIED';
-        } else if (s.current_status === 'APPROVED') {
+        } else if (data.current_status === 'APPROVED') {
           pStatus = 'QUALIFIED';
-        } else if (s.current_status === 'IN_PROGRESS') {
+        } else if (data.current_status === 'IN_PROGRESS') {
           pStatus = 'FIRST_CONTACT';
         } else {
           pStatus = 'NEW_LEAD';
         }
 
-        const sentLogAt = s.sent_to_logistics_at || (s.current_stage === 'LOGISTICS' ? (s.updated_at || s.created_at) : null);
-        const logDeadline = s.logistics_deadline || (sentLogAt ? new Date(new Date(sentLogAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null);
+        const sentLogAt = data.sent_to_logistics_at || (data.current_stage === 'LOGISTICS' ? (data.updated_at || data.created_at) : null);
+        const logDeadline = data.logistics_deadline || (sentLogAt ? new Date(new Date(sentLogAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null);
+
+        const [cloudDocs, cloudBuyerChecklist, cloudLogisticsChecklist] = await Promise.all([
+          this.getSupplierDocuments(data.id),
+          this.fetchCloudChecklist(data.id, 'buyer'),
+          this.fetchCloudChecklist(data.id, 'logistics')
+        ]);
+
+        const localBuyerChecklist = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {})[data.id] || null;
+        const localLogisticsChecklist = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {})[data.id] || null;
+
+        const buyerChecklist = cloudBuyerChecklist || data.buyer_checklist || localBuyerChecklist;
+        const logisticsChecklist = cloudLogisticsChecklist || data.logistics_checklist || localLogisticsChecklist;
+
         return {
-          ...s,
-          code: s.code ? (s.code.startsWith('GER-') ? s.code.replace('GER-', 'IW-') : s.code) : ('IW-' + String((data?.length || 1) - idx).padStart(3, '0')),
+          ...data,
+          code: data.code ? (data.code.startsWith('GER-') ? data.code.replace('GER-', 'IW-') : data.code) : 'IW-001',
           prospecting_status: pStatus,
           sent_to_logistics_at: sentLogAt,
           logistics_deadline: logDeadline,
-          materials: (s.materials || []).map((m: any) => {
+          materials: (data.materials || []).map((m: any) => {
             let needsStorage = Boolean(m.needs_storage_provision);
             let sType = m.storage_provision_type || 'Bag';
             let sQty = m.storage_provision_quantity || null;
@@ -272,201 +436,129 @@ export const dbService = {
               storage_provision_custom_type: sCustom
             };
           }).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
-          contacts: s.contacts || [],
-          interactions: s.interactions || [],
-          tasks: s.tasks || [],
-          logistics_analyses: s.logistics_analyses || [],
-          collections: (s.collections || []).map((col: any) => ({
-            ...col,
+          contacts: data.contacts || [],
+          interactions: (data.interactions || []).map((i: any) => ({
+            ...i,
+            user: (data.status_history || []).find((h: any) => h.user_id === i.user_id)?.user || undefined
+          })),
+          tasks: data.tasks || [],
+          logistics_analyses: data.logistics_analyses || [],
+          collections: (data.collections || []).map((col: any) => ({
             items: col.items || []
           })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
-          receipts: s.receipts || [],
-          buyer_checklist: s.buyer_checklist || getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {})[s.id] || null,
-          logistics_checklist: s.logistics_checklist || getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {})[s.id] || null,
-          attached_documents: [
-            ...(s.attached_documents || []),
-            ...getLocalData<AttachedDocument & { supplier_id: string }>('documents', []).filter(d => d.supplier_id === s.id)
-          ].filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id))
+          receipts: data.receipts || [],
+          status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+          buyer_checklist: buyerChecklist,
+          logistics_checklist: logisticsChecklist,
+          attached_documents: cloudDocs
         };
-      });
-    }
-
-    // Local Storage Mock Join Query
-    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
-    const profiles = getLocalData<Profile>('profiles', mockProfiles);
-    const addresses = getLocalData<SupplierAddress>('addresses', mockAddresses);
-    const contacts = getLocalData<SupplierContact>('contacts', mockContacts);
-    const materials = getLocalData<SupplierMaterial>('materials', mockMaterials);
-    const interactions = getLocalData<SupplierInteraction>('interactions', mockInteractions);
-    const tasks = getLocalData<SupplierTask>('tasks', mockTasks);
-    const logistics = getLocalData<LogisticsAnalysis>('logistics', mockLogistics);
-    const collections = getLocalData<Collection>('collections', mockCollections);
-    const receipts = getLocalData<Receipt>('receipts', mockReceipts);
-    const storedDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
-    const buyerChecklists = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
-    const logisticsChecklists = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
-
-    return suppliers.map(s => ({
-      ...s,
-      responsible: profiles.find(p => p.id === s.internal_responsible_id) || null,
-      address: addresses.find(a => a.supplier_id === s.id) || null,
-      contacts: contacts.filter(c => c.supplier_id === s.id),
-      materials: materials.filter(m => m.supplier_id === s.id),
-      interactions: interactions.filter(i => i.supplier_id === s.id),
-      tasks: tasks.filter(t => t.supplier_id === s.id),
-      logistics_analyses: logistics.filter(l => l.supplier_id === s.id),
-      collections: collections.filter(col => col.supplier_id === s.id),
-      receipts: receipts.filter(r => r.supplier_id === s.id),
-      buyer_checklist: s.buyer_checklist || buyerChecklists[s.id] || null,
-      logistics_checklist: s.logistics_checklist || logisticsChecklists[s.id] || null,
-      attached_documents: [
-        ...(s.attached_documents || []),
-        ...storedDocs.filter(d => d.supplier_id === s.id)
-      ].filter((doc, idx, self) => idx === self.findIndex(d => d.id === doc.id))
-    })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  },
-
-  async getSupplier(id: string): Promise<Supplier | null> {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select(`
-          *,
-          responsible:profiles(id, name, email, role),
-          address:supplier_addresses(*),
-          contacts:supplier_contacts(*),
-          materials:supplier_materials(*),
-          interactions:supplier_interactions(*),
-          tasks:supplier_tasks(*),
-          logistics_analyses:logistics_analyses(*),
-          collections:collections(*, items:collection_items(*)),
-          receipts:receipts(*),
-          status_history:supplier_status_history(*, user:profiles(id, name, email, role))
-        `)
-        .eq('id', id)
-        .single();
-      
-      if (!error && data) {
-        let pStatus: ProspectingStatus = 'NEW_LEAD';
-      if (data.current_stage === 'LOGISTICS') {
-        pStatus = 'WAITING_LOGISTICS';
-      } else if (['QUALIFICATION', 'DOCUMENTATION', 'COLLECTION', 'OPERATION'].includes(data.current_stage)) {
-        pStatus = 'QUALIFIED';
-      } else if (data.backlog_reason === 'PRESENTATION_SENT') {
-        pStatus = 'PRESENTATION_SENT';
-      } else if (data.backlog_reason === 'FIRST_CONTACT') {
-        pStatus = 'FIRST_CONTACT';
-      } else if (data.backlog_reason === 'QUALIFIED') {
-        pStatus = 'QUALIFIED';
-      } else if (data.current_status === 'APPROVED') {
-        pStatus = 'QUALIFIED';
-      } else if (data.current_status === 'IN_PROGRESS') {
-        pStatus = 'FIRST_CONTACT';
-      } else {
-        pStatus = 'NEW_LEAD';
+        }
       }
 
-      const sentLogAt = data.sent_to_logistics_at || (data.current_stage === 'LOGISTICS' ? (data.updated_at || data.created_at) : null);
-      const logDeadline = data.logistics_deadline || (sentLogAt ? new Date(new Date(sentLogAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null);
+      const suppliers = await this.getSuppliers();
+      return suppliers.find(s => s.id === id) || null;
+    },
 
-      return {
-        ...data,
-        code: data.code ? (data.code.startsWith('GER-') ? data.code.replace('GER-', 'IW-') : data.code) : 'IW-001',
-        prospecting_status: pStatus,
-        sent_to_logistics_at: sentLogAt,
-        logistics_deadline: logDeadline,
-        materials: (data.materials || []).map((m: any) => {
-          let needsStorage = Boolean(m.needs_storage_provision);
-          let sType = m.storage_provision_type || 'Bag';
-          let sQty = m.storage_provision_quantity || null;
-          let sCustom = m.storage_provision_custom_type || null;
-
-          if (m.notes && m.notes.includes('[STORAGE_PROVISION:')) {
-            needsStorage = true;
-            const match = m.notes.match(/\[STORAGE_PROVISION:\s*([^|]+)\s*\|\s*([^|]+)\s*(?:\|\s*([^\]]+))?\]/);
-            if (match) {
-              sType = match[1]?.trim() || 'Bag';
-              sQty = Number(match[2]?.trim()) || null;
-              sCustom = match[3]?.trim() || null;
-            }
-          }
-
+    async fetchCloudChecklists(): Promise<{ buyerChecklists: Record<string, BuyerChecklist>, logisticsChecklists: Record<string, LogisticsChecklist> }> {
+      if (!isBrowser) return { buyerChecklists: {}, logisticsChecklists: {} };
+      try {
+        const res = await fetch('/api/checklists?all=true');
+        if (res.ok) {
+          const json = await res.json();
           return {
-            ...m,
-            needs_storage_provision: needsStorage,
-            storage_provision_type: sType,
-            storage_provision_quantity: sQty,
-            storage_provision_custom_type: sCustom
+            buyerChecklists: json.buyerChecklists || {},
+            logisticsChecklists: json.logisticsChecklists || {}
           };
-        }).sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()),
-        contacts: data.contacts || [],
-        interactions: (data.interactions || []).map((i: any) => ({
-          ...i,
-          user: (data.status_history || []).find((h: any) => h.user_id === i.user_id)?.user || undefined
-        })),
-        tasks: data.tasks || [],
-        logistics_analyses: data.logistics_analyses || [],
-        collections: (data.collections || []).map((col: any) => ({
-          items: col.items || []
-        })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
-        receipts: data.receipts || [],
-        status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
-        buyer_checklist: data.buyer_checklist || getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {})[data.id] || null,
-        logistics_checklist: data.logistics_checklist || getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {})[data.id] || null,
-        attached_documents: await this.getSupplierDocuments(data.id)
-      };
+        }
+      } catch (e) {
+        console.warn('Error fetching cloud checklists:', e);
       }
-    }
+      return { buyerChecklists: {}, logisticsChecklists: {} };
+    },
 
-    const suppliers = await this.getSuppliers();
-    return suppliers.find(s => s.id === id) || null;
-  },
+    async fetchCloudChecklist(supplierId: string, type: 'buyer' | 'logistics'): Promise<any | null> {
+      if (!isBrowser || !supplierId) return null;
+      try {
+        const res = await fetch(`/api/checklists?supplierId=${encodeURIComponent(supplierId)}&type=${type}`);
+        if (res.ok) {
+          const json = await res.json();
+          return json.checklist || null;
+        }
+      } catch (e) {
+        console.warn(`Error fetching cloud ${type} checklist:`, e);
+      }
+      return null;
+    },
 
-  getBuyerChecklist(supplierId: string): BuyerChecklist | null {
-    const list = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
-    return list[supplierId] || null;
-  },
+    getBuyerChecklist(supplierId: string): BuyerChecklist | null {
+      const list = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
+      return list[supplierId] || null;
+    },
 
-  saveBuyerChecklist(supplierId: string, checklist: BuyerChecklist | null): void {
-    if (!supplierId) return;
-    const list = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
-    if (checklist) {
-      list[supplierId] = checklist;
-    } else {
-      delete list[supplierId];
-    }
-    saveLocalObject('buyer_checklists', list);
+    saveBuyerChecklist(supplierId: string, checklist: BuyerChecklist | null): void {
+      if (!supplierId) return;
+      const list = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
+      if (checklist) {
+        list[supplierId] = checklist;
+      } else {
+        delete list[supplierId];
+      }
+      saveLocalObject('buyer_checklists', list);
 
-    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
-    const idx = suppliers.findIndex(s => s.id === supplierId);
-    if (idx !== -1) {
-      suppliers[idx].buyer_checklist = checklist;
-      saveLocalData('suppliers', suppliers);
-    }
-  },
+      const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+      const idx = suppliers.findIndex(s => s.id === supplierId);
+      if (idx !== -1) {
+        suppliers[idx].buyer_checklist = checklist;
+        saveLocalData('suppliers', suppliers);
+      }
 
-  getLogisticsChecklist(supplierId: string): LogisticsChecklist | null {
-    const list = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
-    return list[supplierId] || null;
-  },
+      if (isBrowser) {
+        fetch('/api/checklists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            supplierId,
+            type: 'buyer',
+            checklist
+          })
+        }).catch(err => console.warn('Failed to persist buyer checklist to cloud:', err));
+      }
+    },
 
-  saveLogisticsChecklist(supplierId: string, checklist: LogisticsChecklist | null): void {
-    if (!supplierId) return;
-    const list = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
-    if (checklist) {
-      list[supplierId] = checklist;
-    } else {
-      delete list[supplierId];
-    }
-    saveLocalObject('logistics_checklists', list);
+    getLogisticsChecklist(supplierId: string): LogisticsChecklist | null {
+      const list = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
+      return list[supplierId] || null;
+    },
 
-    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
-    const idx = suppliers.findIndex(s => s.id === supplierId);
-    if (idx !== -1) {
-      suppliers[idx].logistics_checklist = checklist;
-      saveLocalData('suppliers', suppliers);
-    }
-  },
+    saveLogisticsChecklist(supplierId: string, checklist: LogisticsChecklist | null): void {
+      if (!supplierId) return;
+      const list = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
+      if (checklist) {
+        list[supplierId] = checklist;
+      } else {
+        delete list[supplierId];
+      }
+      saveLocalObject('logistics_checklists', list);
+
+      const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+      const idx = suppliers.findIndex(s => s.id === supplierId);
+      if (idx !== -1) {
+        suppliers[idx].logistics_checklist = checklist;
+        saveLocalData('suppliers', suppliers);
+      }
+
+      if (isBrowser) {
+        fetch('/api/checklists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            supplierId,
+            type: 'logistics',
+            checklist
+          })
+        }).catch(err => console.warn('Failed to persist logistics checklist to cloud:', err));
+      }
+    },
 
   async createSupplier(
     supplierData: Partial<Supplier>,
@@ -874,6 +966,29 @@ export const dbService = {
     if (!docs || docs.length === 0) return [];
     const now = new Date().toISOString();
 
+    let persistedDocs: AttachedDocument[] = [];
+
+    if (isBrowser) {
+      try {
+        const res = await fetch('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            supplierId,
+            documents: docs
+          })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.documents)) {
+            persistedDocs = json.documents;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('API batch document upload failed:', apiErr);
+      }
+    }
+
     const newDocs: (AttachedDocument & { supplier_id: string })[] = docs.map(doc => ({
       id: doc.id || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       supplier_id: supplierId,
@@ -887,11 +1002,14 @@ export const dbService = {
       notes: doc.notes || ''
     }));
 
+    const finalDocsList = persistedDocs.length > 0 ? persistedDocs : newDocs;
+
     // Save local cache (without huge base64 strings to prevent QuotaExceededError)
     try {
       const allDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
-      const sanitizedDocs = newDocs.map(d => ({
+      const sanitizedDocs = finalDocsList.map(d => ({
         ...d,
+        supplier_id: supplierId,
         file_data: (d.file_data && d.file_data.length < 500000) ? d.file_data : (d.file_url || '')
       }));
 
@@ -911,7 +1029,7 @@ export const dbService = {
       console.warn('Local storage cache update skipped:', localErr);
     }
 
-    return newDocs;
+    return finalDocsList;
   },
 
   async deleteSupplierDocument(supplierId: string, docId: string): Promise<void> {

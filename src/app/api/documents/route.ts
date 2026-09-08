@@ -14,14 +14,53 @@ const adminSupabase = createClient(supabaseUrl, serviceRoleKey || supabaseKey, {
   }
 });
 
+// Helper to sanitize filename
+function sanitizeFileName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
 // GET /api/documents?supplierId=... - List all documents for a supplier
+// GET /api/documents?all=true - List all documents across all suppliers
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const supplierId = searchParams.get('supplierId');
+    const isAll = searchParams.get('all') === 'true';
+
+    if (isAll) {
+      const { data: rootList, error: listErr } = await adminSupabase.storage
+        .from('documents')
+        .list('', { limit: 500 });
+
+      if (listErr || !rootList) {
+        return NextResponse.json({ documentsBySupplier: {} });
+      }
+
+      const documentsBySupplier: Record<string, AttachedDocument[]> = {};
+
+      await Promise.all(
+        rootList.map(async (item) => {
+          if (!item.name || item.name.includes('.')) return;
+          const supId = item.name;
+          try {
+            const metaPath = `${supId}/_docs_list.json`;
+            const { data } = await adminSupabase.storage.from('documents').download(metaPath);
+            if (data) {
+              const text = await data.text();
+              const docs: AttachedDocument[] = JSON.parse(text || '[]');
+              if (Array.isArray(docs) && docs.length > 0) {
+                documentsBySupplier[supId] = docs;
+              }
+            }
+          } catch (e) {}
+        })
+      );
+
+      return NextResponse.json({ documentsBySupplier });
+    }
 
     if (!supplierId) {
-      return NextResponse.json({ error: 'supplierId é obrigatório' }, { status: 400 });
+      return NextResponse.json({ error: 'supplierId ou all=true é obrigatório' }, { status: 400 });
     }
 
     const metaPath = `${supplierId}/_docs_list.json`;
@@ -40,9 +79,107 @@ export async function GET(req: Request) {
   }
 }
 
-// POST /api/documents - Upload a document directly to Supabase Storage via Server Admin
+// POST /api/documents - Upload document(s) directly to Supabase Storage
 export async function POST(req: Request) {
   try {
+    const contentType = req.headers.get('content-type') || '';
+    const now = new Date().toISOString();
+
+    // 1. JSON Payload Handler (supports batch of base64 documents or pre-created records)
+    if (contentType.includes('application/json')) {
+      const body = await req.json();
+      const { supplierId, documents } = body;
+
+      if (!supplierId) {
+        return NextResponse.json({ error: 'supplierId é obrigatório' }, { status: 400 });
+      }
+
+      const docsToProcess: Partial<AttachedDocument>[] = Array.isArray(documents)
+        ? documents
+        : [body];
+
+      // Download existing docs list
+      const metaPath = `${supplierId}/_docs_list.json`;
+      let currentList: AttachedDocument[] = [];
+      const { data: existingData } = await adminSupabase.storage.from('documents').download(metaPath);
+      if (existingData) {
+        try {
+          const text = await existingData.text();
+          currentList = JSON.parse(text || '[]');
+        } catch (e) {}
+      }
+
+      const processedDocs: AttachedDocument[] = [];
+
+      for (const doc of docsToProcess) {
+        const docId = doc.id || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const fileName = doc.name || 'documento';
+        const cleanName = sanitizeFileName(fileName);
+        let fileUrl = doc.file_url || '';
+        let storagePath = (doc as any).file_path || '';
+
+        // If base64 file_data is present and needs uploading to storage
+        if (doc.file_data && doc.file_data.startsWith('data:')) {
+          try {
+            const matches = doc.file_data.match(/^data:([A-Za-z-+/0-9]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+              const mimeType = matches[1];
+              const base64Data = matches[2];
+              const buffer = Buffer.from(base64Data, 'base64');
+              storagePath = `${supplierId}/${docId}/${cleanName}`;
+
+              const { error: upErr } = await adminSupabase.storage
+                .from('documents')
+                .upload(storagePath, buffer, {
+                  contentType: mimeType || 'application/octet-stream',
+                  upsert: true
+                });
+
+              if (!upErr) {
+                const { data: pubData } = adminSupabase.storage
+                  .from('documents')
+                  .getPublicUrl(storagePath);
+                fileUrl = pubData?.publicUrl || '';
+              } else {
+                console.error('Error uploading base64 file to storage:', upErr);
+              }
+            }
+          } catch (b64Err) {
+            console.error('Error decoding base64 file_data:', b64Err);
+          }
+        }
+
+        const newDoc: AttachedDocument = {
+          id: docId,
+          supplier_id: supplierId,
+          name: fileName,
+          type: doc.type || 'other',
+          file_url: fileUrl || (doc.file_url || undefined),
+          file_data: fileUrl || (doc.file_url || undefined),
+          file_path: storagePath || undefined,
+          uploaded_at: doc.uploaded_at || now,
+          size: doc.size || 'Arquivo',
+          notes: doc.notes || ''
+        };
+
+        processedDocs.push(newDoc);
+        currentList = [...currentList.filter(d => d.id !== docId), newDoc];
+      }
+
+      // Save updated _docs_list.json to Supabase storage
+      await adminSupabase.storage.from('documents').upload(
+        metaPath,
+        Buffer.from(JSON.stringify(currentList, null, 2)),
+        { contentType: 'application/json', upsert: true }
+      );
+
+      return NextResponse.json({
+        document: processedDocs[0],
+        documents: currentList
+      });
+    }
+
+    // 2. FormData / Multipart Payload Handler (Direct file uploads)
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const supplierId = formData.get('supplierId') as string;
@@ -54,9 +191,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'supplierId é obrigatório' }, { status: 400 });
     }
 
-    const now = new Date().toISOString();
     const docId = customDocId || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-
     let fileUrl = '';
     let storagePath = '';
     let fileName = 'Documento';
@@ -64,7 +199,7 @@ export async function POST(req: Request) {
 
     if (file) {
       fileName = file.name;
-      const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const cleanName = sanitizeFileName(file.name);
       storagePath = `${supplierId}/${docId}/${cleanName}`;
       sizeStr = file.size > 1024 * 1024 
         ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
@@ -118,7 +253,7 @@ export async function POST(req: Request) {
     const updatedList = [...currentList.filter(d => d.id !== docId), newDoc];
     await adminSupabase.storage.from('documents').upload(
       metaPath,
-      Buffer.from(JSON.stringify(updatedList)),
+      Buffer.from(JSON.stringify(updatedList, null, 2)),
       { contentType: 'application/json', upsert: true }
     );
 
@@ -158,7 +293,7 @@ export async function DELETE(req: Request) {
     const filteredList = currentList.filter(d => d.id !== docId);
     await adminSupabase.storage.from('documents').upload(
       metaPath,
-      Buffer.from(JSON.stringify(filteredList)),
+      Buffer.from(JSON.stringify(filteredList, null, 2)),
       { contentType: 'application/json', upsert: true }
     );
 

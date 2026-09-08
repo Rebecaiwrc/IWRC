@@ -576,6 +576,19 @@ export default function ProspectingPage() {
       can_prepare_material: 'not_informed',
       additional_notes: ''
     });
+
+    // Real-time cloud sync for attachments & checklist
+    dbService.getSupplierDocuments(supplier.id).then(docs => {
+      if (docs && docs.length > 0) {
+        setAttachedFiles(docs);
+      }
+    }).catch(() => {});
+
+    dbService.fetchCloudChecklist(supplier.id, 'buyer').then(chk => {
+      if (chk) {
+        setBuyerChecklistForm(chk);
+      }
+    }).catch(() => {});
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
