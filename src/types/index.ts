@@ -115,6 +115,61 @@ export interface StorageProvisionItem {
   quantity: number | string;
 }
 
+export type ThreeStateChoice = 'yes' | 'no' | 'not_informed';
+
+export interface BuyerChecklist {
+  // Armazenamento
+  adequate_storage_space?: ThreeStateChoice | null; // Possui espaço adequado para armazenar?
+  covered_storage?: ThreeStateChoice | null; // Espaço é coberto/protegido?
+  max_accumulation_volume?: number | string | null; // Máximo que consegue acumular
+  max_accumulation_unit?: 'kg' | 'ton' | null;
+  has_space_height_limitation?: 'yes' | 'no' | null; // Possui limitação de espaço/altura?
+  space_height_limitation_obs?: string | null;
+
+  // Estrutura disponível (Marcar o que o fornecedor possui)
+  available_structures?: string[]; // 'Balança', 'Prensa', 'Empilhadeira', 'Paleteira', 'Doca', 'Caçamba/contêiner', 'Nenhum'
+
+  // Carregamento
+  can_load_vehicle?: ThreeStateChoice | null; // Consegue realizar o carregamento do veículo?
+  has_loading_team?: ThreeStateChoice | null; // Possui equipe para auxiliar no carregamento?
+
+  // Acesso e coleta
+  truck_access_ok?: ThreeStateChoice | null; // Caminhão consegue acessar o local?
+  maneuver_space_ok?: ThreeStateChoice | null; // Possui espaço para manobra?
+  vehicle_restriction?: 'yes' | 'no' | null; // Possui restrição de porte/tipo de veículo?
+  vehicle_restriction_obs?: string | null;
+  time_restriction?: 'yes' | 'no' | null; // Possui restrição de dia/horário?
+  time_restriction_obs?: string | null;
+  requires_prior_scheduling?: ThreeStateChoice | null; // Exige agendamento prévio?
+  gate_access_instructions?: 'yes' | 'no' | null; // Possui orientação especial de acesso/portaria?
+  gate_access_instructions_obs?: string | null;
+
+  // Preparação
+  can_prepare_material?: ThreeStateChoice | null; // Consegue deixar o material preparado para retirada?
+  additional_notes?: string | null; // Observações adicionais
+
+  // Metadata
+  completed_by?: string | null;
+  completed_at?: string | null;
+}
+
+export interface LogisticsChecklist {
+  // Análise Operacional
+  recommended_vehicle?: string | null; // Veículo recomendado (seleção)
+  needs_helper?: 'yes' | 'no' | null; // Precisa de ajudante?
+  needs_handling_equipment?: 'yes' | 'no' | null; // Precisa de equipamento para movimentação?
+  needs_storage_provision?: 'yes' | 'no' | null; // Precisa fornecer Big Bags, pallets ou recipientes?
+  storage_provision_details?: string | null; // Se Sim -> qual e quantidade
+  needs_adaptation_before_collection?: 'yes' | 'no' | null; // Precisa de alguma adequação antes da coleta?
+  adaptation_details?: string | null; // Se Sim -> observação curta
+  estimated_collection_cost?: number | string | null; // Custo estimado da coleta - R$
+  logistics_notes?: string | null; // Observações da Logística - opcional
+
+  // Metadata
+  completed_by?: string | null;
+  completed_at?: string | null;
+}
+
 export interface Supplier {
   id: string;
   code?: string; // e.g. GER-001
@@ -140,6 +195,10 @@ export interface Supplier {
   sent_to_logistics_at?: string | null;
   logistics_deadline?: string | null;
   transport_responsible?: string | null;
+
+  // Checklists (Compras & Logística)
+  buyer_checklist?: BuyerChecklist | null;
+  logistics_checklist?: LogisticsChecklist | null;
   
   created_at: string;
   updated_at: string;
@@ -261,6 +320,7 @@ export interface LogisticsAnalysis {
   analyst_id: string | null;
   analyzed_at: string;
   created_at: string;
+  logistics_checklist?: LogisticsChecklist | null;
   
   // Joins
   analyst?: Profile | null;

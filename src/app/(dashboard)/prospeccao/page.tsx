@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { dbService } from '@/features/shared/services/dbService';
-import { Supplier, Profile, ProspectingStatus, StorageProvisionItem, AttachedDocument, DocumentType } from '@/types';
+import { Supplier, Profile, ProspectingStatus, StorageProvisionItem, AttachedDocument, DocumentType, BuyerChecklist } from '@/types';
+import { BuyerChecklistForm } from '@/components/checklists/BuyerChecklistForm';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -650,19 +651,66 @@ export default function ProspectingPage() {
     return false;
   };
 
-  const updateStatus = async (supplierId: string, newStatus: ProspectingStatus) => {
-    const s = suppliers.find(x => x.id === supplierId);
-    if (!s || getLeadStatus(s) === newStatus) return;
+  // Checklist de Compras State
+  const [isBuyerChecklistModalOpen, setIsBuyerChecklistModalOpen] = useState(false);
+  const [checklistSupplier, setChecklistSupplier] = useState<Supplier | null>(null);
+  const [buyerChecklistForm, setBuyerChecklistForm] = useState<BuyerChecklist>({});
+  const [onChecklistSuccess, setOnChecklistSuccess] = useState<(() => Promise<void>) | null>(null);
 
-    // Security Rule: If lead is currently in WAITING_LOGISTICS, only the responsible user or Admin can move it
-    if (s.prospecting_status === 'WAITING_LOGISTICS' && !canUserModifyLeadInLogistics(s)) {
-      alert(
-        language === 'pt'
-          ? `Apenas o responsável (${s.responsible?.name || 'quem enviou'}) ou Administrador pode alterar ou retirar este lead da Logística.`
-          : `Only the responsible owner (${s.responsible?.name || 'sender'}) or Administrator can move or withdraw this lead from Logistics.`
-      );
-      return;
+  const openBuyerChecklistModal = (supplier: Supplier, onSuccess: () => Promise<void>) => {
+    setChecklistSupplier(supplier);
+    setBuyerChecklistForm(supplier.buyer_checklist || {
+      adequate_storage_space: 'not_informed',
+      covered_storage: 'not_informed',
+      max_accumulation_volume: '',
+      max_accumulation_unit: 'kg',
+      has_space_height_limitation: 'no',
+      space_height_limitation_obs: '',
+      available_structures: [],
+      can_load_vehicle: 'not_informed',
+      has_loading_team: 'not_informed',
+      truck_access_ok: 'not_informed',
+      maneuver_space_ok: 'not_informed',
+      vehicle_restriction: 'no',
+      vehicle_restriction_obs: '',
+      time_restriction: 'no',
+      time_restriction_obs: '',
+      requires_prior_scheduling: 'not_informed',
+      gate_access_instructions: 'no',
+      gate_access_instructions_obs: '',
+      can_prepare_material: 'not_informed',
+      additional_notes: ''
+    });
+    setOnChecklistSuccess(() => onSuccess);
+    setIsBuyerChecklistModalOpen(true);
+  };
+
+  const handleConfirmBuyerChecklist = async () => {
+    if (!checklistSupplier) return;
+    setIsSubmitting(true);
+    try {
+      const updatedChecklist: BuyerChecklist = {
+        ...buyerChecklistForm,
+        completed_by: currentUser?.name || 'Comercial',
+        completed_at: new Date().toISOString()
+      };
+      await dbService.saveBuyerChecklist(checklistSupplier.id, updatedChecklist);
+      setSuppliers(prev => prev.map(s => s.id === checklistSupplier.id ? { ...s, buyer_checklist: updatedChecklist } : s));
+      setIsBuyerChecklistModalOpen(false);
+      if (onChecklistSuccess) {
+        await onChecklistSuccess();
+      }
+    } catch (err) {
+      console.error('Error saving buyer checklist:', err);
+      alert('Erro ao salvar checklist de compras.');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const executeStatusUpdate = async (supplierId: string, newStatus: ProspectingStatus) => {
+    const s = suppliers.find(x => x.id === supplierId);
+    if (!s) return;
 
     const stage = newStatus === 'WAITING_LOGISTICS' ? 'LOGISTICS'
                 : newStatus === 'QUALIFIED'         ? 'QUALIFICATION' : 'PROSPECTING';
@@ -718,6 +766,30 @@ export default function ProspectingPage() {
       console.error('Error persisting status change:', err);
       setSuppliers(oldSuppliers);
     }
+  };
+
+  const updateStatus = async (supplierId: string, newStatus: ProspectingStatus) => {
+    const s = suppliers.find(x => x.id === supplierId);
+    if (!s || getLeadStatus(s) === newStatus) return;
+
+    // Security Rule: If lead is currently in WAITING_LOGISTICS, only the responsible user or Admin can move it
+    if (s.prospecting_status === 'WAITING_LOGISTICS' && !canUserModifyLeadInLogistics(s)) {
+      alert(
+        language === 'pt'
+          ? `Apenas o responsável (${s.responsible?.name || 'quem enviou'}) ou Administrador pode alterar ou retirar este lead da Logística.`
+          : `Only the responsible owner (${s.responsible?.name || 'sender'}) or Administrator can move or withdraw this lead from Logistics.`
+      );
+      return;
+    }
+
+    if (newStatus === 'WAITING_LOGISTICS') {
+      openBuyerChecklistModal(s, async () => {
+        await executeStatusUpdate(supplierId, newStatus);
+      });
+      return;
+    }
+
+    await executeStatusUpdate(supplierId, newStatus);
   };
 
   const handleDrop = async (e: React.DragEvent, col: ProspectingStatus) => {
@@ -2586,6 +2658,50 @@ export default function ProspectingPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Modal: Checklist de Compras */}
+      {isBuyerChecklistModalOpen && checklistSupplier && (
+        <Modal
+          isOpen={isBuyerChecklistModalOpen}
+          onClose={() => setIsBuyerChecklistModalOpen(false)}
+          title={`${language === 'pt' ? 'Checklist de Compras' : 'Buyer Checklist'} — ${checklistSupplier.name}`}
+          size="xl"
+        >
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto px-1 pr-2">
+            <div className="p-3.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-xl text-xs space-y-1">
+              <p className="font-bold text-sky-800 dark:text-sky-200 flex items-center gap-1.5">
+                📋 {language === 'pt' ? 'Checklist de Compras — Qualificação e Envio para Logística' : 'Purchasing Checklist — Qualification & Logistics Forwarding'}
+              </p>
+              <p className="text-slate-600 dark:text-slate-400">
+                {language === 'pt'
+                  ? 'Preencha ou confirme as condições de armazenamento, estrutura, carregamento e acesso para subsidiar a análise operacional da Logística.'
+                  : 'Fill or confirm storage, structure, loading, and access conditions for logistics operational analysis.'}
+              </p>
+            </div>
+
+            <BuyerChecklistForm
+              value={buyerChecklistForm}
+              onChange={setBuyerChecklistForm}
+              language={language}
+            />
+
+            <div className="sticky bottom-0 -mx-6 -mb-6 p-4 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xs border-t border-slate-200 dark:border-slate-800 rounded-b-3xl flex items-center justify-end gap-2.5 z-20 shadow-md">
+              <Button variant="outline" type="button" onClick={() => setIsBuyerChecklistModalOpen(false)}>
+                {language === 'pt' ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button
+                type="button"
+                isLoading={isSubmitting}
+                onClick={handleConfirmBuyerChecklist}
+                className="!bg-indigo-600 hover:!bg-indigo-700 text-white gap-2 font-bold shadow-xs"
+              >
+                <Send size={14} />
+                {language === 'pt' ? 'Salvar Checklist e Avançar para Logística' : 'Save Checklist and Proceed to Logistics'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

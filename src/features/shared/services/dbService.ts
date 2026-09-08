@@ -21,7 +21,9 @@ import {
   AttachedDocument,
   ProspectingStatus,
   SystemHealthStatus,
-  DatabaseQuotaMetrics
+  DatabaseQuotaMetrics,
+  BuyerChecklist,
+  LogisticsChecklist
 } from '@/types';
 import {
   mockProfiles,
@@ -116,6 +118,37 @@ function saveLocalData<T>(key: string, data: T[]): void {
       localStorage.setItem(`iwrc_${key}`, JSON.stringify(data));
     } catch (e) {
       console.warn(`[LocalDB] Quota exceeded or error saving 'iwrc_${key}':`, e);
+    }
+  } else {
+    (memoryDb as any)[key] = data;
+  }
+}
+
+function getLocalObject<T>(key: string, defaultVal: T): T {
+  if (!isBrowser) {
+    return ((memoryDb as any)[key] as T) || defaultVal;
+  }
+  try {
+    const raw = localStorage.getItem(`iwrc_${key}`);
+    if (!raw || raw === 'undefined' || raw === 'null') {
+      try {
+        localStorage.setItem(`iwrc_${key}`, JSON.stringify(defaultVal));
+      } catch (e) {}
+      return defaultVal;
+    }
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn(`[LocalDB] Error reading object 'iwrc_${key}':`, err);
+    return defaultVal;
+  }
+}
+
+function saveLocalObject<T>(key: string, data: T): void {
+  if (isBrowser) {
+    try {
+      localStorage.setItem(`iwrc_${key}`, JSON.stringify(data));
+    } catch (e) {
+      console.warn(`[LocalDB] Quota exceeded or error saving object 'iwrc_${key}':`, e);
     }
   } else {
     (memoryDb as any)[key] = data;
@@ -248,6 +281,8 @@ export const dbService = {
             items: col.items || []
           })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
           receipts: s.receipts || [],
+          buyer_checklist: s.buyer_checklist || getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {})[s.id] || null,
+          logistics_checklist: s.logistics_checklist || getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {})[s.id] || null,
           attached_documents: [
             ...(s.attached_documents || []),
             ...getLocalData<AttachedDocument & { supplier_id: string }>('documents', []).filter(d => d.supplier_id === s.id)
@@ -268,6 +303,8 @@ export const dbService = {
     const collections = getLocalData<Collection>('collections', mockCollections);
     const receipts = getLocalData<Receipt>('receipts', mockReceipts);
     const storedDocs = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []);
+    const buyerChecklists = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
+    const logisticsChecklists = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
 
     return suppliers.map(s => ({
       ...s,
@@ -280,6 +317,8 @@ export const dbService = {
       logistics_analyses: logistics.filter(l => l.supplier_id === s.id),
       collections: collections.filter(col => col.supplier_id === s.id),
       receipts: receipts.filter(r => r.supplier_id === s.id),
+      buyer_checklist: s.buyer_checklist || buyerChecklists[s.id] || null,
+      logistics_checklist: s.logistics_checklist || logisticsChecklists[s.id] || null,
       attached_documents: [
         ...(s.attached_documents || []),
         ...storedDocs.filter(d => d.supplier_id === s.id)
@@ -368,11 +407,12 @@ export const dbService = {
         tasks: data.tasks || [],
         logistics_analyses: data.logistics_analyses || [],
         collections: (data.collections || []).map((col: any) => ({
-          ...col,
           items: col.items || []
         })).sort((a: any, b: any) => new Date(a.scheduled_date || a.created_at || 0).getTime() - new Date(b.scheduled_date || b.created_at || 0).getTime()),
         receipts: data.receipts || [],
         status_history: (data.status_history || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+        buyer_checklist: data.buyer_checklist || getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {})[data.id] || null,
+        logistics_checklist: data.logistics_checklist || getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {})[data.id] || null,
         attached_documents: await this.getSupplierDocuments(data.id)
       };
       }
@@ -382,6 +422,52 @@ export const dbService = {
     return suppliers.find(s => s.id === id) || null;
   },
 
+  getBuyerChecklist(supplierId: string): BuyerChecklist | null {
+    const list = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
+    return list[supplierId] || null;
+  },
+
+  saveBuyerChecklist(supplierId: string, checklist: BuyerChecklist | null): void {
+    if (!supplierId) return;
+    const list = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
+    if (checklist) {
+      list[supplierId] = checklist;
+    } else {
+      delete list[supplierId];
+    }
+    saveLocalObject('buyer_checklists', list);
+
+    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+    const idx = suppliers.findIndex(s => s.id === supplierId);
+    if (idx !== -1) {
+      suppliers[idx].buyer_checklist = checklist;
+      saveLocalData('suppliers', suppliers);
+    }
+  },
+
+  getLogisticsChecklist(supplierId: string): LogisticsChecklist | null {
+    const list = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
+    return list[supplierId] || null;
+  },
+
+  saveLogisticsChecklist(supplierId: string, checklist: LogisticsChecklist | null): void {
+    if (!supplierId) return;
+    const list = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
+    if (checklist) {
+      list[supplierId] = checklist;
+    } else {
+      delete list[supplierId];
+    }
+    saveLocalObject('logistics_checklists', list);
+
+    const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
+    const idx = suppliers.findIndex(s => s.id === supplierId);
+    if (idx !== -1) {
+      suppliers[idx].logistics_checklist = checklist;
+      saveLocalData('suppliers', suppliers);
+    }
+  },
+
   async createSupplier(
     supplierData: Partial<Supplier>,
     addressData: Partial<SupplierAddress>,
@@ -389,6 +475,13 @@ export const dbService = {
   ): Promise<Supplier> {
     const supplierId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
     const now = new Date().toISOString();
+
+    if (supplierData.buyer_checklist) {
+      this.saveBuyerChecklist(supplierId, supplierData.buyer_checklist);
+    }
+    if (supplierData.logistics_checklist) {
+      this.saveLogisticsChecklist(supplierId, supplierData.logistics_checklist);
+    }
 
     if (isSupabaseConfigured && supabase) {
       // 1. Insert Supplier with sanitized columns matching PostgreSQL schema
@@ -419,6 +512,13 @@ export const dbService = {
       }
 
       const insertedSupplierId = supplier.id;
+
+      if (supplierData.buyer_checklist) {
+        this.saveBuyerChecklist(insertedSupplierId, supplierData.buyer_checklist);
+      }
+      if (supplierData.logistics_checklist) {
+        this.saveLogisticsChecklist(insertedSupplierId, supplierData.logistics_checklist);
+      }
 
       // 2. Insert Address
       if (addressData) {
@@ -480,69 +580,65 @@ export const dbService = {
       internal_responsible_id: supplierData.internal_responsible_id || null,
       current_stage: supplierData.current_stage || 'PROSPECTING',
       current_status: supplierData.current_status || 'PENDING',
-      prospecting_status: supplierData.prospecting_status || 'NEW_LEAD',
+      prospecting_status: 'NEW_LEAD',
       backlog_reason: supplierData.backlog_reason || null,
       mtr_login: supplierData.mtr_login || null,
       mtr_password: supplierData.mtr_password || null,
-      first_collection_date: supplierData.first_collection_date || null,
-      last_collection_date: supplierData.last_collection_date || null,
-      attached_documents: supplierData.attached_documents || [],
+      buyer_checklist: supplierData.buyer_checklist || null,
+      logistics_checklist: supplierData.logistics_checklist || null,
       created_at: now,
       updated_at: now
     };
 
-    const newAddress: SupplierAddress = {
-      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
-      supplier_id: supplierId,
-      zip_code: addressData.zip_code || '',
-      street: addressData.street || '',
-      number: addressData.number || '',
-      complement: addressData.complement || null,
-      neighborhood: addressData.neighborhood || '',
-      city: addressData.city || '',
-      state: addressData.state || '',
-      created_at: now
-    };
-
-    const newContact: SupplierContact = {
-      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
-      supplier_id: supplierId,
-      name: contactData.name || '',
-      role: contactData.role || null,
-      phone: contactData.phone || null,
-      whatsapp: contactData.whatsapp || null,
-      email: contactData.email || null,
-      is_primary: true,
-      created_at: now
-    };
-
-    suppliers.push(newSupplier);
-    addresses.push(newAddress);
-    contacts.push(newContact);
-
+    suppliers.unshift(newSupplier);
     saveLocalData('suppliers', suppliers);
-    saveLocalData('addresses', addresses);
-    saveLocalData('contacts', contacts);
 
-    // Track status history
-    await this.addSupplierStatusHistory({
-      supplier_id: supplierId,
-      old_stage: null,
-      new_stage: newSupplier.current_stage,
-      old_status: null,
-      new_status: newSupplier.current_status,
-      user_id: newSupplier.internal_responsible_id || 'd3b07384-d113-4e4e-9b2f-123456789013',
-      notes: 'Cadastro inicial do fornecedor'
-    });
+    if (addressData) {
+      addresses.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+        supplier_id: supplierId,
+        zip_code: addressData.zip_code || '',
+        street: addressData.street || '',
+        number: addressData.number || '',
+        complement: addressData.complement || null,
+        neighborhood: addressData.neighborhood || '',
+        city: addressData.city || '',
+        state: addressData.state || '',
+        created_at: now
+      });
+      saveLocalData('addresses', addresses);
+    }
 
-    const fullSupplier = await this.getSupplier(supplierId);
-    return fullSupplier!;
+    if (contactData) {
+      contacts.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+        supplier_id: supplierId,
+        name: contactData.name || supplierData.name || 'Contato Principal',
+        role: contactData.role || null,
+        phone: contactData.phone || null,
+        whatsapp: contactData.whatsapp || null,
+        email: contactData.email || null,
+        is_primary: true,
+        created_at: now
+      });
+      saveLocalData('contacts', contacts);
+    }
+
+    return (await this.getSupplier(supplierId)) || newSupplier;
   },
 
   async updateSupplier(id: string, supplierData: Partial<Supplier>): Promise<Supplier> {
     const now = new Date().toISOString();
 
+    if (supplierData.buyer_checklist !== undefined) {
+      this.saveBuyerChecklist(id, supplierData.buyer_checklist);
+    }
+    if (supplierData.logistics_checklist !== undefined) {
+      this.saveLogisticsChecklist(id, supplierData.logistics_checklist);
+    }
+
     if (isSupabaseConfigured && supabase) {
+      // 1. Sanitize columns matching PostgreSQL schema
       const updatePayload: any = {
         updated_at: now
       };
@@ -552,17 +648,23 @@ export const dbService = {
       if (supplierData.document !== undefined) updatePayload.document = supplierData.document;
       if (supplierData.supplier_type !== undefined) updatePayload.supplier_type = supplierData.supplier_type;
       if (supplierData.lead_source !== undefined) updatePayload.lead_source = supplierData.lead_source;
+      if (supplierData.internal_responsible_id !== undefined) {
+        updatePayload.internal_responsible_id = isValidUuid(supplierData.internal_responsible_id) ? supplierData.internal_responsible_id : null;
+      }
       if (supplierData.current_stage !== undefined) updatePayload.current_stage = supplierData.current_stage;
       if (supplierData.current_status !== undefined) updatePayload.current_status = supplierData.current_status;
       if (supplierData.backlog_reason !== undefined) updatePayload.backlog_reason = supplierData.backlog_reason;
-
-      if (supplierData.internal_responsible_id !== undefined) {
-        updatePayload.internal_responsible_id = supplierData.internal_responsible_id ? supplierData.internal_responsible_id : null;
-      }
+      if (supplierData.mtr_login !== undefined) updatePayload.mtr_login = supplierData.mtr_login;
+      if (supplierData.mtr_password !== undefined) updatePayload.mtr_password = supplierData.mtr_password;
+      if (supplierData.first_collection_date !== undefined) updatePayload.first_collection_date = supplierData.first_collection_date;
+      if (supplierData.last_collection_date !== undefined) updatePayload.last_collection_date = supplierData.last_collection_date;
+      if (supplierData.transport_responsible !== undefined) updatePayload.transport_responsible = supplierData.transport_responsible;
+      if (supplierData.sent_to_logistics_at !== undefined) updatePayload.sent_to_logistics_at = supplierData.sent_to_logistics_at;
+      if (supplierData.logistics_deadline !== undefined) updatePayload.logistics_deadline = supplierData.logistics_deadline;
 
       if (supplierData.prospecting_status) {
         if (supplierData.prospecting_status === 'WAITING_LOGISTICS') {
-          updatePayload.current_stage = supplierData.current_stage || 'LOGISTICS';
+          updatePayload.current_stage = 'LOGISTICS';
           updatePayload.current_status = supplierData.current_status || 'PENDING';
           updatePayload.backlog_reason = null;
         } else if (supplierData.prospecting_status === 'QUALIFIED') {
@@ -1236,6 +1338,10 @@ export const dbService = {
 
   async createOrUpdateLogisticsAnalysis(analysisData: Partial<LogisticsAnalysis>): Promise<LogisticsAnalysis> {
     const now = new Date().toISOString();
+
+    if (analysisData.logistics_checklist !== undefined && analysisData.supplier_id) {
+      this.saveLogisticsChecklist(analysisData.supplier_id, analysisData.logistics_checklist);
+    }
 
     if (isSupabaseConfigured && supabase) {
       // Check if exists

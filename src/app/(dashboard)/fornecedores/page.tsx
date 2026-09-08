@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { dbService } from '@/features/shared/services/dbService';
-import { Supplier, Profile } from '@/types';
+import { Supplier, Profile, BuyerChecklist } from '@/types';
+import { BuyerChecklistForm } from '@/components/checklists/BuyerChecklistForm';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -49,6 +50,8 @@ import {
 } from 'lucide-react';
 import { MaterialSelectDropdown } from '../prospeccao/page';
 
+import Link from 'next/link';
+
 const STORAGE_OPTIONS = ['Container', 'Big Bag', 'Sacos de Lixo', 'Caçamba', 'Lixeira', 'Prensa / Enfardado', 'Granel / Solto', 'Outro'];
 const FREQUENCY_OPTIONS = ['2x por semana', '1x por semana', 'Quinzenal', '1x por mês', 'Sob demanda', 'Esporádico', 'Entrega única', 'Outros'];
 
@@ -79,7 +82,6 @@ const newMaterialLine = (): FormMaterialLine => ({
   estimated_volume: '',
   unit: 'kg'
 });
-import Link from 'next/link';
 
 export default function SuppliersPage() {
   const searchParams = useSearchParams();
@@ -132,18 +134,18 @@ export default function SuppliersPage() {
   });
 
   const [formMaterials, setFormMaterials] = useState<FormMaterialLine[]>([newMaterialLine()]);
+  const [formBuyerChecklist, setFormBuyerChecklist] = useState<BuyerChecklist>({});
+
   const updMat = (id: string, field: keyof FormMaterialLine, value: any) => {
     setFormMaterials(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
 
-  const isFormDirty = () => {
+  const hasFormChanges = () => {
     if (formSupplier.name.trim()) return true;
     if (formSupplier.trade_name.trim()) return true;
     if (formSupplier.document.trim()) return true;
-    if (formSupplier.supplier_type && formSupplier.supplier_type !== 'Indústria') return true;
-    if (formSupplier.custom_supplier_type.trim()) return true;
-    if (formSupplier.custom_lead_source.trim()) return true;
     if (formContact.name.trim()) return true;
+    if (formContact.phone.trim()) return true;
     if (formContact.whatsapp.trim()) return true;
     if (formContact.email.trim()) return true;
     if (formAddress.zip_code.trim()) return true;
@@ -152,6 +154,7 @@ export default function SuppliersPage() {
     if (formAddress.neighborhood.trim()) return true;
     if (formAddress.city.trim()) return true;
     if (formMaterials.some(m => m.material_name.trim() !== '' || m.estimated_volume.trim() !== '' || m.storage_form.trim() !== '')) return true;
+    if (Object.keys(formBuyerChecklist).length > 0) return true;
     return false;
   };
 
@@ -172,6 +175,7 @@ export default function SuppliersPage() {
     setFormContact({ name: '', role: '', phone: '', whatsapp: '', email: '' });
     setFormAddress({ zip_code: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
     setFormMaterials([newMaterialLine()]);
+    setFormBuyerChecklist({});
   };
 
   const [isCepLoading, setIsCepLoading] = useState(false);
@@ -252,7 +256,12 @@ export default function SuppliersPage() {
           supplier_type: finalSegment,
           lead_source: finalSource,
           current_stage: 'OPERATION',
-          current_status: 'APPROVED'
+          current_status: 'APPROVED',
+          buyer_checklist: Object.keys(formBuyerChecklist).length > 0 ? {
+            ...formBuyerChecklist,
+            completed_by: currentUser?.name || 'Comercial',
+            completed_at: new Date().toISOString()
+          } : undefined
         },
         formAddress,
         formContact
@@ -744,7 +753,7 @@ export default function SuppliersPage() {
         onClose={resetAndCloseModal}
         title={language === 'pt' ? 'Cadastrar Gerador Homologado' : 'Register Approved Generator'}
         size="xl"
-        hasUnsavedChanges={isFormDirty()}
+        hasUnsavedChanges={hasFormChanges()}
       >
         <form onSubmit={handleCreateSupplier} className="space-y-6">
           
@@ -1091,6 +1100,22 @@ export default function SuppliersPage() {
                 placeholder="SP"
               />
             </div>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                📋 {language === 'pt' ? 'Checklist de Compras' : 'Buyer Checklist'}
+              </h4>
+              <span className="text-[10px] text-slate-400">
+                {language === 'pt' ? 'Armazenamento, Estrutura, Carregamento e Acesso' : 'Storage, Structure, Loading & Access'}
+              </span>
+            </div>
+            <BuyerChecklistForm
+              value={formBuyerChecklist}
+              onChange={setFormBuyerChecklist}
+              language={language}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">

@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { dbService } from '@/features/shared/services/dbService';
-import { Supplier, AttachedDocument, MaterialDispatch, DispatchDestinationType } from '@/types';
+import { Supplier, AttachedDocument, MaterialDispatch, DispatchDestinationType, LogisticsChecklist, BuyerChecklist } from '@/types';
+import { LogisticsChecklistForm } from '@/components/checklists/LogisticsChecklistForm';
+import { BuyerChecklistForm } from '@/components/checklists/BuyerChecklistForm';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -188,6 +190,8 @@ export default function LogisticsPage() {
   });
 
   // Analysis Form
+  const [logisticsChecklist, setLogisticsChecklist] = useState<LogisticsChecklist | null>(null);
+  const [showBuyerChecklistRecap, setShowBuyerChecklistRecap] = useState(true);
   const [analysisForm, setAnalysisForm] = useState({
     distance_km: '',
     transport_type: 'VUC',
@@ -497,6 +501,25 @@ export default function LogisticsPage() {
     setCustomPendingDoc('');
     
     const existing = await dbService.getLogisticsAnalysisForSupplier(supplier.id);
+    const existingLogChecklist = supplier.logistics_checklist || existing?.logistics_checklist || dbService.getLogisticsChecklist(supplier.id);
+    const existingBuyerChecklist = supplier.buyer_checklist || dbService.getBuyerChecklist(supplier.id);
+    
+    if (existingBuyerChecklist && !supplier.buyer_checklist) {
+      supplier.buyer_checklist = existingBuyerChecklist;
+    }
+
+    setLogisticsChecklist(existingLogChecklist || {
+      recommended_vehicle: (existing?.transport_type as any) || 'VUC',
+      needs_helper: 'no',
+      needs_handling_equipment: 'no',
+      needs_storage_provision: 'no',
+      storage_provision_details: null,
+      needs_adaptation_before_collection: 'no',
+      adaptation_details: null,
+      estimated_collection_cost: existing?.estimated_cost !== undefined && existing?.estimated_cost !== null ? String(existing.estimated_cost) : null,
+      logistics_notes: existing?.notes || ''
+    });
+
     if (existing) {
       const isStdTransport = transportTypeOptions.some(o => o.value === existing.transport_type && o.value !== 'Outros');
       const isStdResp = responsibleOptions.some(o => o.value === existing.transport_responsible && o.value !== 'Outros');
@@ -549,9 +572,13 @@ export default function LogisticsPage() {
     if (!selectedSupplier || !currentUser) return;
     setIsSubmitting(true);
     try {
-      const finalTransport = analysisForm.transport_type === 'Outros'
+      if (logisticsChecklist) {
+        dbService.saveLogisticsChecklist(selectedSupplier.id, logisticsChecklist);
+      }
+
+      const finalTransport = logisticsChecklist?.recommended_vehicle || (analysisForm.transport_type === 'Outros'
         ? (analysisForm.custom_transport_type?.trim() || 'Outros')
-        : analysisForm.transport_type;
+        : analysisForm.transport_type);
 
       const finalResponsible = analysisForm.transport_responsible === 'Outros'
         ? (analysisForm.custom_transport_responsible?.trim() || 'Outros')
@@ -572,16 +599,17 @@ export default function LogisticsPage() {
         supplier_id: selectedSupplier.id,
         distance_km: isGenTransport ? null : (Number(analysisForm.distance_km) || null),
         transport_type: isGenTransport ? 'Entrega Própria (Gerador)' : (finalTransport || null),
-        estimated_cost: isGenTransport ? 0 : (Number(analysisForm.estimated_cost) || null),
+        estimated_cost: logisticsChecklist?.estimated_collection_cost !== undefined ? logisticsChecklist.estimated_collection_cost : (isGenTransport ? 0 : (Number(analysisForm.estimated_cost) || null)),
         recommended_frequency: finalFrequency || null,
         transport_responsible: finalResponsible || null,
         conditioning_infrastructure_needed: analysisForm.conditioning_infrastructure_needed || null,
         storage_provision_cost: analysisForm.storage_provision_cost ? Number(analysisForm.storage_provision_cost) : null,
         storage_provision_delivery_date: analysisForm.storage_provision_delivery_date || null,
         feasibility: analysisForm.feasibility as any,
-        notes: analysisForm.notes || null,
+        notes: logisticsChecklist?.logistics_notes || analysisForm.notes || null,
         analyst_id: currentUser.id,
-        pending_docs: finalPendingDocs
+        pending_docs: finalPendingDocs,
+        logistics_checklist: logisticsChecklist || undefined
       } as any);
 
       let newStage = selectedSupplier.current_stage;
@@ -1786,6 +1814,49 @@ export default function LogisticsPage() {
               </div>
             );
           })()}
+
+            {/* Buyer Checklist Recap (Momento 1 / 2) */}
+            {selectedSupplier.buyer_checklist && (
+              <div className="border border-sky-200 dark:border-sky-800 rounded-2xl overflow-hidden bg-sky-50/50 dark:bg-sky-950/20">
+                <button
+                  type="button"
+                  onClick={() => setShowBuyerChecklistRecap(!showBuyerChecklistRecap)}
+                  className="w-full flex items-center justify-between p-3.5 text-xs font-bold text-[#1883B5] dark:text-[#2098D1] hover:bg-sky-100/50 dark:hover:bg-sky-900/30 transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    📋 {language === 'pt' ? 'Checklist de Compras Preenchido pelo Comercial' : 'Buyer Checklist Filled by Commercial'}
+                  </span>
+                  <span className="text-[11px] font-semibold underline">
+                    {showBuyerChecklistRecap ? (language === 'pt' ? 'Ocultar' : 'Hide') : (language === 'pt' ? 'Exibir Respostas' : 'Show Answers')}
+                  </span>
+                </button>
+                {showBuyerChecklistRecap && (
+                  <div className="p-4 border-t border-sky-100 dark:border-sky-900/40 bg-white dark:bg-slate-900">
+                    <BuyerChecklistForm value={selectedSupplier.buyer_checklist} readOnly language={language} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CHECKLIST DE LOGÍSTICA (Análise Operacional) */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl">
+              <LogisticsChecklistForm
+                value={logisticsChecklist}
+                onChange={(val) => {
+                  setLogisticsChecklist(val);
+                  if (val.recommended_vehicle) {
+                    setAnalysisForm(p => ({ ...p, transport_type: val.recommended_vehicle || 'VUC' }));
+                  }
+                  if (val.estimated_collection_cost !== undefined && val.estimated_collection_cost !== null) {
+                    setAnalysisForm(p => ({ ...p, estimated_cost: String(val.estimated_collection_cost) }));
+                  }
+                  if (val.logistics_notes !== undefined && val.logistics_notes !== null) {
+                    setAnalysisForm(p => ({ ...p, notes: val.logistics_notes || '' }));
+                  }
+                }}
+                language={language}
+              />
+            </div>
 
           {/* Feasibility Decision */}
           <div className="grid grid-cols-1 gap-4">
