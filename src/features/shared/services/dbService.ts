@@ -1757,6 +1757,22 @@ export const dbService = {
     return all.find(c => c.id === id)!;
   },
 
+  async deleteCollection(id: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('collection_items').delete().eq('collection_id', id);
+      const { error } = await supabase.from('collections').delete().eq('id', id);
+      if (error) {
+        console.error('Error deleting collection in Supabase:', error);
+        throw error;
+      }
+    }
+
+    const collections = getLocalData<Collection>('collections', mockCollections).filter(c => c.id !== id);
+    saveLocalData('collections', collections);
+    const collectionItems = getLocalData<CollectionItem>('collectionItems', mockCollectionItems).filter(ci => ci.collection_id !== id);
+    saveLocalData('collectionItems', collectionItems);
+  },
+
   // Receipts (Recebimentos)
   async getReceipts(): Promise<Receipt[]> {
     if (isSupabaseConfigured && supabase) {
