@@ -552,6 +552,30 @@ export default function ProspectingPage() {
       setMaterials([newLine()]);
     }
     setAttachedFiles(supplier.attached_documents || []);
+
+    const existingChecklist = supplier.buyer_checklist || dbService.getBuyerChecklist(supplier.id);
+    setBuyerChecklistForm(existingChecklist || {
+      adequate_storage_space: 'not_informed',
+      covered_storage: 'not_informed',
+      max_accumulation_volume: '',
+      max_accumulation_unit: 'kg',
+      has_space_height_limitation: 'no',
+      space_height_limitation_obs: '',
+      available_structures: [],
+      can_load_vehicle: 'not_informed',
+      has_loading_team: 'not_informed',
+      truck_access_ok: 'not_informed',
+      maneuver_space_ok: 'not_informed',
+      vehicle_restriction: 'no',
+      vehicle_restriction_obs: '',
+      time_restriction: 'no',
+      time_restriction_obs: '',
+      requires_prior_scheduling: 'not_informed',
+      gate_access_instructions: 'no',
+      gate_access_instructions_obs: '',
+      can_prepare_material: 'not_informed',
+      additional_notes: ''
+    });
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -651,61 +675,19 @@ export default function ProspectingPage() {
     return false;
   };
 
-  // Checklist de Compras State
-  const [isBuyerChecklistModalOpen, setIsBuyerChecklistModalOpen] = useState(false);
-  const [checklistSupplier, setChecklistSupplier] = useState<Supplier | null>(null);
+  // Checklist de Compras State (gerenciado dentro da tela única de Qualificação / Materiais)
   const [buyerChecklistForm, setBuyerChecklistForm] = useState<BuyerChecklist>({});
-  const [onChecklistSuccess, setOnChecklistSuccess] = useState<(() => Promise<void>) | null>(null);
 
-  const openBuyerChecklistModal = (supplier: Supplier, onSuccess: () => Promise<void>) => {
-    setChecklistSupplier(supplier);
-    setBuyerChecklistForm(supplier.buyer_checklist || {
-      adequate_storage_space: 'not_informed',
-      covered_storage: 'not_informed',
-      max_accumulation_volume: '',
-      max_accumulation_unit: 'kg',
-      has_space_height_limitation: 'no',
-      space_height_limitation_obs: '',
-      available_structures: [],
-      can_load_vehicle: 'not_informed',
-      has_loading_team: 'not_informed',
-      truck_access_ok: 'not_informed',
-      maneuver_space_ok: 'not_informed',
-      vehicle_restriction: 'no',
-      vehicle_restriction_obs: '',
-      time_restriction: 'no',
-      time_restriction_obs: '',
-      requires_prior_scheduling: 'not_informed',
-      gate_access_instructions: 'no',
-      gate_access_instructions_obs: '',
-      can_prepare_material: 'not_informed',
-      additional_notes: ''
-    });
-    setOnChecklistSuccess(() => onSuccess);
-    setIsBuyerChecklistModalOpen(true);
-  };
-
-  const handleConfirmBuyerChecklist = async () => {
-    if (!checklistSupplier) return;
-    setIsSubmitting(true);
-    try {
-      const updatedChecklist: BuyerChecklist = {
-        ...buyerChecklistForm,
-        completed_by: currentUser?.name || 'Comercial',
-        completed_at: new Date().toISOString()
-      };
-      await dbService.saveBuyerChecklist(checklistSupplier.id, updatedChecklist);
-      setSuppliers(prev => prev.map(s => s.id === checklistSupplier.id ? { ...s, buyer_checklist: updatedChecklist } : s));
-      setIsBuyerChecklistModalOpen(false);
-      if (onChecklistSuccess) {
-        await onChecklistSuccess();
-      }
-    } catch (err) {
-      console.error('Error saving buyer checklist:', err);
-      alert('Erro ao salvar checklist de compras.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const isLeadChecklistFilled = (s: Supplier) => {
+    const bc = s.buyer_checklist || dbService.getBuyerChecklist(s.id);
+    if (!bc) return false;
+    return Boolean(
+      bc.adequate_storage_space ||
+      (bc.available_structures && bc.available_structures.length > 0) ||
+      bc.truck_access_ok ||
+      bc.can_load_vehicle ||
+      bc.can_prepare_material
+    );
   };
 
   const executeStatusUpdate = async (supplierId: string, newStatus: ProspectingStatus) => {
@@ -734,23 +716,15 @@ export default function ProspectingPage() {
       return item;
     }));
 
-    // Auto-open materials modal ONLY if the supplier does not have materials filled yet
-    const hasMaterials = Boolean(s.materials && s.materials.length > 0);
-    if (!hasMaterials) {
-      if (newStatus === 'QUALIFIED') {
-        openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, false);
-      } else if (newStatus === 'WAITING_LOGISTICS') {
-        openMaterialsModal({ ...s, prospecting_status: newStatus, current_stage: stage }, true);
-      }
-    }
-
     // ⚡ 2. ASYNC BACKGROUND PERSISTENCE: Save to Supabase in parallel
     try {
       await Promise.all([
         dbService.updateSupplier(supplierId, {
           prospecting_status: newStatus, 
           current_stage: stage,
-          current_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS'
+          current_status: newStatus === 'WAITING_LOGISTICS' ? 'PENDING' : 'IN_PROGRESS',
+          sent_to_logistics_at: newStatus === 'WAITING_LOGISTICS' ? (s.sent_to_logistics_at || now) : s.sent_to_logistics_at,
+          logistics_deadline: newStatus === 'WAITING_LOGISTICS' ? (s.logistics_deadline || deadline) : s.logistics_deadline
         }),
         dbService.addSupplierStatusHistory({
           supplier_id: supplierId, 
@@ -782,10 +756,25 @@ export default function ProspectingPage() {
       return;
     }
 
+    const hasMaterials = Boolean(s.materials && s.materials.length > 0);
+    const hasChecklist = isLeadChecklistFilled(s);
+
     if (newStatus === 'WAITING_LOGISTICS') {
-      openBuyerChecklistModal(s, async () => {
+      if (hasMaterials && hasChecklist) {
+        // As informações já estão preenchidas: avança diretamente sem reabrir modal!
         await executeStatusUpdate(supplierId, newStatus);
-      });
+      } else {
+        // Falta alguma informação: abre a tela única com os dados que já existirem preenchidos
+        openMaterialsModal(s, true);
+      }
+      return;
+    }
+
+    if (newStatus === 'QUALIFIED') {
+      if (!hasMaterials || !hasChecklist) {
+        openMaterialsModal(s, false);
+      }
+      await executeStatusUpdate(supplierId, newStatus);
       return;
     }
 
@@ -813,6 +802,14 @@ export default function ProspectingPage() {
       const storageStorageItemTags = hasStorageNeed
         ? storageProvisions.map(p => `[STORAGE_ITEM: ${p.type} | ${p.quantity} | ${p.custom_type || ''}]`).join(' ')
         : '';
+
+      // 0. Save Buyer Checklist into the supplier record
+      const updatedChecklist: BuyerChecklist = {
+        ...buyerChecklistForm,
+        completed_by: currentUser?.name || 'Comercial',
+        completed_at: new Date().toISOString()
+      };
+      dbService.saveBuyerChecklist(activeMaterialSupplier.id, updatedChecklist);
 
       // 1. Delete previous materials if any to avoid duplication
       if (activeMaterialSupplier.materials && activeMaterialSupplier.materials.length > 0) {
@@ -871,7 +868,8 @@ export default function ProspectingPage() {
               current_stage: 'OPERATION',
               current_status: 'APPROVED',
               prospecting_status: 'QUALIFIED',
-              transport_responsible: 'Fornecedor (entrega no Hub)'
+              transport_responsible: 'Fornecedor (entrega no Hub)',
+              buyer_checklist: updatedChecklist
             }),
             dbService.createOrUpdateLogisticsAnalysis({
               supplier_id: activeMaterialSupplier.id,
@@ -906,7 +904,8 @@ export default function ProspectingPage() {
                 prospecting_status: 'WAITING_LOGISTICS',
                 transport_responsible: 'Fornecedor (entrega no Hub)',
                 sent_to_logistics_at: now,
-                logistics_deadline: deadline
+                logistics_deadline: deadline,
+                buyer_checklist: updatedChecklist
               };
             }
             return s;
@@ -920,7 +919,8 @@ export default function ProspectingPage() {
               transport_responsible: 'Fornecedor (entrega no Hub)',
               sent_to_logistics_at: now,
               logistics_deadline: deadline,
-              backlog_reason: null
+              backlog_reason: null,
+              buyer_checklist: updatedChecklist
             }),
             dbService.createOrUpdateLogisticsAnalysis({
               supplier_id: activeMaterialSupplier.id,
@@ -956,7 +956,8 @@ export default function ProspectingPage() {
               prospecting_status: 'WAITING_LOGISTICS',
               sent_to_logistics_at: now,
               logistics_deadline: deadline,
-              backlog_reason: null
+              backlog_reason: null,
+              buyer_checklist: updatedChecklist
             }),
             dbService.createOrUpdateLogisticsAnalysis({
               supplier_id: activeMaterialSupplier.id,
@@ -965,6 +966,11 @@ export default function ProspectingPage() {
               notes: hasStorageNeed ? `Necessita frete e fornecimento de meios de armazenamento: ${storageSummary} ${storageStorageItemTags}` : undefined
             })
           ]);
+        } else {
+          // Just saving materials/qualification
+          await dbService.updateSupplier(activeMaterialSupplier.id, {
+            buyer_checklist: updatedChecklist
+          });
         }
       }
 
@@ -2407,14 +2413,31 @@ export default function ProspectingPage() {
               )}
             </div>
 
+            {/* SEÇÃO: CHECKLIST DE COMPRAS UNIFICADO */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/40 border border-[#CCEAF1] dark:border-slate-800 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between pb-1 border-b border-[#CCEAF1] dark:border-slate-800">
+                <h4 className="text-xs font-bold text-[#0E2439] dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                  📋 {language === 'pt' ? 'Checklist de Compras' : 'Buyer Checklist'}
+                </h4>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  {language === 'pt' ? 'Armazenamento, Estrutura, Carregamento, Acesso e Coleta' : 'Storage, Structure, Loading & Access'}
+                </span>
+              </div>
+              <BuyerChecklistForm
+                value={buyerChecklistForm}
+                onChange={setBuyerChecklistForm}
+                language={language}
+              />
+            </div>
+
             {/* Sticky Action Footer */}
-            <div className="sticky bottom-0 -mx-6 -mb-6 p-4 bg-white/95 backdrop-blur-xs border-t border-[#CCEAF1] rounded-b-3xl flex flex-col sm:flex-row items-center justify-between gap-3 z-20 shadow-md">
+            <div className="sticky bottom-0 -mx-6 -mb-6 p-4 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xs border-t border-[#CCEAF1] dark:border-slate-800 rounded-b-3xl flex flex-col sm:flex-row items-center justify-between gap-3 z-20 shadow-md">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                <span className="px-2.5 py-1 bg-[#EBF7FA] text-[#2098D1] border border-[#CCEAF1] rounded-full">
+                <span className="px-2.5 py-1 bg-[#EBF7FA] dark:bg-slate-850 text-[#2098D1] border border-[#CCEAF1] dark:border-slate-750 rounded-full">
                   📦 {materials.length} {materials.length === 1 ? 'material adicionado' : 'materiais adicionados'}
                 </span>
                 {needsStorageProvision && storageProvisions.length > 0 && (
-                  <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full">
+                  <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-full">
                     {storageProvisions.length} {storageProvisions.length === 1 ? 'recipiente solicitado' : 'recipientes solicitados'}
                   </span>
                 )}
@@ -2443,7 +2466,7 @@ export default function ProspectingPage() {
                     </>
                   ) : (
                     <>
-                      <FileCheck size={14}/>{language === 'pt' ? 'Salvar Materiais' : 'Save Materials'}
+                      <FileCheck size={14}/>{language === 'pt' ? 'Salvar Materiais e Checklist' : 'Save Materials & Checklist'}
                     </>
                   )}
                 </Button>
@@ -2658,50 +2681,6 @@ export default function ProspectingPage() {
           </div>
         </form>
       </Modal>
-
-      {/* Modal: Checklist de Compras */}
-      {isBuyerChecklistModalOpen && checklistSupplier && (
-        <Modal
-          isOpen={isBuyerChecklistModalOpen}
-          onClose={() => setIsBuyerChecklistModalOpen(false)}
-          title={`${language === 'pt' ? 'Checklist de Compras' : 'Buyer Checklist'} — ${checklistSupplier.name}`}
-          size="xl"
-        >
-          <div className="space-y-4 max-h-[75vh] overflow-y-auto px-1 pr-2">
-            <div className="p-3.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-xl text-xs space-y-1">
-              <p className="font-bold text-sky-800 dark:text-sky-200 flex items-center gap-1.5">
-                📋 {language === 'pt' ? 'Checklist de Compras — Qualificação e Envio para Logística' : 'Purchasing Checklist — Qualification & Logistics Forwarding'}
-              </p>
-              <p className="text-slate-600 dark:text-slate-400">
-                {language === 'pt'
-                  ? 'Preencha ou confirme as condições de armazenamento, estrutura, carregamento e acesso para subsidiar a análise operacional da Logística.'
-                  : 'Fill or confirm storage, structure, loading, and access conditions for logistics operational analysis.'}
-              </p>
-            </div>
-
-            <BuyerChecklistForm
-              value={buyerChecklistForm}
-              onChange={setBuyerChecklistForm}
-              language={language}
-            />
-
-            <div className="sticky bottom-0 -mx-6 -mb-6 p-4 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xs border-t border-slate-200 dark:border-slate-800 rounded-b-3xl flex items-center justify-end gap-2.5 z-20 shadow-md">
-              <Button variant="outline" type="button" onClick={() => setIsBuyerChecklistModalOpen(false)}>
-                {language === 'pt' ? 'Cancelar' : 'Cancel'}
-              </Button>
-              <Button
-                type="button"
-                isLoading={isSubmitting}
-                onClick={handleConfirmBuyerChecklist}
-                className="!bg-indigo-600 hover:!bg-indigo-700 text-white gap-2 font-bold shadow-xs"
-              >
-                <Send size={14} />
-                {language === 'pt' ? 'Salvar Checklist e Avançar para Logística' : 'Save Checklist and Proceed to Logistics'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }

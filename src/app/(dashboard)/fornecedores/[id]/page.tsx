@@ -419,6 +419,7 @@ export default function SupplierDetailPage() {
   });
 
   const [materialsForm, setMaterialsForm] = useState<MaterialLine[]>([]);
+  const [buyerChecklistForm, setBuyerChecklistForm] = useState<BuyerChecklist>({});
   const [needsStorageProvision, setNeedsStorageProvision] = useState<boolean>(false);
   const [storageProvisions, setStorageProvisions] = useState<StorageProvisionItem[]>([
     { id: '1', type: 'Bag', quantity: '1', custom_type: '' }
@@ -836,6 +837,15 @@ export default function SupplierDetailPage() {
     }
     setAttachedFiles([]);
 
+    const existingChecklist = supplier?.buyer_checklist || (supplier ? dbService.getBuyerChecklist(supplier.id) : null);
+    setBuyerChecklistForm(existingChecklist || {
+      adequate_storage_space: 'yes',
+      available_structures: ['ground_floor'],
+      truck_access_ok: 'yes',
+      can_load_vehicle: 'yes',
+      can_prepare_material: 'yes'
+    });
+
     const isSupplierSelfDelivery = 
       supplier?.transport_responsible === 'Fornecedor (entrega no Hub)' ||
       supplier?.logistics_analyses?.[0]?.transport_responsible === 'Fornecedor (entrega no Hub)';
@@ -950,7 +960,15 @@ export default function SupplierDetailPage() {
         await dbService.addSupplierDocuments(supplier.id, attachedFiles);
       }
 
-      // 4. Update Hub delivery / self-delivery status if configured
+      // 4. Save buyer checklist permanently
+      const updatedChecklist: BuyerChecklist = {
+        ...buyerChecklistForm,
+        completed_by: currentUser?.name || 'Comercial',
+        completed_at: new Date().toISOString()
+      };
+      await dbService.saveBuyerChecklist(supplier.id, updatedChecklist);
+
+      // 5. Update Hub delivery / self-delivery status if configured
       if (isHubDelivery) {
         const isProspecting = ['PROSPECTING', 'QUALIFICATION', 'LOGISTICS'].includes(supplier.current_stage || '');
 
@@ -959,7 +977,8 @@ export default function SupplierDetailPage() {
             dbService.updateSupplier(supplier.id, {
               current_stage: isProspecting ? 'OPERATION' : supplier.current_stage,
               current_status: isProspecting ? 'APPROVED' : supplier.current_status,
-              transport_responsible: 'Fornecedor (entrega no Hub)'
+              transport_responsible: 'Fornecedor (entrega no Hub)',
+              buyer_checklist: updatedChecklist
             }),
             dbService.createOrUpdateLogisticsAnalysis({
               supplier_id: supplier.id,
@@ -984,7 +1003,8 @@ export default function SupplierDetailPage() {
               transport_responsible: 'Fornecedor (entrega no Hub)',
               sent_to_logistics_at: now,
               logistics_deadline: deadline,
-              backlog_reason: null
+              backlog_reason: null,
+              buyer_checklist: updatedChecklist
             }),
             dbService.createOrUpdateLogisticsAnalysis({
               supplier_id: supplier.id,
@@ -999,6 +1019,10 @@ export default function SupplierDetailPage() {
           ]);
         }
       } else {
+        await dbService.updateSupplier(supplier.id, {
+          buyer_checklist: updatedChecklist
+        });
+
         if (hasStorageNeed) {
           await dbService.createOrUpdateLogisticsAnalysis({
             supplier_id: supplier.id,
@@ -3921,6 +3945,23 @@ export default function SupplierDetailPage() {
                   : 'No files attached yet. Click "Browse PC" to select files.'}
               </div>
             )}
+          </div>
+
+          {/* SEÇÃO: CHECKLIST DE COMPRAS UNIFICADO */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/40 border border-[#CCEAF1] dark:border-slate-800 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between pb-1 border-b border-[#CCEAF1] dark:border-slate-800">
+              <h4 className="text-xs font-bold text-[#0E2439] dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                📋 {language === 'pt' ? 'Checklist de Compras' : 'Buyer Checklist'}
+              </h4>
+              <span className="text-[10px] text-slate-500 font-medium">
+                {language === 'pt' ? 'Armazenamento, Estrutura, Carregamento, Acesso e Coleta' : 'Storage, Structure, Loading & Access'}
+              </span>
+            </div>
+            <BuyerChecklistForm
+              value={buyerChecklistForm}
+              onChange={setBuyerChecklistForm}
+              language={language}
+            />
           </div>
 
           {/* Sticky Action Footer */}
