@@ -49,28 +49,34 @@ export function LogisticsChecklistForm({
 }: LogisticsChecklistFormProps) {
   const currentVal = value || DEFAULT_LOGISTICS_CHECKLIST;
 
-  const updateField = <K extends keyof LogisticsChecklist>(field: K, val: LogisticsChecklist[K]) => {
+  const updateFields = (updates: Partial<LogisticsChecklist>) => {
     if (readOnly || !onChange) return;
     onChange({
       ...currentVal,
-      [field]: val
+      ...updates
     });
+  };
+
+  const updateField = <K extends keyof LogisticsChecklist>(field: K, val: LogisticsChecklist[K]) => {
+    updateFields({ [field]: val });
   };
 
   const renderTwoStateRadio = (
     label: string,
     field: keyof LogisticsChecklist,
-    currentVal?: 'yes' | 'no' | null
+    currentValChoice?: 'yes' | 'no' | null
   ) => {
+    const isYes = currentValChoice === 'yes';
+    const isNo = currentValChoice === 'no' || (!currentValChoice && currentValChoice !== undefined);
+
     if (readOnly) {
-      const isYes = currentVal === 'yes';
       return (
         <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800/60 text-xs">
           <span className="text-slate-700 dark:text-slate-300 font-medium">{label}</span>
           <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
             isYes 
-              ? 'bg-indigo-100 text-indigo-800 border-indigo-200' 
-              : 'bg-slate-100 text-slate-700 border-slate-200'
+              ? 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800' 
+              : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'
           }`}>
             {isYes ? (language === 'pt' ? 'Sim' : 'Yes') : (language === 'pt' ? 'Não' : 'No')}
           </span>
@@ -83,39 +89,29 @@ export function LogisticsChecklistForm({
         <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
           {label}
         </label>
-        <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0">
-          <label
-            className={`px-3 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
-              currentVal === 'yes'
+        <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 gap-1">
+          <button
+            type="button"
+            onClick={() => updateField(field, 'yes')}
+            className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              isYes
                 ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
             }`}
           >
-            <input
-              type="radio"
-              name={String(field)}
-              className="sr-only"
-              checked={currentVal === 'yes'}
-              onChange={() => updateField(field, 'yes')}
-            />
             {language === 'pt' ? 'Sim' : 'Yes'}
-          </label>
-          <label
-            className={`px-3 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
-              currentVal === 'no'
+          </button>
+          <button
+            type="button"
+            onClick={() => updateField(field, 'no')}
+            className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              isNo
                 ? 'bg-slate-600 text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
             }`}
           >
-            <input
-              type="radio"
-              name={String(field)}
-              className="sr-only"
-              checked={currentVal === 'no'}
-              onChange={() => updateField(field, 'no')}
-            />
             {language === 'pt' ? 'Não' : 'No'}
-          </label>
+          </button>
         </div>
       </div>
     );
@@ -182,48 +178,35 @@ export function LogisticsChecklistForm({
               {readOnly ? (
                 <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
                   currentVal.needs_storage_provision === 'yes'
-                    ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
-                    : 'bg-slate-100 text-slate-700 border-slate-200'
+                    ? 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'
                 }`}>
                   {currentVal.needs_storage_provision === 'yes' ? (language === 'pt' ? 'Sim' : 'Yes') : (language === 'pt' ? 'Não' : 'No')}
                 </span>
               ) : (
-                <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0">
-                  <label
-                    className={`px-3 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
+                <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => updateFields({ needs_storage_provision: 'yes' })}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                       currentVal.needs_storage_provision === 'yes'
                         ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="log_needs_storage_provision"
-                      className="sr-only"
-                      checked={currentVal.needs_storage_provision === 'yes'}
-                      onChange={() => updateField('needs_storage_provision', 'yes')}
-                    />
                     {language === 'pt' ? 'Sim' : 'Yes'}
-                  </label>
-                  <label
-                    className={`px-3 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
-                      currentVal.needs_storage_provision === 'no'
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateFields({ needs_storage_provision: 'no', storage_provision_details: '' })}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                      currentVal.needs_storage_provision === 'no' || !currentVal.needs_storage_provision
                         ? 'bg-slate-600 text-white shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="log_needs_storage_provision"
-                      className="sr-only"
-                      checked={currentVal.needs_storage_provision === 'no'}
-                      onChange={() => {
-                        updateField('needs_storage_provision', 'no');
-                        updateField('storage_provision_details', null);
-                      }}
-                    />
                     {language === 'pt' ? 'Não' : 'No'}
-                  </label>
+                  </button>
                 </div>
               )}
             </div>
@@ -256,48 +239,35 @@ export function LogisticsChecklistForm({
               {readOnly ? (
                 <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
                   currentVal.needs_adaptation_before_collection === 'yes'
-                    ? 'bg-amber-100 text-amber-800 border-amber-200'
-                    : 'bg-slate-100 text-slate-700 border-slate-200'
+                    ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'
                 }`}>
                   {currentVal.needs_adaptation_before_collection === 'yes' ? (language === 'pt' ? 'Sim' : 'Yes') : (language === 'pt' ? 'Não' : 'No')}
                 </span>
               ) : (
-                <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0">
-                  <label
-                    className={`px-3 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
+                <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => updateFields({ needs_adaptation_before_collection: 'yes' })}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                       currentVal.needs_adaptation_before_collection === 'yes'
                         ? 'bg-amber-600 text-white shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="log_needs_adaptation"
-                      className="sr-only"
-                      checked={currentVal.needs_adaptation_before_collection === 'yes'}
-                      onChange={() => updateField('needs_adaptation_before_collection', 'yes')}
-                    />
                     {language === 'pt' ? 'Sim' : 'Yes'}
-                  </label>
-                  <label
-                    className={`px-3 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
-                      currentVal.needs_adaptation_before_collection === 'no'
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateFields({ needs_adaptation_before_collection: 'no', adaptation_details: '' })}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                      currentVal.needs_adaptation_before_collection === 'no' || !currentVal.needs_adaptation_before_collection
                         ? 'bg-slate-600 text-white shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="log_needs_adaptation"
-                      className="sr-only"
-                      checked={currentVal.needs_adaptation_before_collection === 'no'}
-                      onChange={() => {
-                        updateField('needs_adaptation_before_collection', 'no');
-                        updateField('adaptation_details', null);
-                      }}
-                    />
                     {language === 'pt' ? 'Não' : 'No'}
-                  </label>
+                  </button>
                 </div>
               )}
             </div>

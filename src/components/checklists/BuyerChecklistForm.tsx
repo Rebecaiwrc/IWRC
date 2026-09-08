@@ -59,12 +59,16 @@ export function BuyerChecklistForm({
 }: BuyerChecklistFormProps) {
   const currentVal = value || DEFAULT_BUYER_CHECKLIST;
 
-  const updateField = <K extends keyof BuyerChecklist>(field: K, val: BuyerChecklist[K]) => {
+  const updateFields = (updates: Partial<BuyerChecklist>) => {
     if (readOnly || !onChange) return;
     onChange({
       ...currentVal,
-      [field]: val
+      ...updates
     });
+  };
+
+  const updateField = <K extends keyof BuyerChecklist>(field: K, val: BuyerChecklist[K]) => {
+    updateFields({ [field]: val });
   };
 
   const handleStructureToggle = (item: string) => {
@@ -100,14 +104,16 @@ export function BuyerChecklistForm({
       { key: 'not_informed', labelPt: 'Não informado', labelEn: 'Not informed' }
     ];
 
+    const activeKey = currentValChoice || 'not_informed';
+
     if (readOnly) {
       const selected = options.find(o => o.key === currentValChoice);
       const text = selected 
         ? (language === 'pt' ? selected.labelPt : selected.labelEn) 
         : (language === 'pt' ? 'Não informado' : 'Not informed');
-      const badgeColor = currentValChoice === 'yes' ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-        : currentValChoice === 'no' ? 'bg-rose-100 text-rose-800 border-rose-200'
-        : 'bg-slate-100 text-slate-700 border-slate-200';
+      const badgeColor = currentValChoice === 'yes' ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+        : currentValChoice === 'no' ? 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800'
+        : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800';
 
       return (
         <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800/60 text-xs">
@@ -124,31 +130,26 @@ export function BuyerChecklistForm({
         <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
           {label}
         </label>
-        <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0">
+        <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 gap-1">
           {options.map(opt => {
-            const isChecked = currentValChoice === opt.key;
+            const isChecked = activeKey === opt.key;
             return (
-              <label
+              <button
                 key={opt.key}
-                className={`px-2.5 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
+                type="button"
+                onClick={() => updateField(field, opt.key)}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                   isChecked
                     ? opt.key === 'yes'
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : opt.key === 'no'
                         ? 'bg-rose-600 text-white shadow-xs'
                         : 'bg-slate-600 text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
                 }`}
               >
-                <input
-                  type="radio"
-                  name={String(field)}
-                  className="sr-only"
-                  checked={isChecked}
-                  onChange={() => updateField(field, opt.key)}
-                />
                 {language === 'pt' ? opt.labelPt : opt.labelEn}
-              </label>
+              </button>
             );
           })}
         </div>
@@ -164,6 +165,9 @@ export function BuyerChecklistForm({
     currentBool?: 'yes' | 'no' | null,
     currentObs?: string | null
   ) => {
+    const isYes = currentBool === 'yes';
+    const isNo = currentBool === 'no' || (!currentBool && currentBool !== undefined);
+
     if (readOnly) {
       return (
         <div className="py-2 border-b border-slate-100 dark:border-slate-800/60 text-xs space-y-1">
@@ -171,8 +175,8 @@ export function BuyerChecklistForm({
             <span className="text-slate-700 dark:text-slate-300 font-medium">{label}</span>
             <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
               currentBool === 'yes' 
-                ? 'bg-amber-100 text-amber-800 border-amber-200' 
-                : 'bg-slate-100 text-slate-700 border-slate-200'
+                ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800' 
+                : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'
             }`}>
               {currentBool === 'yes' ? (language === 'pt' ? 'Sim' : 'Yes') : (language === 'pt' ? 'Não' : 'No')}
             </span>
@@ -192,46 +196,33 @@ export function BuyerChecklistForm({
           <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
             {label}
           </label>
-          <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0">
-            <label
-              className={`px-3 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
-                currentBool === 'yes'
+          <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 gap-1">
+            <button
+              type="button"
+              onClick={() => updateFields({ [boolField]: 'yes' })}
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                isYes
                   ? 'bg-amber-600 text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
               }`}
             >
-              <input
-                type="radio"
-                name={String(boolField)}
-                className="sr-only"
-                checked={currentBool === 'yes'}
-                onChange={() => updateField(boolField, 'yes')}
-              />
               {language === 'pt' ? 'Sim' : 'Yes'}
-            </label>
-            <label
-              className={`px-3 py-1 text-xs font-bold rounded-md cursor-pointer transition-all ${
-                currentBool === 'no'
+            </button>
+            <button
+              type="button"
+              onClick={() => updateFields({ [boolField]: 'no', [obsField]: '' })}
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                isNo
                   ? 'bg-slate-600 text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
               }`}
             >
-              <input
-                type="radio"
-                name={String(boolField)}
-                className="sr-only"
-                checked={currentBool === 'no'}
-                onChange={() => {
-                  updateField(boolField, 'no');
-                  updateField(obsField, null);
-                }}
-              />
               {language === 'pt' ? 'Não' : 'No'}
-            </label>
+            </button>
           </div>
         </div>
 
-        {currentBool === 'yes' && (
+        {isYes && (
           <div className="pt-1">
             <input
               type="text"
