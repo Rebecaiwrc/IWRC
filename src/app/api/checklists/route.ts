@@ -23,71 +23,107 @@ async function ensureBucket() {
   } catch (e) {}
 }
 
+// Server-side cache for high performance
+let memoryChecklistsCache: {
+  buyerChecklists: Record<string, BuyerChecklist>;
+  logisticsChecklists: Record<string, LogisticsChecklist>;
+  timestamp: number;
+} | null = null;
+
+const CACHE_TTL_MS = 10000; // 10 seconds
+
 // GET /api/checklists?supplierId=...&type=buyer|logistics
 // GET /api/checklists?all=true
 export async function GET(req: Request) {
   try {
-    await ensureBucket();
     const { searchParams } = new URL(req.url);
     const supplierId = searchParams.get('supplierId');
     const type = searchParams.get('type') || 'buyer';
     const isAll = searchParams.get('all') === 'true';
 
     if (isAll) {
-      const buyerChecklists: Record<string, BuyerChecklist> = {};
-      const logisticsChecklists: Record<string, LogisticsChecklist> = {};
-
-      // Get all supplier IDs from database
-      const { data: supRows } = await adminSupabase
-        .from('suppliers')
-        .select('id');
-
-      const supplierIds = (supRows || []).map(r => r.id).filter(Boolean);
-
-      // Also check root list in storage
-      const { data: rootList } = await adminSupabase.storage
-        .from('documents')
-        .list('', { limit: 500 });
-
-      if (rootList) {
-        rootList.forEach(item => {
-          if (item.name && !item.name.includes('.') && !supplierIds.includes(item.name)) {
-            supplierIds.push(item.name);
-          }
+      const now = Date.now();
+      if (memoryChecklistsCache && (now - memoryChecklistsCache.timestamp) < CACHE_TTL_MS) {
+        return NextResponse.json({
+          buyerChecklists: memoryChecklistsCache.buyerChecklists,
+          logisticsChecklists: memoryChecklistsCache.logisticsChecklists
         });
       }
 
-      await Promise.all(
-        supplierIds.map(async (supId) => {
-          // Fetch buyer checklist
-          try {
-            const { data: bData, error: bErr } = await adminSupabase.storage
-              .from('documents')
-              .download(`${supId}/_buyer_checklist.json`);
-            if (bData && !bErr) {
-              const text = await bData.text();
-              const parsed = JSON.parse(text || '{}');
-              if (parsed && Object.keys(parsed).length > 0) {
-                buyerChecklists[supId] = parsed;
-              }
-            }
-          } catch (e) {}
+      await ensureBucket();
+      let buyerChecklists: Record<string, BuyerChecklist> = {};
+      let logisticsChecklists: Record<string, LogisticsChecklist> = {};
 
-          // Fetch logistics checklist
-          try {
-            const { data: lData, error: lErr } = await adminSupabase.storage
-              .from('documents')
-              .download(`${supId}/_logistics_checklist.json`);
-            if (lData && !lErr) {
-              const text = await lData.text();
-              const parsed = JSON.parse(text || '{}');
-              if (parsed && Object.keys(parsed).length > 0) {
-                logisticsChecklists[supId] = parsed;
+      // 1. Try reading fast global index
+      try {
+        const { data: indexData } = await adminSupabase.storage
+          .from('documents')
+          .download('_all_checklists_index.json');
+        
+        if (indexData) {
+          const text = await indexData.text();
+          const parsed = JSON.parse(text || '{}');
+          buyerChecklists = parsed.buyerChecklists || {};
+          logisticsChecklists = parsed.logisticsChecklists || {};
+        }
+      } catch (e) {}
+
+      // If global index is empty, build it once
+      if (Object.keys(buyerChecklists).length === 0 && Object.keys(logisticsChecklists).length === 0) {
+        const { data: supRows } = await adminSupabase
+          .from('suppliers')
+          .select('id')
+          .limit(100);
+
+        const supplierIds = (supRows || []).map(r => r.id).filter(Boolean);
+
+        await Promise.all(
+          supplierIds.map(async (supId) => {
+            // Fetch buyer checklist
+            try {
+              const { data: bData, error: bErr } = await adminSupabase.storage
+                .from('documents')
+                .download(`${supId}/_buyer_checklist.json`);
+              if (bData && !bErr) {
+                const text = await bData.text();
+                const parsed = JSON.parse(text || '{}');
+                if (parsed && Object.keys(parsed).length > 0) {
+                  buyerChecklists[supId] = parsed;
+                }
               }
-            }
-          } catch (e) {}
-        })
-      );
+            } catch (e) {}
+
+            // Fetch logistics checklist
+            try {
+              const { data: lData, error: lErr } = await adminSupabase.storage
+                .from('documents')
+                .download(`${supId}/_logistics_checklist.json`);
+              if (lData && !lErr) {
+                const text = await lData.text();
+                const parsed = JSON.parse(text || '{}');
+                if (parsed && Object.keys(parsed).length > 0) {
+                  logisticsChecklists[supId] = parsed;
+                }
+              }
+            } catch (e) {}
+          })
+        );
+
+        // Save global index for instant future queries
+        if (Object.keys(buyerChecklists).length > 0 || Object.keys(logisticsChecklists).length > 0) {
+          adminSupabase.storage.from('documents').upload(
+            '_all_checklists_index.json',
+            Buffer.from(JSON.stringify({ buyerChecklists, logisticsChecklists })),
+            { contentType: 'application/json', upsert: true }
+          ).catch(() => {});
+        }
+      }
+
+      memoryChecklistsCache = {
+        buyerChecklists,
+        logisticsChecklists,
+        timestamp: Date.now()
+      };
 
       return NextResponse.json({ buyerChecklists, logisticsChecklists });
     }
@@ -96,6 +132,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'supplierId ou all=true é obrigatório' }, { status: 400 });
     }
 
+    // Check memory cache first
+    if (memoryChecklistsCache) {
+      if (type === 'buyer' && memoryChecklistsCache.buyerChecklists[supplierId]) {
+        return NextResponse.json({ checklist: memoryChecklistsCache.buyerChecklists[supplierId] });
+      }
+      if (type === 'logistics' && memoryChecklistsCache.logisticsChecklists[supplierId]) {
+        return NextResponse.json({ checklist: memoryChecklistsCache.logisticsChecklists[supplierId] });
+      }
+    }
+
+    await ensureBucket();
     const filePath = `${supplierId}/_${type}_checklist.json`;
     const { data, error } = await adminSupabase.storage
       .from('documents')
@@ -145,6 +192,37 @@ export async function POST(req: Request) {
       console.error(`Error saving ${type} checklist to storage:`, upErr);
       return NextResponse.json({ error: upErr.message }, { status: 500 });
     }
+
+    // Update memory cache
+    if (memoryChecklistsCache) {
+      if (type === 'buyer') {
+        memoryChecklistsCache.buyerChecklists[supplierId] = checklist;
+      } else {
+        memoryChecklistsCache.logisticsChecklists[supplierId] = checklist;
+      }
+      memoryChecklistsCache.timestamp = Date.now();
+    }
+
+    // Update global index in background
+    adminSupabase.storage.from('documents').download('_all_checklists_index.json').then(async ({ data: gData }) => {
+      let gIndex: { buyerChecklists: Record<string, BuyerChecklist>; logisticsChecklists: Record<string, LogisticsChecklist> } = {
+        buyerChecklists: {},
+        logisticsChecklists: {}
+      };
+      if (gData) {
+        try { gIndex = JSON.parse(await gData.text() || '{}'); } catch (e) {}
+      }
+      if (type === 'buyer') {
+        gIndex.buyerChecklists[supplierId] = checklist;
+      } else {
+        gIndex.logisticsChecklists[supplierId] = checklist;
+      }
+      await adminSupabase.storage.from('documents').upload(
+        '_all_checklists_index.json',
+        Buffer.from(JSON.stringify(gIndex)),
+        { contentType: 'application/json', upsert: true }
+      );
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, checklist });
   } catch (err: any) {

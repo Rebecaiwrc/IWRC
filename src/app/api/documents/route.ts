@@ -30,53 +30,82 @@ async function ensureBucket() {
   }
 }
 
+// Server-side cache for high performance
+let memoryDocsCache: {
+  data: Record<string, AttachedDocument[]>;
+  timestamp: number;
+} | null = null;
+
+const CACHE_TTL_MS = 10000; // 10 seconds
+
 // GET /api/documents?supplierId=... - List all documents for a supplier
 // GET /api/documents?all=true - List all documents across all suppliers
 export async function GET(req: Request) {
   try {
-    await ensureBucket();
     const { searchParams } = new URL(req.url);
     const supplierId = searchParams.get('supplierId');
     const isAll = searchParams.get('all') === 'true';
 
     if (isAll) {
-      const documentsBySupplier: Record<string, AttachedDocument[]> = {};
-
-      // Get all supplier IDs from database
-      const { data: supRows } = await adminSupabase
-        .from('suppliers')
-        .select('id');
-
-      const supplierIds = (supRows || []).map(r => r.id).filter(Boolean);
-
-      // Also check root list in storage
-      const { data: rootList } = await adminSupabase.storage
-        .from('documents')
-        .list('', { limit: 500 });
-
-      if (rootList) {
-        rootList.forEach(item => {
-          if (item.name && !item.name.includes('.') && !supplierIds.includes(item.name)) {
-            supplierIds.push(item.name);
-          }
-        });
+      const now = Date.now();
+      if (memoryDocsCache && (now - memoryDocsCache.timestamp) < CACHE_TTL_MS) {
+        return NextResponse.json({ documentsBySupplier: memoryDocsCache.data });
       }
 
-      await Promise.all(
-        supplierIds.map(async (supId) => {
-          try {
-            const metaPath = `${supId}/_docs_list.json`;
-            const { data, error } = await adminSupabase.storage.from('documents').download(metaPath);
-            if (data && !error) {
-              const text = await data.text();
-              const docs: AttachedDocument[] = JSON.parse(text || '[]');
-              if (Array.isArray(docs) && docs.length > 0) {
-                documentsBySupplier[supId] = docs;
+      await ensureBucket();
+      let documentsBySupplier: Record<string, AttachedDocument[]> = {};
+
+      // 1. Try reading fast global index
+      try {
+        const { data: indexData } = await adminSupabase.storage
+          .from('documents')
+          .download('_all_docs_index.json');
+        
+        if (indexData) {
+          const text = await indexData.text();
+          documentsBySupplier = JSON.parse(text || '{}');
+        }
+      } catch (e) {}
+
+      // If global index is empty, build it once
+      if (Object.keys(documentsBySupplier).length === 0) {
+        const { data: supRows } = await adminSupabase
+          .from('suppliers')
+          .select('id')
+          .limit(100);
+
+        const supplierIds = (supRows || []).map(r => r.id).filter(Boolean);
+
+        await Promise.all(
+          supplierIds.map(async (supId) => {
+            try {
+              const metaPath = `${supId}/_docs_list.json`;
+              const { data, error } = await adminSupabase.storage.from('documents').download(metaPath);
+              if (data && !error) {
+                const text = await data.text();
+                const docs: AttachedDocument[] = JSON.parse(text || '[]');
+                if (Array.isArray(docs) && docs.length > 0) {
+                  documentsBySupplier[supId] = docs;
+                }
               }
-            }
-          } catch (e) {}
-        })
-      );
+            } catch (e) {}
+          })
+        );
+
+        // Save global index for instant future queries
+        if (Object.keys(documentsBySupplier).length > 0) {
+          adminSupabase.storage.from('documents').upload(
+            '_all_docs_index.json',
+            Buffer.from(JSON.stringify(documentsBySupplier)),
+            { contentType: 'application/json', upsert: true }
+          ).catch(() => {});
+        }
+      }
+
+      memoryDocsCache = {
+        data: documentsBySupplier,
+        timestamp: Date.now()
+      };
 
       return NextResponse.json({ documentsBySupplier });
     }
@@ -85,6 +114,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'supplierId ou all=true é obrigatório' }, { status: 400 });
     }
 
+    // Check memory cache first
+    if (memoryDocsCache && memoryDocsCache.data[supplierId]) {
+      return NextResponse.json({ documents: memoryDocsCache.data[supplierId] });
+    }
+
+    await ensureBucket();
     const metaPath = `${supplierId}/_docs_list.json`;
     const { data, error } = await adminSupabase.storage.from('documents').download(metaPath);
 
@@ -194,6 +229,26 @@ export async function POST(req: Request) {
         Buffer.from(JSON.stringify(currentList, null, 2)),
         { contentType: 'application/json', upsert: true }
       );
+
+      // Invalidate and update cache
+      if (memoryDocsCache) {
+        memoryDocsCache.data[supplierId] = currentList;
+        memoryDocsCache.timestamp = Date.now();
+      }
+
+      // Update global index in background
+      adminSupabase.storage.from('documents').download('_all_docs_index.json').then(async ({ data: gData }) => {
+        let gIndex: Record<string, AttachedDocument[]> = {};
+        if (gData) {
+          try { gIndex = JSON.parse(await gData.text() || '{}'); } catch (e) {}
+        }
+        gIndex[supplierId] = currentList;
+        await adminSupabase.storage.from('documents').upload(
+          '_all_docs_index.json',
+          Buffer.from(JSON.stringify(gIndex)),
+          { contentType: 'application/json', upsert: true }
+        );
+      }).catch(() => {});
 
       return NextResponse.json({
         document: processedDocs[0],

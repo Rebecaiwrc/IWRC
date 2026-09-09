@@ -83,6 +83,10 @@ let memoryDb: {
 // Helper for local storage
 const isBrowser = typeof window !== 'undefined';
 
+let clientDocsCache: { data: Record<string, AttachedDocument[]>; timestamp: number } | null = null;
+let clientChecklistsCache: { buyerChecklists: Record<string, BuyerChecklist>; logisticsChecklists: Record<string, LogisticsChecklist>; timestamp: number } | null = null;
+const CLIENT_CACHE_TTL = 8000; // 8 seconds
+
 function getLocalData<T>(key: string, defaultVal: T[]): T[] {
   if (!isBrowser) {
     return (memoryDb[key as keyof typeof memoryDb] as unknown as T[]) || defaultVal;
@@ -226,13 +230,29 @@ export const dbService = {
 
       if (isBrowser) {
         try {
+          const now = Date.now();
+          const needDocs = !clientDocsCache || (now - clientDocsCache.timestamp) > CLIENT_CACHE_TTL;
+          const needChecklists = !clientChecklistsCache || (now - clientChecklistsCache.timestamp) > CLIENT_CACHE_TTL;
+
           const [docRes, chkData] = await Promise.all([
-            fetch('/api/documents?all=true').then(r => r.ok ? r.json() : { documentsBySupplier: {} }).catch(() => ({ documentsBySupplier: {} })),
-            this.fetchCloudChecklists()
+            needDocs 
+              ? fetch('/api/documents?all=true').then(r => r.ok ? r.json() : { documentsBySupplier: {} }).catch(() => ({ documentsBySupplier: {} }))
+              : Promise.resolve({ documentsBySupplier: clientDocsCache?.data || {} }),
+            needChecklists
+              ? this.fetchCloudChecklists()
+              : Promise.resolve({ buyerChecklists: clientChecklistsCache?.buyerChecklists || {}, logisticsChecklists: clientChecklistsCache?.logisticsChecklists || {} })
           ]);
-          cloudDocsBySupplier = docRes.documentsBySupplier || {};
-          cloudBuyerChecklists = chkData.buyerChecklists || {};
-          cloudLogisticsChecklists = chkData.logisticsChecklists || {};
+
+          if (needDocs && docRes.documentsBySupplier) {
+            clientDocsCache = { data: docRes.documentsBySupplier, timestamp: now };
+          }
+          if (needChecklists && (chkData.buyerChecklists || chkData.logisticsChecklists)) {
+            clientChecklistsCache = { buyerChecklists: chkData.buyerChecklists, logisticsChecklists: chkData.logisticsChecklists, timestamp: now };
+          }
+
+          cloudDocsBySupplier = docRes.documentsBySupplier || clientDocsCache?.data || {};
+          cloudBuyerChecklists = chkData.buyerChecklists || clientChecklistsCache?.buyerChecklists || {};
+          cloudLogisticsChecklists = chkData.logisticsChecklists || clientChecklistsCache?.logisticsChecklists || {};
         } catch (e) {}
       }
 
