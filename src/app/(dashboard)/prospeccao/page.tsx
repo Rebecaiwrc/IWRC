@@ -841,7 +841,7 @@ export default function ProspectingPage() {
 
         const finalFrequency = (mat.frequency === 'Outros' || mat.frequency === 'Outro')
           ? (mat.custom_frequency?.trim() ? `Outro: ${mat.custom_frequency.trim()}` : 'Outros')
-          : (mat.frequency || undefined);
+          : (mat.frequency || 'Mensal');
 
         const prov = hasStorageNeed ? (storageProvisions[idx] || storageProvisions[0]) : null;
 

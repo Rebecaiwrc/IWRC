@@ -1077,20 +1077,33 @@ export const dbService = {
     } catch (e) {}
   },
   async addSupplierContact(contactData: Partial<SupplierContact>): Promise<SupplierContact> {
-    const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+    const id = (contactData.id && isValidUuid(contactData.id))
+      ? contactData.id
+      : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15));
     const now = new Date().toISOString();
+
+    const cleanContact = {
+      id,
+      supplier_id: contactData.supplier_id || '',
+      name: (contactData.name?.trim()) || 'Contato Principal',
+      role: (contactData.role?.trim()) || null,
+      phone: (contactData.phone?.trim()) || null,
+      whatsapp: (contactData.whatsapp?.trim()) || null,
+      email: (contactData.email?.trim()) || null,
+      is_primary: Boolean(contactData.is_primary),
+      created_at: now
+    };
 
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('supplier_contacts')
-        .insert([{
-          ...contactData,
-          id,
-          created_at: now
-        }])
+        .insert([cleanContact])
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting supplier contact in Supabase:', error);
+        throw error;
+      }
       return data;
     }
 
@@ -1104,13 +1117,13 @@ export const dbService = {
 
     const newContact: SupplierContact = {
       id,
-      supplier_id: contactData.supplier_id || '',
-      name: contactData.name || '',
-      role: contactData.role || null,
-      phone: contactData.phone || null,
-      whatsapp: contactData.whatsapp || null,
-      email: contactData.email || null,
-      is_primary: contactData.is_primary || false,
+      supplier_id: cleanContact.supplier_id,
+      name: cleanContact.name,
+      role: cleanContact.role,
+      phone: cleanContact.phone,
+      whatsapp: cleanContact.whatsapp,
+      email: cleanContact.email,
+      is_primary: cleanContact.is_primary,
       created_at: now
     };
     contacts.push(newContact);
@@ -1141,23 +1154,35 @@ export const dbService = {
       ? `${materialData.notes || ''} [STORAGE_PROVISION: ${materialData.storage_provision_type || 'Bag'} | ${materialData.storage_provision_quantity || 1} | ${materialData.storage_provision_custom_type || ''}]`.trim()
       : (materialData.notes || null);
 
-    if (isSupabaseConfigured && supabase) {
-      const payload: any = {
-        ...materialData,
-        notes: notesWithProvision,
-        id,
-        created_at: materialData.created_at || now
-      };
+    const cleanMaterial = {
+      id,
+      supplier_id: materialData.supplier_id || '',
+      material_name: (materialData.material_name?.trim()) || 'Material',
+      category: (materialData.category?.trim()) || (materialData.material_name?.trim()) || 'Diversos',
+      estimated_volume: Number(materialData.estimated_volume) || 0,
+      unit: (materialData.unit?.trim()) || 'kg',
+      frequency: (materialData.frequency?.trim()) || 'Mensal',
+      transaction_type: materialData.transaction_type || 'donation',
+      price_per_kg: Number(materialData.price_per_kg) || 0,
+      storage_form: materialData.storage_form || null,
+      notes: notesWithProvision,
+      needs_storage_provision: Boolean(materialData.needs_storage_provision),
+      storage_provision_type: materialData.storage_provision_type || null,
+      storage_provision_quantity: materialData.storage_provision_quantity !== undefined && materialData.storage_provision_quantity !== null ? Number(materialData.storage_provision_quantity) : null,
+      storage_provision_custom_type: materialData.storage_provision_custom_type || null,
+      created_at: materialData.created_at || now
+    };
 
+    if (isSupabaseConfigured && supabase) {
       let { data, error } = await supabase
         .from('supplier_materials')
-        .insert([payload])
+        .insert([cleanMaterial])
         .select()
         .single();
 
       // If database is missing the newly added storage provision columns, retry without them
       if (error && (error.message?.includes('column') || error.code === '42703' || error.code === 'PGRST204')) {
-        const safePayload: any = { ...payload };
+        const safePayload: any = { ...cleanMaterial };
         delete safePayload.needs_storage_provision;
         delete safePayload.storage_provision_type;
         delete safePayload.storage_provision_quantity;
@@ -1183,21 +1208,21 @@ export const dbService = {
     const materials = getLocalData<SupplierMaterial>('materials', mockMaterials);
     const newMaterial: SupplierMaterial = {
       id,
-      supplier_id: materialData.supplier_id || '',
-      material_name: materialData.material_name || '',
-      category: materialData.category || '',
-      estimated_volume: Number(materialData.estimated_volume) || 0,
-      unit: materialData.unit || 'kg',
-      frequency: materialData.frequency || 'monthly',
-      transaction_type: (materialData.transaction_type as any) || 'donation',
-      price_per_kg: Number(materialData.price_per_kg) || 0,
-      storage_form: materialData.storage_form || null,
-      notes: notesWithProvision,
-      needs_storage_provision: Boolean(materialData.needs_storage_provision),
-      storage_provision_type: materialData.storage_provision_type || null,
-      storage_provision_quantity: materialData.storage_provision_quantity !== undefined ? Number(materialData.storage_provision_quantity) : null,
-      storage_provision_custom_type: materialData.storage_provision_custom_type || null,
-      created_at: materialData.created_at || now
+      supplier_id: cleanMaterial.supplier_id,
+      material_name: cleanMaterial.material_name,
+      category: cleanMaterial.category,
+      estimated_volume: cleanMaterial.estimated_volume,
+      unit: cleanMaterial.unit,
+      frequency: cleanMaterial.frequency,
+      transaction_type: cleanMaterial.transaction_type as any,
+      price_per_kg: cleanMaterial.price_per_kg,
+      storage_form: cleanMaterial.storage_form,
+      notes: cleanMaterial.notes,
+      needs_storage_provision: cleanMaterial.needs_storage_provision,
+      storage_provision_type: cleanMaterial.storage_provision_type,
+      storage_provision_quantity: cleanMaterial.storage_provision_quantity,
+      storage_provision_custom_type: cleanMaterial.storage_provision_custom_type,
+      created_at: cleanMaterial.created_at
     };
     materials.push(newMaterial);
     saveLocalData('materials', materials);
@@ -1622,32 +1647,58 @@ export const dbService = {
   },
 
   async createCollection(collectionData: Partial<Collection>, items: Partial<CollectionItem>[]): Promise<Collection> {
-    const collectionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+    const collectionId = (collectionData.id && isValidUuid(collectionData.id))
+      ? collectionData.id
+      : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15));
     const now = new Date().toISOString();
+    const scheduledDateStr = collectionData.scheduled_date
+      ? String(collectionData.scheduled_date).split('T')[0]
+      : now.split('T')[0];
+
+    const cleanCollectionPayload: Record<string, any> = {
+      id: collectionId,
+      supplier_id: collectionData.supplier_id || '',
+      scheduled_date: scheduledDateStr,
+      completed_date: collectionData.completed_date ? String(collectionData.completed_date).split('T')[0] : null,
+      status: collectionData.status || 'SCHEDULED',
+      driver_name: (collectionData.driver_name?.trim()) || null,
+      carrier_name: (collectionData.carrier_name?.trim()) || null,
+      recurrence_cycle: collectionData.recurrence_cycle || null,
+      recurrence_custom: collectionData.recurrence_custom || null,
+      next_recurrence_date: collectionData.next_recurrence_date ? String(collectionData.next_recurrence_date).split('T')[0] : null,
+      notes: (collectionData.notes?.trim()) || null,
+      created_at: now
+    };
 
     if (isSupabaseConfigured && supabase) {
       const { data: collection, error: cErr } = await supabase
         .from('collections')
-        .insert([{
-          ...collectionData,
-          id: collectionId,
-          created_at: now
-        }])
+        .insert([cleanCollectionPayload])
         .select()
         .single();
-      if (cErr) throw cErr;
+      if (cErr) {
+        console.error('Error inserting collection in Supabase:', cErr);
+        throw cErr;
+      }
 
       const itemsToInsert = items.map(item => ({
-        ...item,
-        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
-        collection_id: collectionId
+        id: (item.id && isValidUuid(item.id)) ? item.id : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)),
+        collection_id: collectionId,
+        material_name: (item.material_name?.trim()) || 'Material',
+        estimated_volume: Number(item.estimated_volume) || 0,
+        unit: (item.unit?.trim()) || 'kg'
       }));
 
-      const { error: iErr } = await supabase.from('collection_items').insert(itemsToInsert);
-      if (iErr) throw iErr;
+      if (itemsToInsert.length > 0) {
+        const { error: iErr } = await supabase.from('collection_items').insert(itemsToInsert);
+        if (iErr) {
+          console.error('Error inserting collection items in Supabase:', iErr);
+          throw iErr;
+        }
+      }
 
       const allCol = await this.getCollections();
-      return allCol.find(c => c.id === collectionId)!;
+      return allCol.find(c => c.id === collectionId) || collection as Collection;
     }
 
     const collections = getLocalData<Collection>('collections', mockCollections);
@@ -1655,13 +1706,16 @@ export const dbService = {
 
     const newCollection: Collection = {
       id: collectionId,
-      supplier_id: collectionData.supplier_id || '',
-      scheduled_date: collectionData.scheduled_date || '',
-      completed_date: null,
-      status: collectionData.status || 'SCHEDULED',
-      driver_name: collectionData.driver_name || null,
-      carrier_name: collectionData.carrier_name || null,
-      notes: collectionData.notes || null,
+      supplier_id: cleanCollectionPayload.supplier_id,
+      scheduled_date: cleanCollectionPayload.scheduled_date,
+      completed_date: cleanCollectionPayload.completed_date,
+      status: cleanCollectionPayload.status,
+      driver_name: cleanCollectionPayload.driver_name,
+      carrier_name: cleanCollectionPayload.carrier_name,
+      recurrence_cycle: cleanCollectionPayload.recurrence_cycle,
+      recurrence_custom: cleanCollectionPayload.recurrence_custom,
+      next_recurrence_date: cleanCollectionPayload.next_recurrence_date,
+      notes: cleanCollectionPayload.notes,
       created_at: now
     };
 
@@ -1672,9 +1726,9 @@ export const dbService = {
       const newItem: CollectionItem = {
         id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
         collection_id: collectionId,
-        material_name: item.material_name || '',
+        material_name: (item.material_name?.trim()) || 'Material',
         estimated_volume: Number(item.estimated_volume) || 0,
-        unit: item.unit || 'kg'
+        unit: (item.unit?.trim()) || 'kg'
       };
       collectionItems.push(newItem);
     });
@@ -1691,21 +1745,48 @@ export const dbService = {
   ): Promise<Collection> {
     const now = new Date().toISOString();
 
+    const updatePayload: Record<string, any> = {};
+    if (collectionData.supplier_id !== undefined) updatePayload.supplier_id = collectionData.supplier_id;
+    if (collectionData.scheduled_date !== undefined) {
+      updatePayload.scheduled_date = collectionData.scheduled_date ? String(collectionData.scheduled_date).split('T')[0] : now.split('T')[0];
+    }
+    if (collectionData.completed_date !== undefined) {
+      updatePayload.completed_date = collectionData.completed_date ? String(collectionData.completed_date).split('T')[0] : null;
+    }
+    if (collectionData.status !== undefined) updatePayload.status = collectionData.status;
+    if (collectionData.driver_name !== undefined) updatePayload.driver_name = (collectionData.driver_name?.trim()) || null;
+    if (collectionData.carrier_name !== undefined) updatePayload.carrier_name = (collectionData.carrier_name?.trim()) || null;
+    if (collectionData.recurrence_cycle !== undefined) updatePayload.recurrence_cycle = collectionData.recurrence_cycle || null;
+    if (collectionData.recurrence_custom !== undefined) updatePayload.recurrence_custom = collectionData.recurrence_custom || null;
+    if (collectionData.next_recurrence_date !== undefined) {
+      updatePayload.next_recurrence_date = collectionData.next_recurrence_date ? String(collectionData.next_recurrence_date).split('T')[0] : null;
+    }
+    if (collectionData.notes !== undefined) updatePayload.notes = (collectionData.notes?.trim()) || null;
+
     if (isSupabaseConfigured && supabase) {
       const { error: cErr } = await supabase
         .from('collections')
-        .update(collectionData)
+        .update(updatePayload)
         .eq('id', id);
-      if (cErr) throw cErr;
+      if (cErr) {
+        console.error('Error updating collection in Supabase:', cErr);
+        throw cErr;
+      }
 
       if (items && items.length > 0) {
         await supabase.from('collection_items').delete().eq('collection_id', id);
         const itemsToInsert = items.map(item => ({
-          ...item,
-          id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
-          collection_id: id
+          id: (item.id && isValidUuid(item.id)) ? item.id : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)),
+          collection_id: id,
+          material_name: (item.material_name?.trim()) || 'Material',
+          estimated_volume: Number(item.estimated_volume) || 0,
+          unit: (item.unit?.trim()) || 'kg'
         }));
-        await supabase.from('collection_items').insert(itemsToInsert);
+        const { error: itemErr } = await supabase.from('collection_items').insert(itemsToInsert);
+        if (itemErr) {
+          console.error('Error updating collection items in Supabase:', itemErr);
+          throw itemErr;
+        }
       }
 
       const all = await this.getCollections();
@@ -1715,7 +1796,7 @@ export const dbService = {
     const collections = getLocalData<Collection>('collections', mockCollections);
     const index = collections.findIndex(c => c.id === id);
     if (index !== -1) {
-      collections[index] = { ...collections[index], ...collectionData };
+      collections[index] = { ...collections[index], ...updatePayload };
       saveLocalData('collections', collections);
     }
 
@@ -1726,9 +1807,9 @@ export const dbService = {
         collectionItems.push({
           id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
           collection_id: id,
-          material_name: item.material_name || '',
+          material_name: (item.material_name?.trim()) || 'Material',
           estimated_volume: Number(item.estimated_volume) || 0,
-          unit: item.unit || 'kg'
+          unit: (item.unit?.trim()) || 'kg'
         });
       });
       saveLocalData('collectionItems', collectionItems);
@@ -1745,14 +1826,16 @@ export const dbService = {
     carrierName?: string | null,
     completedDate?: string | null
   ): Promise<Collection> {
+    const formattedCompletedDate = completedDate ? String(completedDate).split('T')[0] : null;
+
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('collections')
         .update({
           status,
-          driver_name: driverName,
-          carrier_name: carrierName,
-          completed_date: completedDate
+          driver_name: (driverName?.trim()) || null,
+          carrier_name: (carrierName?.trim()) || null,
+          completed_date: formattedCompletedDate
         })
         .eq('id', id);
       if (error) throw error;
@@ -1767,9 +1850,9 @@ export const dbService = {
     collections[index] = {
       ...collections[index],
       status,
-      driver_name: driverName !== undefined ? driverName : collections[index].driver_name,
-      carrier_name: carrierName !== undefined ? carrierName : collections[index].carrier_name,
-      completed_date: completedDate !== undefined ? completedDate : collections[index].completed_date
+      driver_name: driverName !== undefined ? ((driverName?.trim()) || null) : collections[index].driver_name,
+      carrier_name: carrierName !== undefined ? ((carrierName?.trim()) || null) : collections[index].carrier_name,
+      completed_date: completedDate !== undefined ? formattedCompletedDate : collections[index].completed_date
     };
 
     saveLocalData('collections', collections);
@@ -1817,32 +1900,85 @@ export const dbService = {
   },
 
   async createReceipt(receiptData: Partial<Receipt>, items: Partial<ReceiptItem>[]): Promise<Receipt> {
-    const receiptId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+    const receiptId = (receiptData.id && isValidUuid(receiptData.id))
+      ? receiptData.id
+      : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15));
     const now = new Date().toISOString();
+    const receivedDateStr = receiptData.received_date
+      ? String(receiptData.received_date).split('T')[0]
+      : now.split('T')[0];
+
+    const cleanReceiptPayload: Record<string, any> = {
+      id: receiptId,
+      supplier_id: receiptData.supplier_id || '',
+      collection_id: isValidUuid(receiptData.collection_id) ? receiptData.collection_id : null,
+      received_date: receivedDateStr,
+      notes: (receiptData.notes?.trim()) || null,
+      created_at: now
+    };
+
+    if (receiptData.invoice_number !== undefined) cleanReceiptPayload.invoice_number = receiptData.invoice_number;
+    if (receiptData.invoice_doc_id !== undefined) cleanReceiptPayload.invoice_doc_id = receiptData.invoice_doc_id;
+    if (receiptData.invoice_status !== undefined) cleanReceiptPayload.invoice_status = receiptData.invoice_status;
+    if (receiptData.invoice_checked_by !== undefined) cleanReceiptPayload.invoice_checked_by = isValidUuid(receiptData.invoice_checked_by) ? receiptData.invoice_checked_by : null;
+    if (receiptData.invoice_checked_at !== undefined) cleanReceiptPayload.invoice_checked_at = receiptData.invoice_checked_at;
+    if (receiptData.invoice_divergence_reason !== undefined) cleanReceiptPayload.invoice_divergence_reason = receiptData.invoice_divergence_reason;
+    if (receiptData.invoice_divergence_notes !== undefined) cleanReceiptPayload.invoice_divergence_notes = receiptData.invoice_divergence_notes;
+    if (receiptData.corrected_invoice_number !== undefined) cleanReceiptPayload.corrected_invoice_number = receiptData.corrected_invoice_number;
+    if (receiptData.corrected_invoice_doc_id !== undefined) cleanReceiptPayload.corrected_invoice_doc_id = receiptData.corrected_invoice_doc_id;
 
     if (isSupabaseConfigured && supabase) {
-      const { data: receipt, error: rErr } = await supabase
+      let { data: receipt, error: rErr } = await supabase
         .from('receipts')
-        .insert([{
-          ...receiptData,
-          id: receiptId,
-          created_at: now
-        }])
+        .insert([cleanReceiptPayload])
         .select()
         .single();
-      if (rErr) throw rErr;
+
+      // Graceful fallback if database receipts table is missing invoice check columns
+      if (rErr && (rErr.message?.includes('column') || rErr.code === '42703' || rErr.code === 'PGRST204')) {
+        const basePayload = {
+          id: receiptId,
+          supplier_id: cleanReceiptPayload.supplier_id,
+          collection_id: cleanReceiptPayload.collection_id,
+          received_date: cleanReceiptPayload.received_date,
+          notes: cleanReceiptPayload.notes,
+          created_at: now
+        };
+        const retry = await supabase.from('receipts').insert([basePayload]).select().single();
+        receipt = retry.data;
+        rErr = retry.error;
+      }
+
+      if (rErr) {
+        console.error('Error inserting receipt in Supabase:', rErr);
+        throw rErr;
+      }
 
       const itemsToInsert = items.map(item => ({
-        ...item,
-        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
-        receipt_id: receiptId
+        id: (item.id && isValidUuid(item.id)) ? item.id : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)),
+        receipt_id: receiptId,
+        material_name: (item.material_name?.trim()) || 'Material',
+        quantity: Number(item.quantity) || 0,
+        unit: (item.unit?.trim()) || 'kg',
+        weight_kg: Number(item.weight_kg) || 0,
+        notes: (item.notes?.trim()) || null
       }));
 
-      const { error: iErr } = await supabase.from('receipt_items').insert(itemsToInsert);
-      if (iErr) throw iErr;
+      if (itemsToInsert.length > 0) {
+        const { error: iErr } = await supabase.from('receipt_items').insert(itemsToInsert);
+        if (iErr) {
+          console.error('Error inserting receipt items in Supabase:', iErr);
+          throw iErr;
+        }
+      }
+
+      // If receipt is tied to a collection, mark collection as completed
+      if (cleanReceiptPayload.collection_id) {
+        await this.updateCollectionStatus(cleanReceiptPayload.collection_id, 'COMPLETED', undefined, undefined, receivedDateStr);
+      }
 
       const allRec = await this.getReceipts();
-      return allRec.find(r => r.id === receiptId)!;
+      return allRec.find(r => r.id === receiptId) || receipt as Receipt;
     }
 
     const receipts = getLocalData<Receipt>('receipts', mockReceipts);
@@ -1850,19 +1986,19 @@ export const dbService = {
 
     const newReceipt: Receipt = {
       id: receiptId,
-      supplier_id: receiptData.supplier_id || '',
-      collection_id: receiptData.collection_id || null,
-      received_date: receiptData.received_date || new Date().toISOString().split('T')[0],
-      notes: receiptData.notes || null,
-      invoice_number: receiptData.invoice_number || null,
-      invoice_doc_id: receiptData.invoice_doc_id || null,
-      invoice_status: receiptData.invoice_status || 'PENDING_CHECK',
-      invoice_checked_by: receiptData.invoice_checked_by || null,
-      invoice_checked_at: receiptData.invoice_checked_at || null,
-      invoice_divergence_reason: receiptData.invoice_divergence_reason || null,
-      invoice_divergence_notes: receiptData.invoice_divergence_notes || null,
-      corrected_invoice_number: receiptData.corrected_invoice_number || null,
-      corrected_invoice_doc_id: receiptData.corrected_invoice_doc_id || null,
+      supplier_id: cleanReceiptPayload.supplier_id,
+      collection_id: cleanReceiptPayload.collection_id,
+      received_date: cleanReceiptPayload.received_date,
+      notes: cleanReceiptPayload.notes,
+      invoice_number: cleanReceiptPayload.invoice_number || null,
+      invoice_doc_id: cleanReceiptPayload.invoice_doc_id || null,
+      invoice_status: cleanReceiptPayload.invoice_status || 'PENDING_CHECK',
+      invoice_checked_by: cleanReceiptPayload.invoice_checked_by || null,
+      invoice_checked_at: cleanReceiptPayload.invoice_checked_at || null,
+      invoice_divergence_reason: cleanReceiptPayload.invoice_divergence_reason || null,
+      invoice_divergence_notes: cleanReceiptPayload.invoice_divergence_notes || null,
+      corrected_invoice_number: cleanReceiptPayload.corrected_invoice_number || null,
+      corrected_invoice_doc_id: cleanReceiptPayload.corrected_invoice_doc_id || null,
       created_at: now
     };
 
@@ -1873,11 +2009,11 @@ export const dbService = {
       const newItem: ReceiptItem = {
         id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
         receipt_id: receiptId,
-        material_name: item.material_name || '',
+        material_name: (item.material_name?.trim()) || 'Material',
         quantity: Number(item.quantity) || 0,
-        unit: item.unit || 'kg',
+        unit: (item.unit?.trim()) || 'kg',
         weight_kg: Number(item.weight_kg) || 0,
-        notes: item.notes || null
+        notes: (item.notes?.trim()) || null
       };
       receiptItems.push(newItem);
     });
@@ -1960,28 +2096,34 @@ export const dbService = {
   },
 
   async createMaterialDispatch(dispatchData: Partial<MaterialDispatch>): Promise<MaterialDispatch> {
-    const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+    const id = (dispatchData.id && isValidUuid(dispatchData.id))
+      ? dispatchData.id
+      : (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15));
     const now = new Date().toISOString();
-    const qty = Number(dispatchData.quantity_kg) || 0;
+    const rawQty = Number(dispatchData.quantity_kg) || 0;
+    const qty = Math.max(0.01, rawQty); // Strict check for CHECK (quantity_kg > 0)
     const price = Number(dispatchData.unit_price) || 0;
     const totalVal = dispatchData.total_value !== undefined ? Number(dispatchData.total_value) : (qty * price);
+    const dispatchDateStr = dispatchData.dispatch_date
+      ? String(dispatchData.dispatch_date).split('T')[0]
+      : now.split('T')[0];
 
     const payload: Record<string, any> = {
       id,
-      buyer_name: dispatchData.buyer_name || 'Comprador não informado',
-      buyer_document: dispatchData.buyer_document || null,
-      material_name: dispatchData.material_name || 'Material em geral',
+      buyer_name: (dispatchData.buyer_name?.trim()) || 'Comprador não informado',
+      buyer_document: (dispatchData.buyer_document?.trim()) || null,
+      material_name: (dispatchData.material_name?.trim()) || 'Material em geral',
       quantity_kg: qty,
       unit_price: price,
       total_value: totalVal,
-      dispatch_date: dispatchData.dispatch_date || now.split('T')[0],
-      invoice_number: dispatchData.invoice_number || null,
-      mtr_number: dispatchData.mtr_number || null,
-      carrier_name: dispatchData.carrier_name || null,
-      vehicle_plate: dispatchData.vehicle_plate || null,
-      driver_name: dispatchData.driver_name || null,
+      dispatch_date: dispatchDateStr,
+      invoice_number: (dispatchData.invoice_number?.trim()) || null,
+      mtr_number: (dispatchData.mtr_number?.trim()) || null,
+      carrier_name: (dispatchData.carrier_name?.trim()) || null,
+      vehicle_plate: (dispatchData.vehicle_plate?.trim()) || null,
+      driver_name: (dispatchData.driver_name?.trim()) || null,
       destination_type: dispatchData.destination_type || 'sale',
-      notes: dispatchData.notes || null,
+      notes: (dispatchData.notes?.trim()) || null,
       created_at: now
     };
 

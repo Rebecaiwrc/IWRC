@@ -334,6 +334,9 @@ export interface Collection {
   status: CollectionStatus;
   driver_name: string | null;
   carrier_name: string | null;
+  recurrence_cycle?: string | null;
+  recurrence_custom?: string | null;
+  next_recurrence_date?: string | null;
   notes: string | null;
   created_at: string;
   

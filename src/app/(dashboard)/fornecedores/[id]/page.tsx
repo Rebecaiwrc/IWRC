@@ -1102,7 +1102,7 @@ export default function SupplierDetailPage() {
 
         const finalFrequency = (mat.frequency === 'Outros' || mat.frequency === 'Outro')
           ? (mat.custom_frequency?.trim() ? `Outro: ${mat.custom_frequency.trim()}` : 'Outros')
-          : (mat.frequency || undefined);
+          : (mat.frequency || 'Mensal');
 
         const origCreatedAt = mat.created_at || new Date(Date.now() + idx * 1000).toISOString();
         const prov = hasStorageNeed ? (storageProvisions[idx] || storageProvisions[0]) : null;

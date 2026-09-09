@@ -335,7 +335,7 @@ export default function CollectionsPage() {
         editingCollection.id,
         {
           supplier_id: editSupplierId,
-          scheduled_date: new Date(editScheduledDate).toISOString(),
+          scheduled_date: editScheduledDate ? editScheduledDate.split('T')[0] : new Date().toISOString().split('T')[0],
           carrier_name: finalCarrier || null,
           driver_name: editDriverName.trim() || null,
           status: editStatus,
