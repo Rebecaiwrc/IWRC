@@ -1260,6 +1260,13 @@ export default function LogisticsPage() {
                                   ? (language === 'pt' ? 'Agendar Próxima Coleta' : 'Schedule Next Collection') 
                                   : (language === 'pt' ? 'Agendar Coleta' : 'Schedule Collection')}
                             </Button>
+                            <button
+                              onClick={() => handleDeleteSupplier(supplier.id, supplier.name)}
+                              className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
+                              title={language === 'pt' ? 'Apagar Gerador' : 'Delete Generator'}
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1334,6 +1341,13 @@ export default function LogisticsPage() {
                             <Button size="sm" variant="outline" onClick={() => handleOpenAnalysis(supplier)}>
                               {language === 'pt' ? 'Editar Parecer' : 'Edit Opinion'}
                             </Button>
+                            <button
+                              onClick={() => handleDeleteSupplier(supplier.id, supplier.name)}
+                              className="inline-flex items-center justify-center h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
+                              title={language === 'pt' ? 'Apagar Gerador' : 'Delete Generator'}
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         </td>
                       </tr>

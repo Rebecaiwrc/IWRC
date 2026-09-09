@@ -147,6 +147,7 @@ export default function CollectionsPage() {
   const visibleCollections = useMemo(() => {
     return collections.filter(c => {
       const sup = c.supplier || suppliers.find(s => s.id === c.supplier_id);
+      if (!sup) return false;
       return isResponsibleForSupplier(sup);
     });
   }, [collections, suppliers, currentUser, isBuyer]);

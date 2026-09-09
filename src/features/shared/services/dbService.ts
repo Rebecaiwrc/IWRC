@@ -828,43 +828,45 @@ export const dbService = {
 
   async deleteSupplier(id: string): Promise<void> {
     if (isSupabaseConfigured && supabase) {
-      try {
-        // Safe cascade deletion of child records to satisfy FK constraints in Supabase
-        const { data: receiptsData } = await supabase.from('receipts').select('id').eq('supplier_id', id);
-        if (receiptsData && receiptsData.length > 0) {
-          const receiptIds = receiptsData.map(r => r.id);
-          await supabase.from('receipt_items').delete().in('receipt_id', receiptIds);
-          await supabase.from('receipts').delete().eq('supplier_id', id);
-        }
+      if (isValidUuid(id)) {
+        try {
+          // Safe cascade deletion of child records to satisfy FK constraints in Supabase
+          const { data: receiptsData } = await supabase.from('receipts').select('id').eq('supplier_id', id);
+          if (receiptsData && receiptsData.length > 0) {
+            const receiptIds = receiptsData.map(r => r.id);
+            await supabase.from('receipt_items').delete().in('receipt_id', receiptIds);
+            await supabase.from('receipts').delete().eq('supplier_id', id);
+          }
 
-        const { data: collectionsData } = await supabase.from('collections').select('id').eq('supplier_id', id);
-        if (collectionsData && collectionsData.length > 0) {
-          const collectionIds = collectionsData.map(c => c.id);
-          await supabase.from('collection_items').delete().in('collection_id', collectionIds);
-          await supabase.from('collections').delete().eq('supplier_id', id);
-        }
+          const { data: collectionsData } = await supabase.from('collections').select('id').eq('supplier_id', id);
+          if (collectionsData && collectionsData.length > 0) {
+            const collectionIds = collectionsData.map(c => c.id);
+            await supabase.from('collection_items').delete().in('collection_id', collectionIds);
+            await supabase.from('collections').delete().eq('supplier_id', id);
+          }
 
-        await supabase.from('logistics_analyses').delete().eq('supplier_id', id);
-        await supabase.from('supplier_tasks').delete().eq('supplier_id', id);
-        await supabase.from('supplier_interactions').delete().eq('supplier_id', id);
-        await supabase.from('supplier_status_history').delete().eq('supplier_id', id);
-        await supabase.from('supplier_materials').delete().eq('supplier_id', id);
-        await supabase.from('supplier_contacts').delete().eq('supplier_id', id);
-        await supabase.from('supplier_addresses').delete().eq('supplier_id', id);
+          await supabase.from('logistics_analyses').delete().eq('supplier_id', id);
+          await supabase.from('supplier_tasks').delete().eq('supplier_id', id);
+          await supabase.from('supplier_interactions').delete().eq('supplier_id', id);
+          await supabase.from('supplier_status_history').delete().eq('supplier_id', id);
+          await supabase.from('supplier_materials').delete().eq('supplier_id', id);
+          await supabase.from('supplier_contacts').delete().eq('supplier_id', id);
+          await supabase.from('supplier_addresses').delete().eq('supplier_id', id);
 
-        const { error } = await supabase.from('suppliers').delete().eq('id', id);
-        if (error) {
-          console.error('Supabase error deleting supplier:', error);
-          throw new Error(error.message || 'Erro ao excluir gerador.');
+          const { error } = await supabase.from('suppliers').delete().eq('id', id);
+          if (error) {
+            console.error('Supabase error deleting supplier:', error);
+          }
+        } catch (err: any) {
+          console.error('Error during supplier cascade deletion in Supabase:', err);
         }
-      } catch (err: any) {
-        console.error('Error during supplier cascade deletion:', err);
-        throw new Error(err.message || 'Falha ao apagar gerador e registros relacionados.');
       }
-      return;
     }
 
-    // Local Storage Mock cascade delete
+    // ALWAYS clean localStorage, in-memory databases and client caches unconditionally
+    clientDocsCache = null;
+    clientChecklistsCache = null;
+
     const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers).filter(s => s.id !== id);
     saveLocalData('suppliers', suppliers);
 
@@ -894,6 +896,21 @@ export const dbService = {
 
     const receipts = getLocalData<Receipt>('receipts', mockReceipts).filter(r => r.supplier_id !== id);
     saveLocalData('receipts', receipts);
+
+    const documents = getLocalData<AttachedDocument & { supplier_id: string }>('documents', []).filter(d => d.supplier_id !== id);
+    saveLocalData('documents', documents);
+
+    const buyerChecklists = getLocalObject<Record<string, BuyerChecklist>>('buyer_checklists', {});
+    if (buyerChecklists[id]) {
+      delete buyerChecklists[id];
+      saveLocalObject('buyer_checklists', buyerChecklists);
+    }
+
+    const logisticsChecklists = getLocalObject<Record<string, LogisticsChecklist>>('logistics_checklists', {});
+    if (logisticsChecklists[id]) {
+      delete logisticsChecklists[id];
+      saveLocalObject('logistics_checklists', logisticsChecklists);
+    }
   },
 
   // Supplier Documents & Storage Photos
@@ -1632,18 +1649,20 @@ export const dbService = {
         .from('collections')
         .select('*, items:collection_items(*), supplier:suppliers(*)');
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((c: any) => Boolean(c.supplier));
     }
 
     const collections = getLocalData<Collection>('collections', mockCollections);
     const colItems = getLocalData<CollectionItem>('collectionItems', mockCollectionItems);
     const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
 
-    return collections.map(c => ({
-      ...c,
-      supplier: suppliers.find(s => s.id === c.supplier_id) || undefined,
-      items: colItems.filter(ci => ci.collection_id === c.id)
-    })).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+    return collections
+      .filter(c => suppliers.some(s => s.id === c.supplier_id))
+      .map(c => ({
+        ...c,
+        supplier: suppliers.find(s => s.id === c.supplier_id) || undefined,
+        items: colItems.filter(ci => ci.collection_id === c.id)
+      })).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
   },
 
   async createCollection(collectionData: Partial<Collection>, items: Partial<CollectionItem>[]): Promise<Collection> {
@@ -1883,7 +1902,7 @@ export const dbService = {
         .from('receipts')
         .select('*, items:receipt_items(*), supplier:suppliers(*), collection:collections(*)');
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((r: any) => Boolean(r.supplier));
     }
 
     const receipts = getLocalData<Receipt>('receipts', mockReceipts);
@@ -1891,12 +1910,14 @@ export const dbService = {
     const suppliers = getLocalData<Supplier>('suppliers', mockSuppliers);
     const collections = getLocalData<Collection>('collections', mockCollections);
 
-    return receipts.map(r => ({
-      ...r,
-      supplier: suppliers.find(s => s.id === r.supplier_id) || undefined,
-      collection: collections.find(c => c.id === r.collection_id) || null,
-      items: recItems.filter(ri => ri.receipt_id === r.id)
-    })).sort((a, b) => new Date(b.received_date).getTime() - new Date(a.received_date).getTime());
+    return receipts
+      .filter(r => suppliers.some(s => s.id === r.supplier_id))
+      .map(r => ({
+        ...r,
+        supplier: suppliers.find(s => s.id === r.supplier_id) || undefined,
+        collection: collections.find(c => c.id === r.collection_id) || null,
+        items: recItems.filter(ri => ri.receipt_id === r.id)
+      })).sort((a, b) => new Date(b.received_date).getTime() - new Date(a.received_date).getTime());
   },
 
   async createReceipt(receiptData: Partial<Receipt>, items: Partial<ReceiptItem>[]): Promise<Receipt> {
