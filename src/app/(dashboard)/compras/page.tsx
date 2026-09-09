@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { useToast } from '@/features/shared/context/ToastContext';
@@ -15,37 +16,37 @@ import {
   Send, 
   Clock, 
   UserCheck, 
-  AlertCircle,
-  HelpCircle,
-  ArrowRight,
-  Phone,
-  MapPin,
-  CheckCircle2,
-  Calendar,
-  Sparkles,
-  ShoppingBag,
-  RotateCcw,
-  Upload,
-  Paperclip,
-  FileCheck,
-  Trash2,
-  Plus,
-  FileText,
-  Scale,
-  Check,
-  X,
-  AlertTriangle,
-  ArrowUpRight
+  AlertCircle, 
+  HelpCircle, 
+  ArrowRight, 
+  Phone, 
+  MapPin, 
+  CheckCircle2, 
+  Calendar, 
+  Sparkles, 
+  ShoppingBag, 
+  RotateCcw, 
+  Upload, 
+  Paperclip, 
+  FileCheck, 
+  Trash2, 
+  Plus, 
+  FileText, 
+  Scale, 
+  Check, 
+  X, 
+  AlertTriangle, 
+  ArrowUpRight 
 } from 'lucide-react';
 import { 
   formatSupplierCode, 
   formatTitleCase, 
   formatCityState, 
   formatPhone, 
-  formatDate,
-  formatVolume,
-  translateSupplierType,
-  formatShortSegment
+  formatDate, 
+  formatVolume, 
+  translateSupplierType, 
+  formatShortSegment 
 } from '@/lib/utils';
 import { compressImageFile } from '@/lib/imageCompressor';
 import { Button } from '@/components/ui/Button';
@@ -67,6 +68,13 @@ export default function ComprasPage() {
   const { user: currentUser } = useAuth();
   const { t, language } = useLanguage();
   const { showSuccess, showError } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (currentUser && currentUser.role === 'LOGISTICS') {
+      router.replace('/logistica');
+    }
+  }, [currentUser, router]);
 
   const [activeTab, setActiveTab] = useState<'logistics_pending' | 'invoice_check'>('logistics_pending');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -518,6 +526,10 @@ export default function ComprasPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (currentUser && currentUser.role === 'LOGISTICS') {
+    return null;
+  }
 
   if (loading) {
     return (

@@ -107,7 +107,7 @@ export const Sidebar: React.FC = () => {
     if (targetProfile) {
       if (targetProfile.role === 'BUYER' && pathname.startsWith('/logistica')) {
         router.replace('/prospeccao');
-      } else if (targetProfile.role === 'LOGISTICS' && pathname.startsWith('/prospeccao')) {
+      } else if (targetProfile.role === 'LOGISTICS' && (pathname.startsWith('/prospeccao') || pathname.startsWith('/compras'))) {
         router.replace('/logistica');
       }
     }
@@ -127,7 +127,6 @@ export const Sidebar: React.FC = () => {
     ? [
         ...(isSuperAdmin ? [{ name: t('nav.masterPanel', 'Painel Master'), href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
         { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], hasPending: logisticsQueueCount > 0 },
-        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], hasPending: comprasQueueCount > 0 },
         { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
@@ -139,7 +138,7 @@ export const Sidebar: React.FC = () => {
         ...(isSuperAdmin ? [{ name: t('nav.masterPanel', 'Painel Master'), href: '/admin/painel', icon: ShieldCheck, roles: ['SUPER_ADMIN'] }] : []),
         { name: t('nav.prospecting', 'Prospecção'), href: '/prospeccao', icon: GitBranch, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER'] },
         { name: t('nav.logistics', 'Logística'), href: '/logistica', icon: Truck, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'], hasPending: logisticsQueueCount > 0 },
-        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'], hasPending: comprasQueueCount > 0 },
+        { name: t('nav.purchasing', 'Compras'), href: '/compras', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER'], hasPending: comprasQueueCount > 0 },
         { name: t('nav.suppliers', 'Geradores'), href: '/fornecedores', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.collections', 'Coletas'), href: '/coletas', icon: Calendar, roles: ['SUPER_ADMIN', 'ADMIN', 'BUYER', 'LOGISTICS'] },
         { name: t('nav.receipts', 'Recebimentos'), href: '/recebimentos', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'LOGISTICS'] },
