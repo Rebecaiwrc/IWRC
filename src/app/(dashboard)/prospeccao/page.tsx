@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
 import { translateProspectingStatus, translateSupplierType, formatDate, formatCep, formatCnpj, fetchAddressByCep, getLogisticsSlaInfo, translateMaterialName, translateFrequency } from '@/lib/utils';
+import { compressImageFile } from '@/lib/imageCompressor';
 import { 
   Plus, 
   MapPin, 
@@ -591,16 +592,11 @@ export default function ProspectingPage() {
     }).catch(() => {});
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      const sizeStr = file.size > 1024 * 1024 
-        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        : (file.size / 1024).toFixed(0) + ' KB';
-
+    for (const file of Array.from(files)) {
       let inferredType: DocumentType = 'other';
       const lower = file.name.toLowerCase();
       const isImg = file.type.startsWith('image/') || lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp');
@@ -621,22 +617,24 @@ export default function ProspectingPage() {
         inferredType = 'env_license';
       }
 
-      reader.onload = () => {
+      try {
+        const { dataUrl, sizeStr } = await compressImageFile(file);
         setAttachedFiles(prev => [
           ...prev,
           {
             id: Math.random().toString(36).substring(2, 9),
             name: file.name,
             size: sizeStr,
-            file_data: reader.result as string,
+            file_data: dataUrl,
             type: inferredType,
             uploaded_at: new Date().toISOString(),
             notes: ''
           }
         ]);
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (err) {
+        console.error('Error compressing image:', err);
+      }
+    }
 
     e.target.value = '';
   };

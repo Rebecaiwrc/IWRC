@@ -14,38 +14,57 @@ const adminSupabase = createClient(supabaseUrl, serviceRoleKey || supabaseKey, {
   }
 });
 
+async function ensureBucket() {
+  try {
+    const { data: buckets } = await adminSupabase.storage.listBuckets();
+    if (!buckets?.some(b => b.name === 'documents')) {
+      await adminSupabase.storage.createBucket('documents', { public: true });
+    }
+  } catch (e) {}
+}
+
 // GET /api/checklists?supplierId=...&type=buyer|logistics
 // GET /api/checklists?all=true
 export async function GET(req: Request) {
   try {
+    await ensureBucket();
     const { searchParams } = new URL(req.url);
     const supplierId = searchParams.get('supplierId');
     const type = searchParams.get('type') || 'buyer';
     const isAll = searchParams.get('all') === 'true';
 
     if (isAll) {
-      const { data: rootList, error: listErr } = await adminSupabase.storage
-        .from('documents')
-        .list('', { limit: 500 });
-
-      if (listErr || !rootList) {
-        return NextResponse.json({ buyerChecklists: {}, logisticsChecklists: {} });
-      }
-
       const buyerChecklists: Record<string, BuyerChecklist> = {};
       const logisticsChecklists: Record<string, LogisticsChecklist> = {};
 
-      await Promise.all(
-        rootList.map(async (item) => {
-          if (!item.name || item.name.includes('.')) return;
-          const supId = item.name;
+      // Get all supplier IDs from database
+      const { data: supRows } = await adminSupabase
+        .from('suppliers')
+        .select('id');
 
+      const supplierIds = (supRows || []).map(r => r.id).filter(Boolean);
+
+      // Also check root list in storage
+      const { data: rootList } = await adminSupabase.storage
+        .from('documents')
+        .list('', { limit: 500 });
+
+      if (rootList) {
+        rootList.forEach(item => {
+          if (item.name && !item.name.includes('.') && !supplierIds.includes(item.name)) {
+            supplierIds.push(item.name);
+          }
+        });
+      }
+
+      await Promise.all(
+        supplierIds.map(async (supId) => {
           // Fetch buyer checklist
           try {
-            const { data: bData } = await adminSupabase.storage
+            const { data: bData, error: bErr } = await adminSupabase.storage
               .from('documents')
               .download(`${supId}/_buyer_checklist.json`);
-            if (bData) {
+            if (bData && !bErr) {
               const text = await bData.text();
               const parsed = JSON.parse(text || '{}');
               if (parsed && Object.keys(parsed).length > 0) {
@@ -56,10 +75,10 @@ export async function GET(req: Request) {
 
           // Fetch logistics checklist
           try {
-            const { data: lData } = await adminSupabase.storage
+            const { data: lData, error: lErr } = await adminSupabase.storage
               .from('documents')
               .download(`${supId}/_logistics_checklist.json`);
-            if (lData) {
+            if (lData && !lErr) {
               const text = await lData.text();
               const parsed = JSON.parse(text || '{}');
               if (parsed && Object.keys(parsed).length > 0) {

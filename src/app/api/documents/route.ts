@@ -19,33 +19,55 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
+async function ensureBucket() {
+  try {
+    const { data: buckets } = await adminSupabase.storage.listBuckets();
+    if (!buckets?.some(b => b.name === 'documents')) {
+      await adminSupabase.storage.createBucket('documents', { public: true });
+    }
+  } catch (e) {
+    // Ignore if already exists or permission
+  }
+}
+
 // GET /api/documents?supplierId=... - List all documents for a supplier
 // GET /api/documents?all=true - List all documents across all suppliers
 export async function GET(req: Request) {
   try {
+    await ensureBucket();
     const { searchParams } = new URL(req.url);
     const supplierId = searchParams.get('supplierId');
     const isAll = searchParams.get('all') === 'true';
 
     if (isAll) {
-      const { data: rootList, error: listErr } = await adminSupabase.storage
+      const documentsBySupplier: Record<string, AttachedDocument[]> = {};
+
+      // Get all supplier IDs from database
+      const { data: supRows } = await adminSupabase
+        .from('suppliers')
+        .select('id');
+
+      const supplierIds = (supRows || []).map(r => r.id).filter(Boolean);
+
+      // Also check root list in storage
+      const { data: rootList } = await adminSupabase.storage
         .from('documents')
         .list('', { limit: 500 });
 
-      if (listErr || !rootList) {
-        return NextResponse.json({ documentsBySupplier: {} });
+      if (rootList) {
+        rootList.forEach(item => {
+          if (item.name && !item.name.includes('.') && !supplierIds.includes(item.name)) {
+            supplierIds.push(item.name);
+          }
+        });
       }
 
-      const documentsBySupplier: Record<string, AttachedDocument[]> = {};
-
       await Promise.all(
-        rootList.map(async (item) => {
-          if (!item.name || item.name.includes('.')) return;
-          const supId = item.name;
+        supplierIds.map(async (supId) => {
           try {
             const metaPath = `${supId}/_docs_list.json`;
-            const { data } = await adminSupabase.storage.from('documents').download(metaPath);
-            if (data) {
+            const { data, error } = await adminSupabase.storage.from('documents').download(metaPath);
+            if (data && !error) {
               const text = await data.text();
               const docs: AttachedDocument[] = JSON.parse(text || '[]');
               if (Array.isArray(docs) && docs.length > 0) {

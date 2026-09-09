@@ -47,6 +47,7 @@ import {
   translateSupplierType,
   formatShortSegment
 } from '@/lib/utils';
+import { compressImageFile } from '@/lib/imageCompressor';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -205,37 +206,34 @@ export default function ComprasPage() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      const sizeStr = file.size > 1024 * 1024 
-        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        : (file.size / 1024).toFixed(0) + ' KB';
-
+    for (const file of Array.from(files)) {
       let inferredType: 'mtr' | 'invoice' | 'donation_letter' | 'other' = 'other';
       const lower = file.name.toLowerCase();
       if (lower.includes('mtr') || lower.includes('manifesto')) inferredType = 'mtr';
       else if (lower.includes('nf') || lower.includes('nota') || lower.includes('fiscal') || lower.includes('danfe')) inferredType = 'invoice';
       else if (lower.includes('doacao') || lower.includes('doação') || lower.includes('carta')) inferredType = 'donation_letter';
 
-      reader.onload = () => {
+      try {
+        const { dataUrl, sizeStr } = await compressImageFile(file);
         setAttachedFiles(prev => [
           ...prev,
           {
             id: Math.random().toString(36).substring(2, 9),
             name: file.name,
             size: sizeStr,
-            file_data: reader.result as string,
+            file_data: dataUrl,
             type: inferredType,
             notes: ''
           }
         ]);
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (err) {
+        console.error('Error compressing file in Compras:', err);
+      }
+    }
 
     e.target.value = '';
   };
